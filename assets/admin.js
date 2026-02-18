@@ -1,10 +1,14 @@
 const API = '/.netlify/functions/stats';
+const HEALTH_API = '/.netlify/functions/admin-health';
 const platformEls = {
   PSN: document.querySelector('#platform-stats .stat:nth-child(1) strong'),
   Xbox: document.querySelector('#platform-stats .stat:nth-child(2) strong'),
   Nintendo: document.querySelector('#platform-stats .stat:nth-child(3) strong')
 };
 const amountList = document.getElementById('amount-stats');
+const healthStatusEl = document.querySelector('[data-health-status]');
+const healthErrorEl = document.querySelector('[data-health-error]');
+const healthTable = document.getElementById('health-clicks');
 const feed = document.getElementById('feed');
 const refreshBtn = document.getElementById('refresh');
 const emailCountEl = document.getElementById('email-count');
@@ -118,6 +122,49 @@ function render(data) {
   });
 }
 
+async function fetchHealth() {
+  try {
+    const res = await fetch(HEALTH_API);
+    if (res.status === 401) {
+      window.location.href = '/admin/login';
+      return { connected: false, clicks: [] };
+    }
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.json();
+  } catch (err) {
+    console.error('health API error', err.message);
+    return { connected: false, error: err.message, clicks: [] };
+  }
+}
+
+function renderHealth(data) {
+  if (!healthTable || !healthStatusEl) return;
+  const { connected, error, clicks = [] } = data;
+  healthStatusEl.textContent = connected ? 'connected' : 'offline';
+  healthStatusEl.classList.toggle('ok', connected);
+  healthStatusEl.classList.toggle('fail', !connected);
+  if (healthErrorEl) {
+    healthErrorEl.textContent = error ? `Fehler: ${error}` : '';
+  }
+  healthTable.querySelectorAll('.table-row').forEach(row => row.remove());
+  clicks.forEach(click => {
+    const row = document.createElement('div');
+    row.className = 'table-row';
+    row.innerHTML = `
+      <span>${new Date(click.created_at).toLocaleTimeString()}</span>
+      <span>${click.slug}</span>
+      <span>${click.platform || '—'}</span>
+      <span>${click.amount || '—'}</span>
+    `;
+    healthTable.appendChild(row);
+  });
+}
+
+async function loadHealth() {
+  const data = await fetchHealth();
+  renderHealth(data);
+}
+
 async function refresh() {
   const data = await fetchStats();
   render(data);
@@ -128,3 +175,6 @@ refresh().then(() => {
 });
 refreshBtn?.addEventListener('click', refresh);
 setInterval(refresh, 2000);
+
+loadHealth();
+setInterval(loadHealth, 8000);

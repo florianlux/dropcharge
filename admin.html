@@ -15,7 +15,7 @@
   <header class="admin-hero">
     <div>
       <h1>DropCharge Live Dashboard</h1>
-      <p>Die letzten Affiliate-Klicks in Echtzeit. Daten bleiben lokal (JSON Logger).</p>
+      <p>Die letzten Affiliate-Klicks in Echtzeit – gespeist aus Supabase.</p>
     </div>
     <div class="admin-actions">
       <a class="btn ghost" href="/">← Landingpage</a>
@@ -46,6 +46,22 @@
       <div id="amount-stats" class="list"></div>
     </section>
 
+    <section class="admin-card full" id="health-card">
+      <div class="admin-head">
+        <h2>Health Check</h2>
+        <span class="badge" data-health-status>—</span>
+      </div>
+      <p class="micro" data-health-error></p>
+      <div class="table" id="health-clicks">
+        <div class="table-head">
+          <span>Zeit</span>
+          <span>Slug</span>
+          <span>Platform</span>
+          <span>Amount</span>
+        </div>
+      </div>
+    </section>
+
         <section class="admin-card full">
       <h2>Letzte Email Signups</h2>
       <div class="table" id="email-table">
@@ -54,6 +70,33 @@
           <span>Timestamp</span>
           <span>Status</span>
         </div>
+      </div>
+    </section>
+
+    <section class="admin-card full">
+      <div class="admin-head">
+        <h2>Weekly Game Spotlight</h2>
+        <button class="btn mini" id="spotlight-fetch">Aktuelles laden</button>
+      </div>
+      <div class="spotlight-admin">
+        <div class="spotlight-preview" id="spotlight-preview">
+          <p class="mini">Aktuell</p>
+          <h3>—</h3>
+          <p class="desc">Noch kein Spotlight gesetzt.</p>
+          <small class="meta"></small>
+        </div>
+        <form id="spotlight-form">
+          <label>Titel<input name="title" required /></label>
+          <label>Cover URL<input name="cover_url" type="url" placeholder="https://..." /></label>
+          <label>Kurzbeschreibung<textarea name="description" rows="3"></textarea></label>
+          <label>Amazon URL<input name="amazon_url" type="url" placeholder="https://amazon.de/..." /></label>
+          <label>G2G URL<input name="g2g_url" type="url" placeholder="https://www.g2a.com/..." /></label>
+          <div class="form-row">
+            <label>Release Datum<input name="release_date" type="date" /></label>
+            <label>Preis<input name="price" placeholder="59,99 €" /></label>
+          </div>
+          <button type="submit" class="btn primary">Spotlight speichern</button>
+        </form>
       </div>
     </section>
 

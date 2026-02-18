@@ -83,3 +83,68 @@
 #email-table .table-head, #email-table .table-row {
   grid-template-columns: 1fr 160px 100px;
 }
+
+
+.spotlight-admin {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(260px,1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+.spotlight-preview {
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  padding: 1.2rem;
+  background: rgba(255,255,255,0.03);
+}
+.spotlight-preview .mini { color: #b0b9d3; text-transform: uppercase; letter-spacing: 0.2em; font-size: 0.7rem; }
+.spotlight-preview .desc { color: rgba(255,255,255,0.8); }
+.spotlight-preview .meta { color: var(--muted, #9ea8c3); display: block; margin-top: 0.5rem; font-size: 0.85rem; }
+#spotlight-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+#spotlight-form label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  gap: 0.3rem;
+  color: #b0b9d3;
+}
+#spotlight-form input,
+#spotlight-form textarea {
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(0,0,0,0.25);
+  color: #fff;
+  padding: 0.7rem 0.9rem;
+  font-family: inherit;
+}
+#spotlight-form textarea { resize: vertical; }
+.form-row { display: grid; grid-template-columns: repeat(auto-fit,minmax(160px,1fr)); gap: 0.8rem; }
+
+#health-card .badge {
+  padding: 0.3rem 0.8rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  background: rgba(255,255,255,0.1);
+}
+#health-card .badge.ok {
+  background: rgba(46, 204, 113, 0.2);
+  color: #7ce0a4;
+}
+#health-card .badge.fail {
+  background: rgba(231, 76, 60, 0.2);
+  color: #ff9e9e;
+}
+#health-card .micro {
+  color: #ff9090;
+  min-height: 1.2rem;
+}
+#health-clicks .table-head,
+#health-clicks .table-row {
+  grid-template-columns: 140px 1fr 120px 120px;
+}
