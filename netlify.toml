@@ -18,38 +18,20 @@
   force = true
 
 [[redirects]]
-  from = "/admin.html"
-  to = "/.netlify/functions/admin-proxy"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/admin-login.html"
-  to = "/.netlify/functions/admin-proxy"
-  status = 200
-  force = true
-
-[[redirects]]
   from = "/admin/login"
-  to = "/.netlify/functions/admin-proxy"
-  status = 200
+  to = "/admin-login.html"
+  status = 302
+  force = true
+
+[[redirects]]
+  from = "/admin"
+  to = "/admin.html"
+  status = 302
   force = true
 
 [[redirects]]
   from = "/admin/logout"
   to = "/.netlify/functions/admin-logout"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/admin"
-  to = "/.netlify/functions/admin-proxy"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/admin/*"
-  to = "/.netlify/functions/admin-proxy"
   status = 200
   force = true
 
