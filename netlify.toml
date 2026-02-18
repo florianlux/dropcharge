@@ -7,16 +7,15 @@
 
 [[redirects]]
   from = "/go/*"
+  to = "/.netlify/functions/go/:splat"
+  status = 200
+  force = true
+
 [[redirects]]
   from = "/api/activity"
   to = "/.netlify/functions/api-activity"
   status = 200
   force = true
-
-  to = "/.netlify/functions/go/:splat"
-  status = 200
-  force = true
-
 
 [[redirects]]
   from = "/admin.html"

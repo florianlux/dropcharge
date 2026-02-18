@@ -248,7 +248,7 @@ function renderTimer() {
   const diff = activityBase ? Math.max(0, Math.floor((Date.now() - activityBase) / 1000)) : 0;
   const minutes = String(Math.floor(diff / 60)).padStart(2, '0');
   const seconds = String(diff % 60).padStart(2, '0');
-  activityTimerEl.textContent = `Letzte Aktivität vor: ${minutes}:${seconds}`;
+  activityTimerEl.textContent = `Letzte Aktivität: ${minutes}:${seconds}`;
 
   if (activityBadgeEl) {
     activityBadgeEl.classList.remove('badge-hot', 'badge-pulse');
