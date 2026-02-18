@@ -1,33 +1,35 @@
 const { createClient } = require('@supabase/supabase-js');
 
-function pickEnv(keys = []) {
-  for (const key of keys) {
-    if (process.env[key]) return process.env[key];
-  }
-  return undefined;
-}
+const url = process.env.SUPABASE_URL;
+const serviceKey = process.env.SUPABASE_SERVICE_KEY;
 
-const url = pickEnv([
-  'SUPABASE_URL',
-  'VITE_SUPABASE_URL',
-  'NEXT_PUBLIC_SUPABASE_URL'
-]);
-const serviceKey = pickEnv([
-  'SUPABASE_SERVICE_KEY',
-  'SUPABASE_SERVICE_ROLE_KEY',
-  'SUPABASE_KEY'
-]);
+if (!url) {
+  console.error('Supabase missing env: SUPABASE_URL');
+}
+if (!serviceKey) {
+  console.error('Supabase missing env: SUPABASE_SERVICE_KEY');
+}
 
 const hasSupabase = Boolean(url && serviceKey);
-
-if (!hasSupabase) {
-  console.warn('Supabase env vars missing: need SUPABASE_URL + SUPABASE_SERVICE_KEY');
-}
-
 const supabase = hasSupabase ? createClient(url, serviceKey) : null;
+
+async function verifyConnection() {
+  if (!supabase) {
+    return { ok: false, error: 'Supabase client not initialised' };
+  }
+  try {
+    // Simple lightweight query to ensure connectivity
+    await supabase.from('clicks').select('id', { head: true, count: 'exact' }).limit(1);
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error.message };
+  }
+}
 
 module.exports = {
   supabase,
   hasSupabase,
-  supabaseUrl: url,
+  supabaseUrlPresent: Boolean(url),
+  supabaseServiceKeyPresent: Boolean(serviceKey),
+  verifyConnection,
 };
