@@ -1,0 +1,85 @@
+.admin {
+  background: #01020a;
+  color: #f9fbff;
+  min-height: 100vh;
+  margin: 0;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+.admin-hero {
+  padding: 2rem clamp(1rem, 4vw, 4rem);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+.admin-actions { display: flex; gap: 0.6rem; }
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(280px,1fr));
+  gap: 1.5rem;
+  padding: 0 clamp(1rem, 4vw, 4rem) 3rem;
+}
+.admin-card {
+  background: rgba(255,255,255,0.04);
+  border-radius: 24px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255,255,255,0.05);
+  backdrop-filter: blur(16px);
+}
+.admin-card.full {
+  grid-column: 1 / -1;
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(120px,1fr));
+  gap: 0.8rem;
+}
+.stat {
+  padding: 1rem;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.stat span { font-size: 0.85rem; color: #b0b9d3; }
+.stat strong { font-size: 1.6rem; }
+.list { display: flex; flex-direction: column; gap: 0.6rem; }
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.7rem 1rem;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.05);
+}
+.table { margin-top: 1rem; }
+.table-head, .table-row {
+  display: grid;
+  grid-template-columns: 120px 100px 100px 80px 100px 120px 150px 1fr;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.table-head { font-size: 0.8rem; color: #9ea8c3; text-transform: uppercase; letter-spacing: 0.1em; }
+.table-row { font-size: 0.9rem; }
+.btn.mini { padding: 0.3rem 0.9rem; font-size: 0.8rem; }
+.admin-head { display: flex; justify-content: space-between; align-items: center; }
+@media (max-width: 960px) {
+  .table-head, .table-row {
+    grid-template-columns: 120px 90px 70px 70px;
+    gap: 0.4rem;
+  }
+  .table-head span:nth-child(n+5),
+  .table-row span:nth-child(n+5) {
+    display: none;
+  }
+}
+
+.email-stats { display: flex; gap: 1rem; }
+.email-stats div { flex:1; padding: 1rem; border-radius: 16px; background: rgba(255,255,255,0.05); display:flex; flex-direction:column; gap:0.2rem; }
+.email-stats span { font-size:0.85rem; color:#b0b9d3; }
+.email-stats strong { font-size:1.8rem; }
+
+#email-table .table-head, #email-table .table-row {
+  grid-template-columns: 1fr 160px 100px;
+}

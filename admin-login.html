@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DropCharge Admin Login</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg: #01020a; --surface: rgba(255,255,255,0.04); --accent: #7f5dff; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Space Grotesk', system-ui, sans-serif; background: var(--bg); color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+    .card { width: min(360px, 100%); background: var(--surface); border-radius: 24px; padding: 2rem; border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(18px); box-shadow: 0 30px 60px rgba(0,0,0,0.5); }
+    h1 { margin-top: 0; font-size: 1.7rem; }
+    label { display: block; font-size: 0.9rem; margin-bottom: 0.4rem; color: rgba(255,255,255,0.8); }
+    input { width: 100%; padding: 0.9rem 1rem; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.35); color: #fff; font-size: 1rem; }
+    button { width: 100%; border: none; border-radius: 14px; padding: 0.9rem 1rem; margin-top: 1rem; font-weight: 600; background: linear-gradient(120deg, var(--accent), #4fd5ff); color: #050505; cursor: pointer; }
+    button:disabled { opacity: 0.6; cursor: progress; }
+    .error { color: #ff9f9f; font-size: 0.85rem; margin-top: 0.8rem; display: none; }
+    .error.visible { display: block; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <p class="eyebrow">DropCharge</p>
+    <h1>Admin Login</h1>
+    <form id="login-form">
+      <label for="password">Passwort</label>
+      <input type="password" id="password" name="password" autocomplete="current-password" required />
+      <button type="submit">Anmelden</button>
+      <p class="error" id="error">Login fehlgeschlagen. Bitte erneut versuchen.</p>
+    </form>
+  </div>
+
+  <script>
+    const form = document.getElementById('login-form');
+    const error = document.getElementById('error');
+    const passwordInput = document.getElementById('password');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      error.classList.remove('visible');
+      const password = passwordInput.value.trim();
+      if (!password) return;
+      form.querySelector('button').disabled = true;
+      try {
+        const res = await fetch('/.netlify/functions/admin-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password })
+        });
+        if (!res.ok) throw new Error('Login failed');
+        window.location.href = '/admin';
+      } catch (err) {
+        error.classList.add('visible');
+      } finally {
+        form.querySelector('button').disabled = false;
+        passwordInput.value = '';
+        passwordInput.focus();
+      }
+    });
+  </script>
+</body>
+</html>

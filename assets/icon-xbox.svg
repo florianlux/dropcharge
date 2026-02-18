@@ -1,4 +1,5 @@
-<svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="32" cy="32" r="30" fill="#101b0a" stroke="#3be35c" stroke-width="2" />
-  <path d="M18 22c4.5-5 9-7 14-7s10 2 14 7m0 0c-4 14-11 22-14 22s-10-8-14-22" stroke="#3be35c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Xbox logo">
+  <circle cx="32" cy="32" r="30" fill="#107C10" />
+  <path d="M18 24c4.5-5 9-7 14-7s9.5 2 14 7" stroke="#fff" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <path d="M18 24c4 14 10 22 14 22s10-8 14-22" stroke="#fff" stroke-width="4" stroke-linecap="round" fill="none"/>
 </svg>

@@ -1,0 +1,30 @@
+[
+  {
+    "event": "failed_login",
+    "payload": {
+      "ip": "::1"
+    },
+    "timestamp": "2026-02-17T23:55:11.069Z"
+  },
+  {
+    "event": "failed_login",
+    "payload": {
+      "ip": "::1"
+    },
+    "timestamp": "2026-02-17T23:55:13.658Z"
+  },
+  {
+    "event": "login_success",
+    "payload": {
+      "ip": "::1"
+    },
+    "timestamp": "2026-02-17T23:55:42.888Z"
+  },
+  {
+    "event": "login_success",
+    "payload": {
+      "ip": "::1"
+    },
+    "timestamp": "2026-02-17T23:56:55.661Z"
+  }
+]

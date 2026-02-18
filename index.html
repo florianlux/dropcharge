@@ -3,148 +3,260 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DropCharge – Digital Credits on Demand</title>
+  <title>DropCharge – Gaming Codes in Sekunden</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Archivo+Black&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./assets/styles.css" />
+  <script>
+    window.TIKTOK_PIXEL_ID = (window.TIKTOK_PIXEL_ID || 'TIKTOK_PIXEL_ID');
+    !function (w, d, t) {
+      w.TiktokAnalyticsObject = t;
+      var ttq = w[t] = w[t] || [];
+      ttq.methods = ['page', 'track', 'identify', 'instances', 'debug', 'on', 'off', 'once', 'ready', 'alias', 'group', 'enableCookie', 'disableCookie'];
+      ttq.setAndDefer = function(t, e) { t[e] = function() { t.push([e].concat(Array.prototype.slice.call(arguments, 0))); }; };
+      for (var i = 0; i < ttq.methods.length; i++) ttq.setAndDefer(ttq, ttq.methods[i]);
+      ttq.instance = function(t) { var e = ttq._i[t] || []; for (var n = 0; n < ttq.methods.length; n++) ttq.setAndDefer(e, ttq.methods[n]); return e; };
+      ttq.load = function(e, n) { var i = 'https://analytics.tiktok.com/i18n/pixel/events.js'; ttq._i = ttq._i || {}; ttq._i[e] = []; ttq._i[e]._u = i; ttq._t = ttq._t || {}; ttq._t[e] = +new Date; ttq._o = ttq._o || {}; ttq._o[e] = n || {}; var o = document.createElement('script'); o.type = 'text/javascript'; o.async = true; o.src = i + '?sdkid=' + e + '&lib=' + t; var a = document.getElementsByTagName('script')[0]; a.parentNode.insertBefore(o, a); };
+    }(window, document, 'ttq');
+    if (window.TIKTOK_PIXEL_ID && window.TIKTOK_PIXEL_ID !== 'TIKTOK_PIXEL_ID') {
+      ttq.load(window.TIKTOK_PIXEL_ID);
+      ttq.page();
+    }
+  </script>
+
 </head>
 <body>
-  <div class="glow"></div>
+  <div class="page-bg"></div>
   <header class="hero" id="top">
-    <nav class="nav">
+    <div class="nav">
       <div class="logo">DropCharge</div>
-      <a class="pill" href="#compare">Live Deals</a>
-    </nav>
-    <div class="hero-grid">
-      <div class="hero-copy">
-        <p class="eyebrow">PSN Guthaben • Xbox Live Mitgliedschaft • Roblox</p>
-        <h1>Tap. Pay. Code unlocked.</h1>
-        <p class="lead">Hyperfast Gaming-Guthaben – perfekt für TikTok Drops und Impulskäufe.</p>
+      <div class="nav-links">
+        <a class="nav-link" href="#compare">Deals</a>
+        <a class="nav-link" href="/admin.html">Dashboard</a>
+      </div>
+    </div>
+    <div class="hero-inner">
+      <div>
+        <p class="eyebrow">PSN • Xbox • Nintendo</p>
+        <h1>Gaming Guthaben in <span>unter 60 Sekunden.</span></h1>
+        <p class="lead">TikTok-optimierte Landingpage: Klarheit, Vertrauen, sofortiger Checkout über Amazon/G2A. Dein Code ist schneller im Postfach als der Clip endet.</p>
         <div class="cta-row">
           <a class="btn primary" href="#compare">Jetzt Guthaben sichern</a>
-          <a class="btn ghost" href="#tiktok">TikTok Deal</a>
-        </div>
-        <div class="badges">
-          <span>⚡ Instant Mail</span>
-          <span>🛡 Verified Partner</span>
-          <span>💳 Amazon/MMOGA</span>
+          <a class="btn ghost" href="#faq">FAQ</a>
         </div>
       </div>
       <div class="hero-card">
-        <p class="mini">Aktueller Drop</p>
-        <h3>PSN Guthaben</h3>
-        <p>20€ Guthaben • -12% vs. Store</p>
-        <a class="btn full" href="https://www.g2a.com/n/psn5_lux" target="_blank">Claim Code</a>
-        <small>Code sofort per Mail.</small>
+        <p class="mini">Live Drop</p>
+        <h3>PSN 20€</h3>
+        <p>-12% vs. Store · Sofort aktivierbar</p>
+        <div class="micro">Offizieller Store Code</div>
+        <a class="btn secondary" href="/go/psn-20">Zum Code</a>
       </div>
     </div>
   </header>
 
+  <section class="trust-bar" aria-label="Trust Badges">
+    <div class="trust-item">⭐ <strong>4,8/5</strong> Bewertung</div>
+    <div class="trust-item">🔥 <strong>10.000+</strong> Gamer vertrauen uns</div>
+    <div class="trust-item">⚡ Code sofort per E-Mail</div>
+    <div class="trust-item">🔒 Sicher zahlen via Amazon</div>
+    <div class="trust-item counter" data-counter>Heute 0 Codes aktiviert</div>
+  </section>
+
   <section class="section" id="compare">
-    <div class="container">
-      <div class="section-head">
-        <h2>Choose your drop</h2>
-        <p>Sofort aktiv für PSN, Xbox und Nintendo Accounts.</p>
+    <div class="section-head">
+      <h2>Wähle deine Plattform</h2>
+      <p>Alle Angebote sind mobile-first. Ein Tap → Checkout → Code im Postfach.</p>
+    </div>
+    <div class="compare-grid">
+      <article class="compare-card psn">
+        <div class="badge">🔥 Beliebteste Wahl</div>
+        <div class="tag">PSN Guthaben</div>
+        <h3>Digital Cards (10/20/50 €)</h3>
+        <p>Offizielle PlayStation Codes. Perfekt für PS5 & PS4 Store, DLCs und Plus-Topups.</p>
+        <ul>
+          <li>
+            <span>10 €</span>
+            <div>
+              <a class="btn pill" href="/go/psn-10">Zum Code</a>
+              <div class="micro">Sofort aktiv · Keine Gebühren</div>
+            </div>
+          </li>
+          <li class="highlight">
+            <span>20 €</span>
+            <div>
+              <a class="btn pill" href="/go/psn-20">Zum Code</a>
+              <div class="micro">Offizieller Store Code</div>
+            </div>
+          </li>
+          <li>
+            <span>50 €</span>
+            <div>
+              <a class="btn pill" href="/go/psn-50">Zum Code</a>
+              <div class="micro">Rabatt vs. PSN</div>
+            </div>
+          </li>
+        </ul>
+      </article>
+
+      <article class="compare-card xbox">
+        <div class="badge">🔥 Beliebteste Wahl</div>
+        <div class="tag">Xbox Live</div>
+        <h3>Mitgliedschaft (1/3/6 Monate)</h3>
+        <p>Game Pass, Multiplayer, Add-ons – alles über einen Klick aktivierbar.</p>
+        <ul>
+          <li>
+            <span>1 Monat</span>
+            <div>
+              <a class="btn pill" href="/go/xbox-1m">Zum Code</a>
+              <div class="micro">Sofort aktiv · Keine Gebühren</div>
+            </div>
+          </li>
+          <li class="highlight">
+            <span>3 Monate</span>
+            <div>
+              <a class="btn pill" href="/go/xbox-3m">Zum Code</a>
+              <div class="micro">Offizieller Store Code</div>
+            </div>
+          </li>
+          <li>
+            <span>6 Monate</span>
+            <div>
+              <a class="btn pill" href="/go/xbox-6m">Zum Code</a>
+              <div class="micro">Rabatt vs. Store</div>
+            </div>
+          </li>
+        </ul>
+      </article>
+
+      <article class="compare-card nintendo">
+        <div class="badge">🔥 Beliebteste Wahl</div>
+        <div class="tag">Nintendo eShop</div>
+        <h3>Guthaben (15/25/50 €)</h3>
+        <p>Switch Games, DLCs & Season Passes ohne Wartezeit. Ein Tap, fertig.</p>
+        <ul>
+          <li>
+            <span>15 €</span>
+            <div>
+              <a class="btn pill" href="/go/nintendo-15">Zum Code</a>
+              <div class="micro">Sofort aktiv · Keine Gebühren</div>
+            </div>
+          </li>
+          <li class="highlight">
+            <span>25 €</span>
+            <div>
+              <a class="btn pill" href="/go/nintendo-25">Zum Code</a>
+              <div class="micro">Offizieller Store Code</div>
+            </div>
+          </li>
+          <li>
+            <span>50 €</span>
+            <div>
+              <a class="btn pill" href="/go/nintendo-50">Zum Code</a>
+              <div class="micro">Rabatt vs. Store</div>
+            </div>
+          </li>
+        </ul>
+      </article>
+    </div>
+  </section>
+
+  <section class="section analytics" aria-live="polite">
+    <div class="section-head">
+      <h2>Live-Stats</h2>
+      <p>Transparenz: Klicks werden lokal gezählt. Für dich entstehen keine Mehrkosten.</p>
+    </div>
+    <div class="analytics-grid">
+      <div class="analytic-card">
+        <p>PSN Klicks</p>
+        <strong data-clicks="psn">0</strong>
       </div>
-      <div class="compare-grid">
-        <article class="compare-card">
-          <div class="tag"><img src="./assets/icon-psn.svg" alt="PSN" /> PSN Guthaben</div>
-          <h3>Mitgliedschaft</h3>
-          <p>Offizielle PSN Cards – 10€ / 20€ / 50€ direkt per Mail.</p>
-          <ul>
-            <li>10€ Guthaben <a href="https://www.g2a.com/n/psn5_lux" class="btn full" target="_blank">Zum Code</a></li>
-            <li>20€ Guthaben <a href="https://www.g2a.com/n/psn5_lux" class="btn full" target="_blank">Zum Code</a></li>
-            <li>50€ Guthaben <a href="https://www.g2a.com/n/psn5_lux" class="btn full" target="_blank">Zum Code</a></li>
-          </ul>
-        </article>
-        <article class="compare-card">
-          <div class="tag"><img src="./assets/icon-xbox.svg" alt="Xbox" /> Xbox Live Mitgliedschaft</div>
-          <h3>Guthaben</h3>
-          <p>1 / 3 / 6 Monate Xbox Live – sofort aktivierbar.</p>
-          <ul>
-            <li>1 Monat <a href="https://www.g2a.com/n/xbox_lux1" class="btn full" target="_blank">Zum Code</a></li>
-            <li>3 Monate <a href="https://www.g2a.com/n/xbox_lux1" class="btn full" target="_blank">Zum Code</a></li>
-            <li>6 Monate <a href="https://www.g2a.com/n/xbox_lux1" class="btn full" target="_blank">Zum Code</a></li>
-          </ul>
-        </article>
-        <article class="compare-card">
-          <div class="tag"><img src="./assets/icon-nintendo.svg" alt="Nintendo" /> Nintendo eShop</div>
-          <h3>Guthaben</h3>
-          <p>Nintendo eShop Codes für Games & DLCs (15€/25€/50€).</p>
-          <ul>
-            <li>15€ Nintendo eShop Guthaben <a href="https://www.g2a.com/n/nintendo15_lux" class="btn full" target="_blank">Zum Code</a></li>
-            <li>25€ Nintendo eShop Guthaben <a href="https://www.g2a.com/n/nintendo15_lux" class="btn full" target="_blank">Zum Code</a></li>
-            <li>50€ Nintendo eShop Guthaben <a href="https://www.g2a.com/n/nintendo15_lux" class="btn full" target="_blank">Zum Code</a></li>
-          </ul>
-        </article>
+      <div class="analytic-card">
+        <p>Xbox Klicks</p>
+        <strong data-clicks="xbox">0</strong>
+      </div>
+      <div class="analytic-card">
+        <p>Nintendo Klicks</p>
+        <strong data-clicks="nintendo">0</strong>
       </div>
     </div>
   </section>
 
   <section class="section alt" id="why">
-    <div class="container why-grid">
+    <div class="section-head">
+      <h2>Warum DropCharge?</h2>
+    </div>
+    <div class="why-grid">
       <article>
-        <h2>Warum wir?</h2>
-        <ul class="checklist">
-          <li><strong>One Tap Checkout</strong> → Amazon/MMOGA.</li>
-          <li><strong>Kein Risiko</strong> → Nur offizielle Codes.</li>
-          <li><strong>FOMO Safe</strong> → Wir zeigen nur verfügbare Drops.</li>
-        </ul>
+        <h3>Zero Friction</h3>
+        <p>Keine Formulare, kein Login. TikTok → Checkout → Code.</p>
       </article>
-      <article class="glass">
-        <h3>Trust Pulse</h3>
-        <p>🔥 128 Käufe heute</p>
-        <p>⚡Ø Versandzeit: 42 Sekunden</p>
+      <article>
+        <h3>Trust & Speed</h3>
+        <p>Nur offizielle Partner. Codes sind in Sekunden im Postfach.</p>
+      </article>
+      <article>
+        <h3>Mobile First</h3>
+        <p>Buttons groß, Copy klar, Section-Flow perfekt für Reels & Shorts.</p>
       </article>
     </div>
   </section>
 
   <section class="section" id="faq">
-    <div class="container columns">
-      <div>
-        <h2>FAQ (30s)</h2>
-        <details open>
-          <summary>Wie schnell kommt der Code?</summary>
-          <p>In der Regel Sekunden nach Kauf per Mail.</p>
-        </details>
-        <details>
-          <summary>Deutschland kompatibel?</summary>
-          <p>Ja – alle Listings sind für DE/AT optimiert.</p>
-        </details>
-        <details>
-          <summary>Extra Gebühren?</summary>
-          <p>Nein. Du zahlst nur den Kartenwert (Partner-Provision ist bereits enthalten).</p>
-        </details>
-      </div>
-      <div class="card">
-        <h3>Support</h3>
-        <p>Telegram: <a href="https://t.me/deallux" target="_blank">@deallux</a><br/>Mail: support@dropcharge.gg</p>
-      </div>
+    <div class="section-head">
+      <h2>FAQ</h2>
+    </div>
+    <div class="columns">
+      <details open>
+        <summary>Wie schnell kommt der Code?</summary>
+        <p>Ø 42 Sekunden nach Kauf per E-Mail.</p>
+      </details>
+      <details>
+        <summary>Ist das DE/AT kompatibel?</summary>
+        <p>Ja, alle Angebote sind für deutschsprachige Accounts freigegeben.</p>
+      </details>
+      <details>
+        <summary>Gibt es Gebühren?</summary>
+        <p>Nein. Der Preis entspricht dem Store – wir verdienen über Affiliate.</p>
+      </details>
     </div>
   </section>
 
   <section class="section alt" id="tiktok">
-    <div class="container tiktok">
-      <p class="eyebrow">TikTok Exclusive</p>
-      <h2>Swipe von TikTok?<br/>Hier ist dein Shortcut.</h2>
+    <div class="tiktok-cta">
+      <p class="eyebrow">TikTok Special</p>
+      <h2>Kommst du aus einem Clip?</h2>
+      <p>Dann sichere dir jetzt deinen Code – bevor der Drop weg ist.</p>
       <a class="btn primary" href="#compare">Deals anzeigen 👇</a>
     </div>
   </section>
 
+    <div class="email-popup" id="email-popup">
+    <button class="close" data-close-email>&times;</button>
+    <p class="mini">Exklusive Drops</p>
+    <h3>🔥 Gaming Codes direkt in dein Postfach</h3>
+    <p>Trag dich ein und bekomme wöchentliche Insider-Deals bevor sie im Feed sind.</p>
+    <form id="email-form">
+      <input type="email" name="email" placeholder="dein@email.de" required />
+      <button type="submit">Deals sichern</button>
+      <small>Wir spammen nicht. Abmeldung jederzeit möglich.</small>
+    </form>
+  </div>
+
   <footer class="footer">
-    <div class="container footer-grid">
-      <div>
-        <strong>DropCharge</strong>
-        <p>Affiliate-Partnerseite – wir verdienen eine Provision, du zahlst denselben Preis.</p>
-      </div>
-      <small>Powered by Amazon PartnerNet / MMOGA. Keine Haftung für Drittanbieter.</small>
-      <div class="footer-links">
-        <a href="#top">Nach oben</a>
-        <a href="mailto:hello@dropcharge.gg">Kontakt</a>
-        <a href="#faq">FAQ</a>
-      </div>
+    <p>Diese Seite enthält Affiliate-Links. Wenn du darüber etwas kaufst, erhalten wir eine kleine Provision. Für dich entstehen keine Mehrkosten.</p>
+    <div class="footer-links">
+      <a href="#top">Nach oben</a>
+      <a href="mailto:hello@dropcharge.gg">Kontakt</a>
+      <a href="#faq">FAQ</a>
     </div>
   </footer>
+
+  <div class="sticky-cta" id="sticky-cta">
+    <a href="#compare">🎮 Jetzt Guthaben sichern</a>
+  </div>
+
+  <script src="./assets/app.js" type="module"></script>
 </body>
 </html>

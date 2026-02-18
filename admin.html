@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta name="robots" content="noindex, nofollow" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DropCharge Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/styles.css" />
+  <link rel="stylesheet" href="./assets/admin.css" />
+</head>
+<body class="admin">
+  <header class="admin-hero">
+    <div>
+      <h1>DropCharge Live Dashboard</h1>
+      <p>Die letzten Affiliate-Klicks in Echtzeit. Daten bleiben lokal (JSON Logger).</p>
+    </div>
+    <div class="admin-actions">
+      <a class="btn ghost" href="/">← Landingpage</a>
+      <a class="btn ghost" href="/admin/logout">Logout</a>
+    </div>
+  </header>
+
+  <main class="admin-grid">
+    <section class="admin-card">
+      <h2>Plattform-Klicks</h2>
+      <div class="stats-grid" id="platform-stats">
+        <div class="stat"><span>PSN</span><strong>0</strong></div>
+        <div class="stat"><span>Xbox</span><strong>0</strong></div>
+        <div class="stat"><span>Nintendo</span><strong>0</strong></div>
+      </div>
+    </section>
+
+    <section class="admin-card">
+      <h2>Email Capture</h2>
+      <div class="email-stats">
+        <div><span>Emails</span><strong id="email-count">0</strong></div>
+        <div><span>Conversion</span><strong id="email-conv">0%</strong></div>
+      </div>
+    </section>
+
+    <section class="admin-card">
+      <h2>Top Beträge</h2>
+      <div id="amount-stats" class="list"></div>
+    </section>
+
+        <section class="admin-card full">
+      <h2>Letzte Email Signups</h2>
+      <div class="table" id="email-table">
+        <div class="table-head email-head">
+          <span>Email</span>
+          <span>Timestamp</span>
+          <span>Status</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="admin-card full">
+      <div class="admin-head">
+        <h2>Live Feed</h2>
+        <button class="btn mini" id="refresh">Refresh</button>
+      </div>
+      <div class="table" id="feed">
+        <div class="table-head">
+          <span>Zeit</span>
+          <span>Slug</span>
+          <span>Platform</span>
+          <span>Amount</span>
+          <span>Land</span>
+          <span>IP</span>
+          <span>UTM</span>
+          <span>Referrer</span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="./assets/admin.js"></script>
+</body>
+</html>
