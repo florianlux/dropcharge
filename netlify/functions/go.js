@@ -1,14 +1,7 @@
 const crypto = require('crypto');
-const fs = require('fs');
-const pathmod = require('path');
 const geoip = require('geoip-lite');
 const { supabase, hasSupabase } = require('./_lib/supabase');
 
-function ensureDataDir() {
-  const dir = pathmod.join(__dirname, '..', '..', 'data');
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  return dir;
-}
 
 const germanStates = {
   BW: 'Baden-Württemberg',
@@ -89,25 +82,7 @@ exports.handler = async function(event) {
       console.log('Supabase click insert error', error.message);
     }
   } else {
-    const dir = ensureDataDir();
-    const file = pathmod.join(dir, 'clicks.json');
-    const payload = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2,7)}`,
-      slug,
-      platform: offer.platform,
-      amount: offer.amount,
-      utm_source: params.utm_source || null,
-      utm_campaign: params.utm_campaign || null,
-      referrer: headers.referer || null,
-      user_agent: headers['user-agent'] || null,
-      ip_hash: ipHash,
-      country,
-      region: regionName,
-      created_at: new Date().toISOString()
-    };
-    const current = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : [];
-    current.push(payload);
-    fs.writeFileSync(file, JSON.stringify(current.slice(-2000), null, 2));
+    console.log('Supabase not configured – skipping click log');
   }
 
   return {
