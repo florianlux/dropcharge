@@ -14,28 +14,30 @@
 <body class="admin">
   <header class="admin-hero">
     <div>
-      <p class="admin-banner">TEMP ADMIN MODE – AUTH DISABLED (TOKEN ONLY)</p>
+      <p class="admin-banner" id="admin-banner">TEMP ADMIN MODE – AUTH DISABLED (TOKEN ONLY)</p>
       <h1>DropCharge Live Dashboard</h1>
-      <p>Die letzten Affiliate-Klicks in Echtzeit – gespeist aus Supabase.</p>
+      <p>Affiliate-Performance in Echtzeit – gespeist aus Supabase.</p>
     </div>
     <div class="admin-actions">
       <a class="btn ghost" href="/">← Landingpage</a>
+      <button class="btn ghost" id="seed-data">Seed Test Data</button>
       <button class="btn ghost" id="admin-clear-token">Token löschen</button>
     </div>
   </header>
 
   <main class="admin-grid">
     <section class="admin-card">
-      <h2>Plattform-Klicks</h2>
+      <h2>Plattform-Klicks (24h)</h2>
       <div class="stats-grid" id="platform-stats">
         <div class="stat"><span>PSN</span><strong>0</strong></div>
         <div class="stat"><span>Xbox</span><strong>0</strong></div>
         <div class="stat"><span>Nintendo</span><strong>0</strong></div>
       </div>
+      <p class="micro" id="clicks-meta">0 Klicks / 0 in 30 Min</p>
     </section>
 
     <section class="admin-card">
-      <h2>Email Capture</h2>
+      <h2>Email Capture (24h)</h2>
       <div class="email-stats">
         <div><span>Emails</span><strong id="email-count">0</strong></div>
         <div><span>Conversion</span><strong id="email-conv">0%</strong></div>
@@ -53,12 +55,18 @@
         <span class="badge" data-health-status>—</span>
       </div>
       <p class="micro" data-health-error></p>
-      <div class="table" id="health-clicks">
-        <div class="table-head">
-          <span>Zeit</span>
-          <span>Slug</span>
-          <span>Platform</span>
-          <span>Amount</span>
+      <div class="health-details">
+        <div>
+          <span>Auth</span>
+          <strong data-health-auth>—</strong>
+        </div>
+        <div>
+          <span>Supabase</span>
+          <strong data-health-supabase>—</strong>
+        </div>
+        <div>
+          <span>Build</span>
+          <strong data-health-build>—</strong>
         </div>
       </div>
     </section>
@@ -88,13 +96,18 @@
         </div>
         <form id="spotlight-form">
           <label>Titel<input name="title" required /></label>
-          <label>Cover URL<input name="cover_url" type="url" placeholder="https://..." /></label>
+          <label>Subtitle<input name="subtitle" /></label>
           <label>Kurzbeschreibung<textarea name="description" rows="3"></textarea></label>
-          <label>Amazon URL<input name="amazon_url" type="url" placeholder="https://amazon.de/..." /></label>
-          <label>G2G URL<input name="g2g_url" type="url" placeholder="https://www.g2a.com/..." /></label>
+          <label>Codelabel<input name="code_label" placeholder="Zum Deal" /></label>
+          <label>Code URL<input name="code_url" type="url" placeholder="https://..." /></label>
+          <label>Cover URL<input name="cover_url" type="url" placeholder="https://..." /></label>
           <div class="form-row">
-            <label>Release Datum<input name="release_date" type="date" /></label>
-            <label>Preis<input name="price" placeholder="59,99 €" /></label>
+            <label>Plattform<input name="platform" placeholder="PSN" /></label>
+            <label>Vendor<input name="vendor" placeholder="G2A" /></label>
+          </div>
+          <div class="form-row">
+            <label>Discount<input name="discount" placeholder="-12%" /></label>
+            <label>Preisinfo<input name="price" placeholder="Preis prüfen" /></label>
           </div>
           <button type="submit" class="btn primary">Spotlight speichern</button>
         </form>
@@ -112,10 +125,6 @@
           <span>Slug</span>
           <span>Platform</span>
           <span>Amount</span>
-          <span>Land</span>
-          <span>IP</span>
-          <span>UTM</span>
-          <span>Referrer</span>
         </div>
       </div>
     </section>

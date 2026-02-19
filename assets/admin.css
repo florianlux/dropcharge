@@ -1,4 +1,4 @@
- .admin {
+.admin {
   background: #01020a;
   color: #f9fbff;
   min-height: 100vh;
@@ -11,9 +11,10 @@
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 .admin-banner {
-  display: inline-block;
+  display: none;
   padding: 0.35rem 0.9rem;
   border-radius: 999px;
   background: rgba(255, 189, 57, 0.15);
@@ -23,7 +24,8 @@
   text-transform: uppercase;
   margin-bottom: 0.6rem;
 }
-.admin-actions { display: flex; gap: 0.6rem; }
+.admin-banner.visible { display: inline-block; }
+.admin-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
 .admin-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit,minmax(280px,1fr));
@@ -63,6 +65,7 @@
   border-radius: 14px;
   background: rgba(255,255,255,0.05);
 }
+.list-item small { display: block; font-size: 0.75rem; color: #9ea8c3; }
 .table { margin-top: 1rem; }
 .table-head, .table-row {
   display: grid;
@@ -74,10 +77,10 @@
 .table-head { font-size: 0.8rem; color: #9ea8c3; text-transform: uppercase; letter-spacing: 0.1em; }
 .table-row { font-size: 0.9rem; }
 .btn.mini { padding: 0.3rem 0.9rem; font-size: 0.8rem; }
-.admin-head { display: flex; justify-content: space-between; align-items: center; }
+.admin-head { display: flex; justify-content: space-between; align-items: center; gap: 0.8rem; }
 @media (max-width: 960px) {
   .table-head, .table-row {
-    grid-template-columns: 120px 90px 70px 70px;
+    grid-template-columns: repeat(auto-fit,minmax(120px,1fr));
     gap: 0.4rem;
   }
   .table-head span:nth-child(n+5),
@@ -95,6 +98,9 @@
   grid-template-columns: 1fr 160px 100px;
 }
 
+#feed .table-head, #feed .table-row {
+  grid-template-columns: 140px 1fr 120px 120px;
+}
 
 .spotlight-admin {
   display: grid;
@@ -155,7 +161,19 @@
   color: #ff9090;
   min-height: 1.2rem;
 }
-#health-clicks .table-head,
-#health-clicks .table-row {
-  grid-template-columns: 140px 1fr 120px 120px;
+.health-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(160px,1fr));
+  gap: 1rem;
+  margin-top: 1rem;
 }
+.health-details div {
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.health-details span { font-size: 0.8rem; color: #9ea8c3; }
+.health-details strong { font-size: 1rem; }

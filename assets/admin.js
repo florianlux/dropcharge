@@ -1,7 +1,11 @@
-const API = '/.netlify/functions/stats';
-const HEALTH_API = '/.netlify/functions/admin-health';
-const SPOTLIGHT_API = '/.netlify/functions/spotlight';
+const API_STATS = '/.netlify/functions/stats';
+const API_HEALTH = '/.netlify/functions/admin-health';
+const API_SPOTLIGHT = '/.netlify/functions/spotlight';
+const API_SEED = '/.netlify/functions/admin-seed';
+
 const TOKEN_STORAGE_KEY = 'admin_token';
+const STATS_INTERVAL = 10000;
+const HEALTH_INTERVAL = 15000;
 
 const platformEls = {
   PSN: document.querySelector('#platform-stats .stat:nth-child(1) strong'),
@@ -9,16 +13,21 @@ const platformEls = {
   Nintendo: document.querySelector('#platform-stats .stat:nth-child(3) strong')
 };
 const amountList = document.getElementById('amount-stats');
-const healthStatusEl = document.querySelector('[data-health-status]');
-const healthErrorEl = document.querySelector('[data-health-error]');
-const healthTable = document.getElementById('health-clicks');
-const feed = document.getElementById('feed');
-const refreshBtn = document.getElementById('refresh');
+const feedTable = document.getElementById('feed');
 const emailCountEl = document.getElementById('email-count');
 const emailConvEl = document.getElementById('email-conv');
+const clicksMetaEl = document.getElementById('clicks-meta');
+const bannerEl = document.getElementById('admin-banner');
+const healthStatusEl = document.querySelector('[data-health-status]');
+const healthAuthEl = document.querySelector('[data-health-auth]');
+const healthSupabaseEl = document.querySelector('[data-health-supabase]');
+const healthBuildEl = document.querySelector('[data-health-build]');
+const healthErrorEl = document.querySelector('[data-health-error]');
 const emailTable = document.getElementById('email-table');
 const spotlightForm = document.getElementById('spotlight-form');
 const spotlightFetchBtn = document.getElementById('spotlight-fetch');
+const seedBtn = document.getElementById('seed-data');
+const clearTokenBtn = document.getElementById('admin-clear-token');
 const toast = document.createElement('div');
 toast.id = 'toast';
 toast.style.position = 'fixed';
@@ -33,7 +42,6 @@ toast.style.opacity = '0';
 toast.style.pointerEvents = 'none';
 toast.style.transition = 'opacity 0.3s ease';
 document.body.appendChild(toast);
-let lastEntryId = null;
 
 (function ensureTokenPresent() {
   if (!localStorage.getItem(TOKEN_STORAGE_KEY)) {
@@ -41,11 +49,11 @@ let lastEntryId = null;
   }
 })();
 
-const clearTokenBtn = document.getElementById('admin-clear-token');
-clearTokenBtn?.addEventListener('click', () => {
-  localStorage.removeItem(TOKEN_STORAGE_KEY);
-  window.location.href = '/admin-login.html';
-});
+function showToast(message) {
+  toast.textContent = message;
+  toast.style.opacity = '1';
+  setTimeout(() => { toast.style.opacity = '0'; }, 3500);
+}
 
 function buildHeaders(extra = {}) {
   const headers = { ...extra };
@@ -59,157 +67,144 @@ function handleUnauthorized() {
   window.location.href = '/admin-login.html';
 }
 
-async function fetchStats() {
-  try {
-    const res = await fetch(API, { headers: buildHeaders() });
-    if (res.status === 401) {
-      handleUnauthorized();
-      return { entries: [], totals: { platform: { PSN: 0, Xbox: 0, Nintendo: 0 }, amount: {} } };
-    }
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    return await res.json();
-  } catch (err) {
-    console.error('stats API error', err.message);
-    return { entries: [], totals: { platform: { PSN: 0, Xbox: 0, Nintendo: 0 }, amount: {} } };
+function updateBanner(authEnabled) {
+  if (!bannerEl) return;
+  if (authEnabled) {
+    bannerEl.classList.remove('visible');
+  } else {
+    bannerEl.classList.add('visible');
   }
 }
 
-function showToast(entry) {
-  if (!entry) return;
-  const msg = `Neuer Klick auf ${entry.platform} ${entry.amount} ${entry.utm_campaign ? 'via ' + entry.utm_campaign : ''}`.trim();
-  toast.textContent = msg;
-  toast.style.opacity = '1';
-  setTimeout(() => { toast.style.opacity = '0'; }, 3500);
-}
+function renderStats(data) {
+  const metrics = data?.metrics;
+  if (!metrics) return;
+  const { platformCounts = {}, emails24h = 0, conversion24h = 0, topAmounts = [], feed = [], clicks24h = 0, clicks30m = 0 } = metrics;
 
-function render(data) {
-  const { entries, totals, emailCount = 0, conversion = 0, emails = [] } = data;
-  window.__lastEntries = entries;
-  if (emailCountEl) emailCountEl.textContent = emailCount;
-  if (emailConvEl) emailConvEl.textContent = (conversion * 100).toFixed(1) + '%';
-  if (emailTable) {
-    emailTable.querySelectorAll('.table-row').forEach(row => row.remove());
-    emails.forEach(entry => {
+  const values = { PSN: platformCounts.PSN || 0, Xbox: platformCounts.Xbox || 0, Nintendo: platformCounts.Nintendo || 0 };
+  Object.entries(values).forEach(([key, value]) => {
+    if (platformEls[key]) platformEls[key].textContent = value;
+  });
+  if (clicksMetaEl) {
+    clicksMetaEl.textContent = `${clicks24h} Klicks / ${clicks30m} in 30 Min`;
+  }
+
+  if (emailCountEl) emailCountEl.textContent = emails24h;
+  if (emailConvEl) emailConvEl.textContent = `${conversion24h.toFixed(1)}%`;
+
+  if (amountList) {
+    amountList.innerHTML = '';
+    if (!topAmounts.length) {
+      amountList.innerHTML = '<div class="list-item"><span>Keine Daten</span><strong>0</strong></div>';
+    } else {
+      topAmounts.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'list-item';
+        row.innerHTML = `
+          <div>
+            <strong>${item.amount || '—'}</strong>
+            <small>${item.platform || '—'} · ${item.slug || ''}</small>
+          </div>
+          <strong>${item.count}</strong>
+        `;
+        amountList.appendChild(row);
+      });
+    }
+  }
+
+  if (feedTable) {
+    feedTable.querySelectorAll('.table-row').forEach(row => row.remove());
+    feed.forEach(entry => {
       const row = document.createElement('div');
       row.className = 'table-row';
       row.innerHTML = `
-        <span>${entry.email}</span>
-        <span>${new Date(entry.created_at).toLocaleString()}</span>
-        <span>${entry.confirmed ? 'Confirmed' : 'Pending'}</span>
+        <span>${new Date(entry.created_at).toLocaleTimeString()}</span>
+        <span>${entry.slug || '—'}</span>
+        <span>${entry.platform || '—'}</span>
+        <span>${entry.amount || '—'}</span>
       `;
-      emailTable.appendChild(row);
+      feedTable.appendChild(row);
     });
   }
-  Object.entries(platformEls).forEach(([key, el]) => {
-    if (el) el.textContent = totals.platform[key] || 0;
-  });
+}
 
-  amountList.innerHTML = '';
-  const sortedAmounts = Object.entries(totals.amount || {}).sort((a,b) => b[1]-a[1]);
-  sortedAmounts.slice(0, 5).forEach(([amount, count]) => {
-    const div = document.createElement('div');
-    div.className = 'list-item';
-    div.innerHTML = `<span>${amount}</span><strong>${count}</strong>`;
-    amountList.appendChild(div);
-  });
-
-  const existingRows = feed.querySelectorAll('.table-row');
-  existingRows.forEach(row => row.remove());
-  entries.forEach((entry, index) => {
-    if (index === 0 && entry.id && lastEntryId && entry.id !== lastEntryId) {
-      showToast(entry);
-      lastEntryId = entry.id;
-    }
+function renderEmails(emails = []) {
+  if (!emailTable) return;
+  emailTable.querySelectorAll('.table-row').forEach(row => row.remove());
+  emails.forEach(entry => {
     const row = document.createElement('div');
     row.className = 'table-row';
-    row.dataset.id = entry.id;
     row.innerHTML = `
-      <span>${new Date(entry.created_at).toLocaleTimeString()}</span>
-      <span>${entry.slug}</span>
-      <span>${entry.platform}</span>
-      <span>${entry.amount}</span>
-      <span>${entry.country || '—'}</span>
-      <span>${entry.region || '—'}</span>
-      <span>${entry.ip_hash ? entry.ip_hash.slice(0, 12) + '…' : '—'}</span>
-      <span>${entry.utm_source || ''}/${entry.utm_campaign || ''}</span>
-      <span>${entry.referrer || '—'}</span>
+      <span>${entry.email}</span>
+      <span>${new Date(entry.created_at).toLocaleString()}</span>
+      <span>${entry.confirmed ? 'Confirmed' : 'Pending'}</span>
     `;
-    feed.appendChild(row);
+    emailTable.appendChild(row);
   });
 }
 
-async function refresh() {
-  const data = await fetchStats();
-  render(data);
-}
-
-refresh().then(() => {
-  lastEntryId = window.__lastEntries?.[0]?.id || null;
-});
-refreshBtn?.addEventListener('click', refresh);
-setInterval(refresh, 2000);
-
-async function fetchHealth() {
+async function loadStats() {
   try {
-    const res = await fetch(HEALTH_API, { headers: buildHeaders() });
+    const res = await fetch(API_STATS, { headers: buildHeaders() });
     if (res.status === 401) {
       handleUnauthorized();
-      return { connected: false, clicks: [] };
+      return;
     }
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    return await res.json();
+    if (!res.ok) throw new Error('Failed to load stats');
+    const json = await res.json();
+    if (!json.ok) throw new Error(json.error || 'Stats error');
+    renderStats(json);
+    renderEmails(json.metrics?.emailRows || []);
   } catch (err) {
-    console.error('health API error', err.message);
-    return { connected: false, error: err.message, clicks: [] };
+    console.error('stats load failed', err.message);
   }
-}
-
-function renderHealth(data) {
-  if (!healthTable || !healthStatusEl) return;
-  const { connected, error, clicks = [] } = data;
-  healthStatusEl.textContent = connected ? 'connected' : 'offline';
-  healthStatusEl.classList.toggle('ok', connected);
-  healthStatusEl.classList.toggle('fail', !connected);
-  if (healthErrorEl) {
-    healthErrorEl.textContent = error ? `Fehler: ${error}` : '';
-  }
-  healthTable.querySelectorAll('.table-row').forEach(row => row.remove());
-  clicks.forEach(click => {
-    const row = document.createElement('div');
-    row.className = 'table-row';
-    row.innerHTML = `
-      <span>${new Date(click.created_at).toLocaleTimeString()}</span>
-      <span>${click.slug}</span>
-      <span>${click.platform || '—'}</span>
-      <span>${click.amount || '—'}</span>
-    `;
-    healthTable.appendChild(row);
-  });
 }
 
 async function loadHealth() {
-  const data = await fetchHealth();
-  renderHealth(data);
+  try {
+    const res = await fetch(API_HEALTH, { headers: buildHeaders() });
+    if (res.status === 401) {
+      handleUnauthorized();
+      return;
+    }
+    if (!res.ok) throw new Error('Failed health');
+    const json = await res.json();
+    updateBanner(json.authEnabled);
+    if (healthStatusEl) {
+      healthStatusEl.textContent = json.ok ? 'CONNECTED' : 'ISSUE';
+      healthStatusEl.classList.toggle('ok', json.ok);
+      healthStatusEl.classList.toggle('fail', !json.ok);
+    }
+    if (healthAuthEl) healthAuthEl.textContent = json.authEnabled ? 'Aktiv' : 'Offen';
+    if (healthSupabaseEl) healthSupabaseEl.textContent = json.hasSupabase ? 'OK' : 'Fehlt';
+    if (healthBuildEl) healthBuildEl.textContent = json.build || 'local';
+    if (healthErrorEl) healthErrorEl.textContent = json.ok ? '' : (json.error || 'Unbekannter Fehler');
+  } catch (err) {
+    console.error('health load failed', err.message);
+    if (healthStatusEl) {
+      healthStatusEl.textContent = 'ISSUE';
+      healthStatusEl.classList.add('fail');
+    }
+    if (healthErrorEl) healthErrorEl.textContent = err.message;
+  }
 }
 
-loadHealth();
-setInterval(loadHealth, 8000);
+const spotlightPreviewEl = document.getElementById('spotlight-preview');
 
 function updateSpotlightPreview(data) {
-  const spotlightPreview = document.getElementById('spotlight-preview');
-  if (!spotlightPreview) return;
+  if (!spotlightPreviewEl) return;
   const entry = data || {};
-  spotlightPreview.querySelector('h3').textContent = entry.title || '—';
-  spotlightPreview.querySelector('.desc').textContent = entry.description || 'Noch kein Text.';
-  const meta = spotlightPreview.querySelector('.meta');
-  const release = entry.release_date ? `Release: ${entry.release_date}` : 'Release: n/a';
-  const price = entry.price ? `Preis: ${entry.price}` : '';
-  meta.textContent = [release, price].filter(Boolean).join(' · ');
+  spotlightPreviewEl.querySelector('h3').textContent = entry.title || '—';
+  const desc = spotlightPreviewEl.querySelector('.desc');
+  if (desc) desc.textContent = entry.description || 'Noch kein Text.';
+  const meta = spotlightPreviewEl.querySelector('.meta');
+  const details = [entry.subtitle, entry.platform, entry.discount].filter(Boolean).join(' · ');
+  meta.textContent = details || '—';
 }
 
 async function fetchSpotlightAdmin() {
   try {
-    const res = await fetch(SPOTLIGHT_API);
+    const res = await fetch(API_SPOTLIGHT);
     if (!res.ok) throw new Error('spotlight fetch');
     const data = await res.json();
     updateSpotlightPreview(data.spotlight);
@@ -224,7 +219,7 @@ spotlightForm?.addEventListener('submit', async (event) => {
   const formData = new FormData(spotlightForm);
   const payload = Object.fromEntries(formData.entries());
   try {
-    const res = await fetch(SPOTLIGHT_API, {
+    const res = await fetch(API_SPOTLIGHT, {
       method: 'POST',
       headers: buildHeaders({ 'Content-Type': 'application/json' }),
       body: JSON.stringify(payload)
@@ -234,9 +229,7 @@ spotlightForm?.addEventListener('submit', async (event) => {
       return;
     }
     if (!res.ok) throw new Error('spotlight save');
-    toast.textContent = 'Spotlight gespeichert';
-    toast.style.opacity = '1';
-    setTimeout(() => { toast.style.opacity = '0'; }, 3500);
+    showToast('Spotlight gespeichert');
     spotlightForm.reset();
     fetchSpotlightAdmin();
   } catch (err) {
@@ -244,4 +237,31 @@ spotlightForm?.addEventListener('submit', async (event) => {
   }
 });
 
+seedBtn?.addEventListener('click', async () => {
+  seedBtn.disabled = true;
+  try {
+    const res = await fetch(API_SEED, { method: 'POST', headers: buildHeaders() });
+    if (res.status === 401) {
+      handleUnauthorized();
+      return;
+    }
+    if (!res.ok) throw new Error('seed failed');
+    showToast('Seed erstellt');
+    loadStats();
+  } catch (err) {
+    alert('Seed fehlgeschlagen.');
+  } finally {
+    seedBtn.disabled = false;
+  }
+});
+
+clearTokenBtn?.addEventListener('click', () => {
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
+  window.location.href = '/admin-login.html';
+});
+
 fetchSpotlightAdmin();
+loadStats();
+loadHealth();
+setInterval(loadStats, STATS_INTERVAL);
+setInterval(loadHealth, HEALTH_INTERVAL);

@@ -9,28 +9,34 @@ function getHeader(headers = {}, name) {
   return null;
 }
 
+const authEnabled = Boolean(process.env.ADMIN_TOKEN);
+
 function isAdminAuthorized(headers) {
-  const expected = process.env.ADMIN_TOKEN;
-  if (!expected) {
-    // If no token configured, allow by default (temporary open mode)
+  if (!authEnabled) {
     return true;
   }
-  const provided = getHeader(headers, 'x-admin-token') || '';
+  const expected = process.env.ADMIN_TOKEN || '';
+  const provided = (getHeader(headers, 'x-admin-token') || '').trim();
   return provided === expected;
+}
+
+function unauthorizedResponse() {
+  return {
+    statusCode: 401,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    body: JSON.stringify({ error: 'unauthorized' })
+  };
 }
 
 function requireAdmin(headers) {
   if (!isAdminAuthorized(headers)) {
-    return {
-      statusCode: 401,
-      headers: { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' },
-      body: 'Unauthorized'
-    };
+    return unauthorizedResponse();
   }
   return null;
 }
 
 module.exports = {
+  authEnabled,
   isAdminAuthorized,
   requireAdmin
 };
