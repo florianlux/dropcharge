@@ -1,12 +1,4 @@
-const fs = require('fs');
-const pathmod = require('path');
 const { supabase, hasSupabase } = require('./_lib/supabase');
-
-function dataFile() {
-  const dir = pathmod.join(__dirname, '..', '..', 'data');
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  return pathmod.join(dir, 'emails.json');
-}
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -26,25 +18,26 @@ exports.handler = async function(event) {
 
   const email = (payload.email || '').trim().toLowerCase();
   if (!email || !isValidEmail(email)) {
-    return { statusCode: 400, body: 'Ungültige E-Mail' };
+    return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'invalid_email' }) };
+  }
+
+  if (!hasSupabase || !supabase) {
+    return { statusCode: 500, body: JSON.stringify({ ok: false, error: 'supabase_not_configured' }) };
   }
 
   const confirmed = process.env.ENABLE_DOUBLE_OPT_IN ? false : true;
 
-  if (hasSupabase && supabase) {
+  try {
     const { data: existing, error: selectErr } = await supabase
       .from('emails')
       .select('id')
       .eq('email', email)
       .maybeSingle();
 
-    if (selectErr) {
-      console.log('email select error', selectErr.message);
-      return { statusCode: 500, body: 'Server error' };
-    }
+    if (selectErr) throw selectErr;
 
     if (existing) {
-      return { statusCode: 200, body: JSON.stringify({ success: true, repeated: true }) };
+      return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: true, repeated: true }) };
     }
 
     const { error } = await supabase.from('emails').insert({
@@ -53,23 +46,19 @@ exports.handler = async function(event) {
       created_at: new Date().toISOString()
     });
 
-    if (error) {
-      console.log('email insert error', error.message);
-      return { statusCode: 500, body: 'Server error' };
-    }
-  } else {
-    const file = dataFile();
-    const list = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : [];
-    if (list.some(entry => entry.email === email)) {
-      return { statusCode: 200, body: JSON.stringify({ success: true, repeated: true }) };
-    }
-    list.push({ email, confirmed, created_at: new Date().toISOString() });
-    fs.writeFileSync(file, JSON.stringify(list.slice(-5000), null, 2));
-  }
+    if (error) throw error;
 
-  return {
-    statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ success: true })
-  };
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: true })
+    };
+  } catch (err) {
+    console.log('email insert/select error', err.message);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: false, error: err.message })
+    };
+  }
 };

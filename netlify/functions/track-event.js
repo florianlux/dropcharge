@@ -1,12 +1,4 @@
-const fs = require('fs');
-const pathmod = require('path');
 const { supabase, hasSupabase } = require('./_lib/supabase');
-
-function dataFile() {
-  const dir = pathmod.join(__dirname, '..', '..', 'data');
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  return pathmod.join(dir, 'events.json');
-}
 
 exports.handler = async function(event) {
   if (event.httpMethod !== 'POST') {
@@ -19,6 +11,10 @@ exports.handler = async function(event) {
     return { statusCode: 400, body: 'Invalid payload' };
   }
 
+  if (!hasSupabase || !supabase) {
+    return { statusCode: 500, body: JSON.stringify({ ok: false, error: 'supabase_not_configured' }) };
+  }
+
   const record = {
     name: payload.name || 'unknown',
     utm_source: payload.utm_source || null,
@@ -28,22 +24,20 @@ exports.handler = async function(event) {
     created_at: new Date().toISOString()
   };
 
-  if (hasSupabase && supabase) {
+  try {
     const { error } = await supabase.from('events').insert(record);
-    if (error) {
-      console.log('event insert error', error.message);
-      return { statusCode: 500, body: 'Server error' };
-    }
-  } else {
-    const file = dataFile();
-    const list = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : [];
-    list.push(record);
-    fs.writeFileSync(file, JSON.stringify(list.slice(-2000), null, 2));
+    if (error) throw error;
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: true })
+    };
+  } catch (err) {
+    console.log('event insert error', err.message);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: false, error: err.message })
+    };
   }
-
-  return {
-    statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ success: true })
-  };
 };
