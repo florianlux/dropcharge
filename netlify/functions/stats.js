@@ -33,10 +33,10 @@ exports.handler = async function(event) {
 
     const { data: emailRows = [], error: emailErr } = await supabase
       .from('emails')
-      .select('id, created_at')
+      .select('id, email, confirmed, created_at')
       .gte('created_at', since24h)
       .order('created_at', { ascending: false })
-      .limit(500);
+      .limit(200);
     if (emailErr) throw emailErr;
 
     const clicks24h = clickRows.filter(row => row.created_at >= since24h);
@@ -90,7 +90,8 @@ exports.handler = async function(event) {
           topAmounts,
           emails24h,
           conversion24h: Number(conversion.toFixed(1)),
-          feed
+          feed,
+          emailRows
         }
       })
     };

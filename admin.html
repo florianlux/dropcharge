@@ -4,7 +4,7 @@
   <meta name="robots" content="noindex, nofollow" />
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DropCharge Dashboard</title>
+  <title>DropCharge Admin Control</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -12,124 +12,366 @@
   <link rel="stylesheet" href="./assets/admin.css" />
 </head>
 <body class="admin">
-  <header class="admin-hero">
-    <div>
-      <p class="admin-banner" id="admin-banner">TEMP ADMIN MODE – AUTH DISABLED (TOKEN ONLY)</p>
-      <h1>DropCharge Live Dashboard</h1>
-      <p>Affiliate-Performance in Echtzeit – gespeist aus Supabase.</p>
-    </div>
-    <div class="admin-actions">
-      <a class="btn ghost" href="/">← Landingpage</a>
-      <button class="btn ghost" id="seed-data">Seed Test Data</button>
-      <button class="btn ghost" id="admin-clear-token">Token löschen</button>
-    </div>
-  </header>
-
-  <main class="admin-grid">
-    <section class="admin-card">
-      <h2>Plattform-Klicks (24h)</h2>
-      <div class="stats-grid" id="platform-stats">
-        <div class="stat"><span>PSN</span><strong>0</strong></div>
-        <div class="stat"><span>Xbox</span><strong>0</strong></div>
-        <div class="stat"><span>Nintendo</span><strong>0</strong></div>
-      </div>
-      <p class="micro" id="clicks-meta">0 Klicks / 0 in 30 Min</p>
-    </section>
-
-    <section class="admin-card">
-      <h2>Email Capture (24h)</h2>
-      <div class="email-stats">
-        <div><span>Emails</span><strong id="email-count">0</strong></div>
-        <div><span>Conversion</span><strong id="email-conv">0%</strong></div>
-      </div>
-    </section>
-
-    <section class="admin-card">
-      <h2>Top Beträge</h2>
-      <div id="amount-stats" class="list"></div>
-    </section>
-
-    <section class="admin-card full" id="health-card">
-      <div class="admin-head">
-        <h2>Health Check</h2>
-        <span class="badge" data-health-status>—</span>
-      </div>
-      <p class="micro" data-health-error></p>
-      <div class="health-details">
+  <div class="admin-shell">
+    <aside class="admin-sidebar">
+      <div class="sidebar-head">
         <div>
-          <span>Auth</span>
-          <strong data-health-auth>—</strong>
+          <p class="admin-banner" id="admin-banner">TEMP ADMIN MODE</p>
+          <h1>DropCharge Control</h1>
+          <p class="micro">Interactive Power Mode – Echtzeitdaten + Aktionen</p>
         </div>
-        <div>
-          <span>Supabase</span>
-          <strong data-health-supabase>—</strong>
-        </div>
-        <div>
-          <span>Build</span>
-          <strong data-health-build>—</strong>
+        <button class="btn mini ghost" id="admin-clear-token">Logout</button>
+      </div>
+      <div class="sidebar-search">
+        <input type="search" id="global-search" placeholder="Slug, Email, Session..." />
+        <button class="icon" id="search-trigger" aria-label="Suche">
+          <span>⌕</span>
+        </button>
+      </div>
+      <nav class="admin-nav" role="tablist">
+        <button class="nav-link active" data-tab="overview">Overview</button>
+        <button class="nav-link" data-tab="live">Live Events</button>
+        <button class="nav-link" data-tab="funnels">Funnels & Conversion</button>
+        <button class="nav-link" data-tab="ab">A/B Tests</button>
+        <button class="nav-link" data-tab="deals">Deals & Spotlights</button>
+        <button class="nav-link" data-tab="email">Email & Leads</button>
+        <button class="nav-link" data-tab="settings">Settings</button>
+      </nav>
+      <div class="quick-actions" id="quick-actions">
+        <h4>Quick Actions</h4>
+        <div class="quick-grid">
+          <button class="chip" data-action="seed" id="seed-data">Seed Test Data</button>
+          <button class="chip" data-action="refresh" id="refresh-all">Refresh All</button>
+          <button class="chip" data-action="export" id="export-csv">Export CSV</button>
+          <button class="chip" data-action="live" id="toggle-live" data-live="on">Live Mode: ON</button>
         </div>
       </div>
-    </section>
+      <div class="sidebar-footer">
+        <a class="btn ghost" href="/" target="_blank">← Landingpage</a>
+      </div>
+    </aside>
 
-    <section class="admin-card full">
-      <h2>Letzte Email Signups</h2>
-      <div class="table" id="email-table">
-        <div class="table-head email-head">
-          <span>Email</span>
-          <span>Timestamp</span>
-          <span>Status</span>
+    <main class="admin-main">
+      <section class="tab-panel active" data-panel="overview">
+        <div class="panel-head">
+          <h2>Overview</h2>
+          <p>Realtime KPIs & Health</p>
         </div>
-      </div>
-    </section>
-
-    <section class="admin-card full">
-      <div class="admin-head">
-        <h2>Weekly Game Spotlight</h2>
-        <button class="btn mini" id="spotlight-fetch">Aktuelles laden</button>
-      </div>
-      <div class="spotlight-admin">
-        <div class="spotlight-preview" id="spotlight-preview">
-          <p class="mini">Aktuell</p>
-          <h3>—</h3>
-          <p class="desc">Noch kein Spotlight gesetzt.</p>
-          <small class="meta"></small>
+        <div class="grid responsive">
+          <article class="admin-card">
+            <h3>Plattform-Klicks (24h)</h3>
+            <div class="stats-grid" id="platform-stats">
+              <div class="stat"><span>PSN</span><strong>0</strong></div>
+              <div class="stat"><span>Xbox</span><strong>0</strong></div>
+              <div class="stat"><span>Nintendo</span><strong>0</strong></div>
+            </div>
+            <p class="micro" id="clicks-meta">0 Klicks / 0 in 30 Min</p>
+          </article>
+          <article class="admin-card">
+            <h3>Email Capture (24h)</h3>
+            <div class="email-stats">
+              <div><span>Emails</span><strong id="email-count">0</strong></div>
+              <div><span>Conversion</span><strong id="email-conv">0%</strong></div>
+            </div>
+          </article>
+          <article class="admin-card">
+            <h3>Top Beträge</h3>
+            <div id="amount-stats" class="list"></div>
+          </article>
         </div>
-        <form id="spotlight-form">
-          <label>Titel<input name="title" required /></label>
-          <label>Subtitle<input name="subtitle" /></label>
-          <label>Kurzbeschreibung<textarea name="description" rows="3"></textarea></label>
-          <label>Codelabel<input name="code_label" placeholder="Zum Deal" /></label>
-          <label>Code URL<input name="code_url" type="url" placeholder="https://..." /></label>
-          <label>Cover URL<input name="cover_url" type="url" placeholder="https://..." /></label>
-          <div class="form-row">
-            <label>Plattform<input name="platform" placeholder="PSN" /></label>
-            <label>Vendor<input name="vendor" placeholder="G2A" /></label>
+        <article class="admin-card full" id="health-card">
+          <div class="admin-head">
+            <h3>Health Check</h3>
+            <span class="badge" data-health-status>—</span>
           </div>
-          <div class="form-row">
-            <label>Discount<input name="discount" placeholder="-12%" /></label>
-            <label>Preisinfo<input name="price" placeholder="Preis prüfen" /></label>
+          <p class="micro" data-health-error></p>
+          <div class="health-details">
+            <div>
+              <span>Auth</span>
+              <strong data-health-auth>—</strong>
+            </div>
+            <div>
+              <span>Supabase</span>
+              <strong data-health-supabase>—</strong>
+            </div>\n            <div>
+              <span>Build</span>
+              <strong data-health-build>—</strong>
+            </div>
+            <div>
+              <span>Schema</span>
+              <strong data-health-schema>—</strong>
+            </div>
           </div>
-          <button type="submit" class="btn primary">Spotlight speichern</button>
-        </form>
-      </div>
-    </section>
+        </article>
+        <article class="admin-card full">
+          <div class="admin-head">
+            <h3>Letzte Email Signups</h3>
+            <div class="head-actions">
+              <button class="btn mini ghost" id="emails-refresh">Refresh</button>
+              <button class="btn mini" id="emails-copy">Copy</button>
+            </div>
+          </div>
+          <div class="table" id="email-table">
+            <div class="table-head email-head">
+              <span>Email</span>
+              <span>Timestamp</span>
+              <span>Status</span>
+            </div>
+          </div>
+        </article>
+      </section>
 
-    <section class="admin-card full">
-      <div class="admin-head">
-        <h2>Live Feed</h2>
-        <button class="btn mini" id="refresh">Refresh</button>
-      </div>
-      <div class="table" id="feed">
-        <div class="table-head">
-          <span>Zeit</span>
-          <span>Slug</span>
-          <span>Platform</span>
-          <span>Amount</span>
+      <section class="tab-panel" data-panel="live">
+        <div class="panel-head">
+          <h2>Live Events</h2>
+          <div class="head-actions">
+            <div class="filter-chips" id="live-filters">
+              <button data-filter="all" class="chip active">Alle</button>
+              <button data-filter="landing_view" class="chip">Landing</button>
+              <button data-filter="cta_click" class="chip">CTA</button>
+              <button data-filter="deal_click" class="chip">Deal</button>
+              <button data-filter="email_submit" class="chip">Email</button>
+            </div>
+            <button class="btn mini ghost" id="live-pause">Pause</button>
+          </div>
         </div>
-      </div>
-    </section>
-  </main>
+        <div class="live-meta">
+          <div>
+            <h4>Letzte Aktivität</h4>
+            <p id="live-latest">—</p>
+          </div>
+          <div>
+            <h4>Events 5 Min</h4>
+            <p id="live-count">0</p>
+          </div>
+          <div>
+            <h4>Session Focus</h4>
+            <div class="session-inline">
+              <input type="text" id="session-filter" placeholder="Session ID" />
+              <button class="btn mini" id="session-apply">Go</button>
+            </div>
+          </div>
+        </div>
+        <div class="table" id="live-table">
+          <div class="table-head">
+            <span>Zeit</span>
+            <span>Type</span>
+            <span>Slug</span>
+            <span>Path</span>
+            <span>Platform</span>
+            <span>Session</span>
+            <span>Country</span>
+            <span>Meta</span>
+          </div>
+        </div>
+      </section>
 
+      <section class="tab-panel" data-panel="funnels">
+        <div class="panel-head">
+          <h2>Funnels & Conversion</h2>
+          <div class="head-actions">
+            <label class="select">
+              <span>Zeitraum</span>
+              <select id="funnel-window">
+                <option value="24h">24h</option>
+                <option value="7d">7 Tage</option>
+                <option value="30d">30 Tage</option>
+              </select>
+            </label>
+          </div>
+        </div>
+        <div class="funnel-grid" id="funnel-grid"></div>
+        <div class="funnel-meta" id="funnel-meta"></div>
+        <div class="panel-split">
+          <article class="admin-card">
+            <h3>UTM / Source Dashboard</h3>
+            <div class="utm-lists" id="utm-lists"></div>
+          </article>
+          <article class="admin-card">
+            <h3>Geo & Device</h3>
+            <div class="device-grid" id="device-grid"></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="tab-panel" data-panel="ab">
+        <div class="panel-head">
+          <h2>A/B Tests</h2>
+          <p>Experimente und Variantentracking</p>
+        </div>
+        <article class="admin-card full">
+          <div class="admin-head">
+            <h3>Aktive Experimente</h3>
+            <button class="btn mini" id="experiment-add">Experiment anlegen</button>
+          </div>
+          <div class="table" id="experiment-table">
+            <div class="table-head">
+              <span>Name</span>
+              <span>Status</span>
+              <span>Traffic</span>
+              <span>Konversion</span>
+              <span>Letztes Update</span>
+              <span>Aktionen</span>
+            </div>
+            <p class="empty">Noch keine Experimente hinterlegt.</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="tab-panel" data-panel="deals">
+        <div class="panel-head">
+          <h2>Deals & Spotlights</h2>
+          <p>Deals kuratieren, Live Drop setzen</p>
+        </div>
+        <div class="panel-split">
+          <article class="admin-card">
+            <div class="admin-head">
+              <h3>Live Preview</h3>
+              <span class="badge" id="deal-status">—</span>
+            </div>
+            <div class="spotlight-preview" id="spotlight-preview">
+              <p class="mini">Aktuell</p>
+              <h3>—</h3>
+              <p class="desc">Noch kein Spotlight gesetzt.</p>
+              <small class="meta">—</small>
+              <div class="deal-meta" id="spotlight-meta"></div>
+            </div>
+          </article>
+          <article class="admin-card">
+            <div class="admin-head">
+              <h3>Deal erstellen / bearbeiten</h3>
+              <div class="head-actions">
+                <button class="btn mini ghost" id="spotlight-reset">Reset</button>
+                <button class="btn mini" id="spotlight-fetch">Aktuelles laden</button>
+              </div>
+            </div>
+            <form id="spotlight-form" class="stack">
+              <div class="form-row">
+                <label>Titel<input name="title" required /></label>
+                <label>Subtitle<input name="subtitle" /></label>
+              </div>
+              <label>Kurzbeschreibung<textarea name="description" rows="3"></textarea></label>
+              <div class="form-row">
+                <label>Slug<input name="slug" placeholder="psn-10" /></label>
+                <label>Plattform<input name="platform" placeholder="PSN" /></label>
+                <label>Vendor<input name="vendor" placeholder="G2A" /></label>
+              </div>
+              <div class="form-row">
+                <label>Preisinfo<input name="price" placeholder="29,99" /></label>
+                <label>Preis (cent)<input name="price_cents" type="number" min="0" /></label>
+              </div>
+              <div class="form-row">
+                <label>Affiliate URL<input name="affiliate_url" type="url" /></label>
+                <label>Code Label<input name="code_label" placeholder="Zum Deal" /></label>
+                <label>Code URL<input name="code_url" type="url" /></label>
+              </div>
+              <div class="form-row">
+                <label>Cover URL<input name="cover_url" type="url" /></label>
+                <label>Amazon URL<input name="amazon_url" type="url" /></label>
+                <label>G2G URL<input name="g2g_url" type="url" /></label>
+              </div>
+              <div class="form-row">
+                <label>Start<input name="starts_at" type="datetime-local" /></label>
+                <label>Ende<input name="ends_at" type="datetime-local" /></label>
+                <label>Priority<input name="priority" type="number" min="0" /></label>
+              </div>
+              <label class="checkbox"><input type="checkbox" name="active" checked /> Aktiv</label>
+              <button type="submit" class="btn primary">Speichern</button>
+            </form>
+          </article>
+        </div>
+        <article class="admin-card full">
+          <div class="admin-head">
+            <h3>Alle Deals</h3>
+            <div class="head-actions">
+              <button class="btn mini ghost" id="deals-refresh">Refresh</button>
+            </div>
+          </div>
+          <div class="table" id="deals-table">
+            <div class="table-head">
+              <span>Titel</span>
+              <span>Platform</span>
+              <span>Preis</span>
+              <span>Status</span>
+              <span>Priority</span>
+              <span>Zeitraum</span>
+              <span>Aktionen</span>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="tab-panel" data-panel="email">
+        <div class="panel-head">
+          <h2>Email & Leads</h2>
+          <div class="head-actions">
+            <button class="btn mini" id="email-export">Export CSV</button>
+            <button class="btn mini ghost" id="email-refresh">Refresh</button>
+          </div>
+        </div>
+        <div class="panel-split">
+          <article class="admin-card">
+            <h3>Lead Qualität</h3>
+            <ul class="lead-stats" id="lead-stats"></ul>
+          </article>
+          <article class="admin-card">
+            <h3>Test Data Generator</h3>
+            <form id="seed-form" class="stack">
+              <label>Clicks: <input type="range" min="0" max="200" value="25" id="seed-clicks" /></label>
+              <label class="checkbox"><input type="checkbox" id="seed-emails" checked /> Emails erzeugen</label>
+              <label class="checkbox"><input type="checkbox" id="seed-events" checked /> Events erzeugen</label>
+              <label>Plattform Mix
+                <select id="seed-mix">
+                  <option value="balanced">Balanced</option>
+                  <option value="ps_focus">PS Fokus</option>
+                  <option value="xbox_focus">Xbox Fokus</option>
+                  <option value="nintendo_focus">Nintendo Fokus</option>
+                </select>
+              </label>
+              <button type="submit" class="btn primary">Generator starten</button>
+            </form>
+          </article>
+        </div>
+        <article class="admin-card full">
+          <div class="table" id="email-leads-table">
+            <div class="table-head">
+              <span>Email</span>
+              <span>Status</span>
+              <span>Created</span>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="tab-panel" data-panel="settings">
+        <div class="panel-head">
+          <h2>Settings & Flags</h2>
+          <div class="head-actions">
+            <button class="btn mini ghost" id="settings-refresh">Refresh</button>
+          </div>
+        </div>
+        <article class="admin-card">
+          <h3>Maintenance Flags</h3>
+          <form id="settings-form" class="stack">
+            <label class="toggle">
+              <span>Email Capture deaktivieren</span>
+              <input type="checkbox" name="disable_email_capture" />
+            </label>
+            <label class="toggle">
+              <span>Affiliate Redirect deaktivieren</span>
+              <input type="checkbox" name="disable_affiliate_redirect" />
+            </label>
+            <label>Banner Message<textarea name="banner_message" rows="2"></textarea></label>
+            <button type="submit" class="btn primary">Speichern</button>
+          </form>
+        </article>
+        <article class="admin-card">
+          <h3>Public Config Snapshot</h3>
+          <pre id="public-config" class="code"></pre>
+        </article>
+      </section>
+    </main>
+  </div>
   <script type="module" src="./assets/admin.js"></script>
 </body>
 </html>
