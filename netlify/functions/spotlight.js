@@ -1,39 +1,66 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
 
-const fallbackSpotlight = {
-  title: 'Reanimal',
-  cover_url: '/images/reanimal.jpg',
-  description: 'Düsteres Koop-Horror-Abenteuer auf einer albtraumhaften Insel – perfekt für Fans von Little Nightmares.',
-  amazon_url: 'https://amzn.to/',
-  g2g_url: 'https://www.g2a.com/',
-  release_date: 'tba',
-  price: 'Preis prüfen'
-};
+function slugify(value) {
+  return (value || '')
+    .toString()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .slice(0, 64) || null;
+}
 
-async function fetchLatestSpotlight() {
+function sanitizePayload(payload = {}) {
+  return {
+    title: (payload.title || '').trim(),
+    subtitle: payload.subtitle || null,
+    description: payload.description || null,
+    platform: payload.platform || null,
+    vendor: payload.vendor || null,
+    slug: payload.slug || slugify(payload.title),
+    price: payload.price || null,
+    price_cents: typeof payload.price_cents === 'number' ? payload.price_cents : null,
+    affiliate_url: payload.affiliate_url || null,
+    code_label: payload.code_label || null,
+    code_url: payload.code_url || null,
+    cover_url: payload.cover_url || null,
+    amazon_url: payload.amazon_url || null,
+    g2g_url: payload.g2g_url || null,
+    release_date: payload.release_date || null,
+    active: typeof payload.active === 'boolean' ? payload.active : true,
+    starts_at: payload.starts_at || null,
+    ends_at: payload.ends_at || null,
+    priority: typeof payload.priority === 'number' ? payload.priority : 0
+  };
+}
+
+async function fetchActiveSpotlight() {
   if (!hasSupabase || !supabase) {
-    return fallbackSpotlight;
+    return null;
   }
+  const now = Date.now();
   const { data, error } = await supabase
     .from('spotlights')
     .select('*')
+    .eq('active', true)
+    .order('priority', { ascending: false })
     .order('created_at', { ascending: false })
-    .limit(1);
-  if (error) {
-    console.log('spotlight fetch error', error.message);
-    return fallbackSpotlight;
-  }
-  const spotlight = data && data.length ? data[0] : null;
-  return spotlight || fallbackSpotlight;
+    .limit(10);
+  if (error) throw error;
+  const entries = data || [];
+  return entries.find(entry => {
+    const startOk = !entry.starts_at || new Date(entry.starts_at).getTime() <= now;
+    const endOk = !entry.ends_at || new Date(entry.ends_at).getTime() >= now;
+    return startOk && endOk;
+  }) || entries[0] || null;
 }
 
 async function handleGet() {
   try {
-    const spotlight = await fetchLatestSpotlight();
+    const spotlight = await fetchActiveSpotlight();
     return {
       statusCode: 200,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=60' },
       body: JSON.stringify({ spotlight })
     };
   } catch (err) {
@@ -42,7 +69,7 @@ async function handleGet() {
   }
 }
 
-async function handlePost(event) {
+async function handleAdminMutation(event) {
   const authError = requireAdmin(event.headers || {});
   if (authError) return authError;
 
@@ -57,42 +84,59 @@ async function handlePost(event) {
     return { statusCode: 400, body: 'Invalid payload' };
   }
 
-  if (!payload.title) {
-    return { statusCode: 400, body: 'Title required' };
+  if (event.httpMethod === 'POST') {
+    if (!payload.title) {
+      return { statusCode: 400, body: 'Title required' };
+    }
+    const record = sanitizePayload(payload);
+    record.created_at = new Date().toISOString();
+    record.updated_at = record.created_at;
+
+    const { error } = await supabase.from('spotlights').insert(record);
+    if (error) {
+      console.log('spotlight insert error', error.message);
+      return { statusCode: 500, body: 'Failed to save spotlight' };
+    }
+    return { statusCode: 200, body: JSON.stringify({ success: true }) };
   }
 
-  const record = {
-    title: payload.title,
-    cover_url: payload.cover_url || null,
-    description: payload.description || null,
-    amazon_url: payload.amazon_url || null,
-    g2g_url: payload.g2g_url || null,
-    release_date: payload.release_date || null,
-    price: payload.price || null,
-    created_at: new Date().toISOString()
-  };
+  if (event.httpMethod === 'PUT') {
+    if (!payload.id) {
+      return { statusCode: 400, body: 'ID required' };
+    }
+    const record = sanitizePayload(payload);
+    record.updated_at = new Date().toISOString();
 
-  const { error } = await supabase.from('spotlights').insert(record);
-  if (error) {
-    console.log('spotlight insert error', error.message);
-    return { statusCode: 500, body: 'Failed to save spotlight' };
+    const { error } = await supabase
+      .from('spotlights')
+      .update(record)
+      .eq('id', payload.id);
+    if (error) {
+      console.log('spotlight update error', error.message);
+      return { statusCode: 500, body: 'Failed to update spotlight' };
+    }
+    return { statusCode: 200, body: JSON.stringify({ success: true }) };
   }
 
-  return {
-    statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ success: true })
-  };
+  if (event.httpMethod === 'DELETE') {
+    const id = payload.id || event.queryStringParameters?.id;
+    if (!id) {
+      return { statusCode: 400, body: 'ID required' };
+    }
+    const { error } = await supabase.from('spotlights').delete().eq('id', id);
+    if (error) {
+      console.log('spotlight delete error', error.message);
+      return { statusCode: 500, body: 'Failed to delete spotlight' };
+    }
+    return { statusCode: 200, body: JSON.stringify({ success: true }) };
+  }
+
+  return { statusCode: 405, body: 'Method Not Allowed' };
 }
 
 exports.handler = async function(event) {
   if (event.httpMethod === 'GET') {
-    return handleGet();
+    return handleGet(event);
   }
-
-  if (event.httpMethod === 'POST') {
-    return handlePost(event);
-  }
-
-  return { statusCode: 405, body: 'Method Not Allowed' };
+  return handleAdminMutation(event);
 };

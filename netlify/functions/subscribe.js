@@ -1,7 +1,18 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
+const { fetchSettings, extractFlags } = require('./_lib/settings');
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+async function getFlags() {
+  try {
+    const map = await fetchSettings(['flags', 'banner_message']);
+    return extractFlags(map);
+  } catch (err) {
+    console.log('settings fetch (subscribe) failed', err.message);
+    return extractFlags();
+  }
 }
 
 exports.handler = async function(event) {
@@ -13,12 +24,21 @@ exports.handler = async function(event) {
   try {
     payload = JSON.parse(event.body || '{}');
   } catch {
-    return { statusCode: 400, body: 'Invalid payload' };
+    return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'invalid_json' }) };
   }
 
   const email = (payload.email || '').trim().toLowerCase();
   if (!email || !isValidEmail(email)) {
     return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'invalid_email' }) };
+  }
+
+  const flags = await getFlags();
+  if (flags.disable_email_capture) {
+    return {
+      statusCode: 503,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: false, error: 'email_capture_disabled', message: flags.banner_message || 'Email capture deaktiviert.' })
+    };
   }
 
   if (!hasSupabase || !supabase) {
@@ -37,7 +57,11 @@ exports.handler = async function(event) {
     if (selectErr) throw selectErr;
 
     if (existing) {
-      return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: true, repeated: true }) };
+      return {
+        statusCode: 409,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ok: false, error: 'already_exists' })
+      };
     }
 
     const { error } = await supabase.from('emails').insert({
