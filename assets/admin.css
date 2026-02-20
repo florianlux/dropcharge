@@ -357,6 +357,17 @@ textarea { resize: vertical; }
 }
 .btn.primary { color: #050505; }
 .empty { padding: 1rem; color: var(--muted); }
+.factory-result {
+  margin-top: 0.85rem;
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px dashed rgba(255,255,255,0.1);
+  font-size: 0.9rem;
+  word-break: break-all;
+}
+.factory-result strong { font-size: 1rem; }
+.factory-result a { color: #5ad7ff; }
 
 @media (max-width: 960px) {
   .admin-shell { grid-template-columns: 1fr; }

@@ -223,6 +223,39 @@
           <h2>Deals & Spotlights</h2>
           <p>Deals kuratieren, Live Drop setzen</p>
         </div>
+        <article class="admin-card">
+          <div class="admin-head">
+            <h3>Affiliate Link Factory</h3>
+            <p class="micro">Generiert Affiliate-Link + /go/&lt;slug&gt;</p>
+          </div>
+          <form id="factory-form" class="stack">
+            <div class="form-row">
+              <label>Produktname<input name="title" required /></label>
+              <label>Netzwerk
+                <select name="network">
+                  <option value="amazon">Amazon</option>
+                  <option value="g2a">G2A</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </label>
+              <label>Slug<input name="slug" placeholder="auto" /></label>
+            </div>
+            <div class="form-row">
+              <label>Produkt URL<input name="product_url" type="url" placeholder="https://" required /></label>
+              <label>Tracking ID<input name="tracker_id" placeholder="dropcharge-21" /></label>
+              <label>Plattform<input name="platform" placeholder="PSN" /></label>
+            </div>
+            <div class="form-row">
+              <label>Preisinfo<input name="price" placeholder="29,99" /></label>
+              <label>Priority<input name="priority" type="number" min="0" value="120" /></label>
+              <label>Start<input name="starts_at" type="datetime-local" /></label>
+            </div>
+            <label>Beschreibung<textarea name="description" rows="2" placeholder="Kurze Beschreibung"></textarea></label>
+            <label class="checkbox"><input type="checkbox" name="auto_live" checked /> Sofort aktiv schalten</label>
+            <button type="submit" class="btn primary">Link generieren</button>
+          </form>
+          <div id="factory-result" class="factory-result"></div>
+        </article>
         <div class="panel-split">
           <article class="admin-card">
             <div class="admin-head">

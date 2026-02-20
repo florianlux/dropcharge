@@ -9,7 +9,8 @@ const API = {
   spotlight: '/.netlify/functions/spotlight',
   deals: '/.netlify/functions/deals-admin',
   settings: '/.netlify/functions/settings',
-  publicConfig: '/.netlify/functions/public-config'
+  publicConfig: '/.netlify/functions/public-config',
+  factory: '/.netlify/functions/affiliate-factory'
 };
 
 const TOKEN_STORAGE_KEY = 'admin_token';
@@ -77,6 +78,8 @@ const dom = {
   spotlightReset: document.getElementById('spotlight-reset'),
   dealsTable: document.getElementById('deals-table'),
   dealStatus: document.getElementById('deal-status'),
+  factoryForm: document.getElementById('factory-form'),
+  factoryResult: document.getElementById('factory-result'),
   emailLeadsTable: document.getElementById('email-leads-table'),
   leadStats: document.getElementById('lead-stats'),
   seedQuick: document.getElementById('seed-data'),
@@ -459,6 +462,43 @@ function renderDeals() {
     `;
     dom.dealsTable.appendChild(row);
   });
+}
+
+function renderFactoryResult(payload) {
+  if (!dom.factoryResult) return;
+  if (!payload) {
+    dom.factoryResult.innerHTML = '';
+    return;
+  }
+  const goUrl = `${window.location.origin}/go/${payload.slug}`;
+  dom.factoryResult.innerHTML = `
+    <p><strong>${goUrl}</strong></p>
+    <p><small>${payload.affiliate_url}</small></p>
+    <button type="button" class="btn mini ghost" data-factory-copy>Copy /go URL</button>
+  `;
+  dom.factoryResult.querySelector('[data-factory-copy]')?.addEventListener('click', () => {
+    navigator.clipboard.writeText(goUrl)
+      .then(() => showToast('Link kopiert'))
+      .catch(() => showToast('Clipboard blockiert', 'error'));
+  });
+}
+
+async function submitFactory(event) {
+  event.preventDefault();
+  const formData = new FormData(dom.factoryForm);
+  const payload = Object.fromEntries(formData.entries());
+  payload.auto_live = formData.get('auto_live') === 'on';
+  if (payload.priority) payload.priority = Number(payload.priority);
+  try {
+    const data = await request(API.factory, { method: 'POST', body: JSON.stringify(payload) });
+    showToast('Affiliate Link erstellt');
+    dom.factoryForm.reset();
+    renderFactoryResult(data);
+    fetchDeals();
+  } catch (err) {
+    console.error('factory failed', err.message);
+    showToast('Factory Fehler', 'error');
+  }
 }
 
 function populateDealForm(deal) {

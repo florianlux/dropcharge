@@ -74,9 +74,34 @@ async function getFlags() {
   }
 }
 
+async function loadDynamicOffer(slug) {
+  if (!hasSupabase || !supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from('spotlights')
+      .select('slug, platform, price, title, vendor, affiliate_url, code_url, amazon_url, g2g_url, active')
+      .eq('slug', slug)
+      .maybeSingle();
+    if (error || !data || data.active === false) return null;
+    const redirectUrl = data.affiliate_url || data.code_url || data.amazon_url || data.g2g_url;
+    if (!redirectUrl) return null;
+    return {
+      url: redirectUrl,
+      platform: data.platform || data.vendor || 'Deal',
+      amount: data.price || data.title || data.slug
+    };
+  } catch (err) {
+    console.log('dynamic go lookup failed', err.message);
+    return null;
+  }
+}
+
 exports.handler = async function(event) {
   const slug = event.path.replace('/go/', '').replace(/^\//, '');
-  const offer = offers[slug];
+  let offer = await loadDynamicOffer(slug);
+  if (!offer) {
+    offer = offers[slug];
+  }
   if (!offer) {
     return { statusCode: 404, body: 'Unknown link' };
   }
