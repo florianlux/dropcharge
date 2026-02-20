@@ -16,7 +16,14 @@ const API = {
   optimizer: `${API_BASE}/.netlify/functions/optimize-deals`,
   settings: `${API_BASE}/.netlify/functions/settings`,
   publicConfig: `${API_BASE}/.netlify/functions/public-config`,
-  factory: `${API_BASE}/.netlify/functions/affiliate-factory`
+  factory: `${API_BASE}/.netlify/functions/affiliate-factory`,
+  subscribers: `${API_BASE}/.netlify/functions/admin-subscribers`,
+  subscribersExport: `${API_BASE}/.netlify/functions/admin-subscribers-export`,
+  campaigns: `${API_BASE}/.netlify/functions/admin-campaigns`,
+  campaignSend: `${API_BASE}/.netlify/functions/admin-campaign-send`,
+  campaignCreate: `${API_BASE}/.netlify/functions/admin-campaign-create`,
+  campaignCancel: `${API_BASE}/.netlify/functions/admin-campaign-cancel`,
+  campaignTick: `${API_BASE}/.netlify/functions/admin-campaign-tick`
 };
 
 const TOKEN_STORAGE_KEY = 'admin_token';
@@ -43,6 +50,8 @@ const state = {
   dealSummary: {},
   optimizerHistory: [],
   campaigns: [],
+  subscribers: [],
+  subscriberFilters: { status: 'active', search: '' },
   currentDealId: null,
   quickLive: true,
   emailRows: [],
@@ -112,6 +121,11 @@ const dom = {
   campaignPreviewRefresh: document.getElementById('campaign-preview-refresh'),
   campaignLog: document.getElementById('campaign-log'),
   campaignLogRefresh: document.getElementById('campaign-log-refresh'),
+  subscriberTable: document.getElementById('email-leads-table'),
+  subscriberSearch: document.getElementById('subscriber-search'),
+  subscriberStatus: document.getElementById('subscriber-status'),
+  subscriberExport: document.getElementById('subscriber-export'),
+  subscriberRefresh: document.getElementById('subscriber-refresh'),
   emailLeadsTable: document.getElementById('email-leads-table'),
   leadStats: document.getElementById('lead-stats'),
   seedQuick: document.getElementById('seed-data'),
@@ -261,7 +275,6 @@ async function loadStats({ silent = false } = {}) {
     }
     state.emailRows = metrics.emailRows || [];
     if (dom.emailTable) renderEmailTable(state.emailRows);
-    if (dom.emailLeadsTable) renderEmailLeads(state.emailRows);
     if (dom.leadStats) renderLeadStats(state.emailRows);
   } catch (err) {
     console.error('stats load failed', err.message);
@@ -280,22 +293,6 @@ function renderEmailTable(rows) {
       <span>${entry.confirmed ? 'Confirmed' : 'Pending'}</span>
     `;
     dom.emailTable.appendChild(row);
-  });
-}
-
-function renderEmailLeads(rows) {
-  const table = dom.emailLeadsTable;
-  if (!table) return;
-  table.querySelectorAll('.table-row').forEach(row => row.remove());
-  rows.forEach(entry => {
-    const row = document.createElement('div');
-    row.className = 'table-row';
-    row.innerHTML = `
-      <span>${entry.email}</span>
-      <span>${entry.confirmed ? 'Confirmed' : 'Pending'}</span>
-      <span>${new Date(entry.created_at).toLocaleString()}</span>
-    `;
-    table.appendChild(row);
   });
 }
 
@@ -591,6 +588,69 @@ function renderDeals() {
 }
 
 
+
+
+async function loadSubscribers({ silent = false } = {}) {
+  try {
+    const params = new URLSearchParams();
+    params.set('status', state.subscriberFilters.status || 'active');
+    if (state.subscriberFilters.search) params.set('search', state.subscriberFilters.search);
+    const data = await request(`${API.subscribers}?${params.toString()}`);
+    state.subscribers = data.items || [];
+    renderSubscribers(state.subscribers);
+  } catch (err) {
+    console.error('subscribers load failed', err.message);
+    if (!silent) handleRequestError('Subscribers', err);
+  }
+}
+
+function renderSubscribers(rows = []) {
+  const table = dom.subscriberTable;
+  if (!table) return;
+  table.querySelectorAll('.table-row').forEach(row => row.remove());
+  if (!rows.length) {
+    const empty = document.createElement('p');
+    empty.className = 'empty';
+    empty.textContent = 'Noch keine Subscriber vorhanden.';
+    table.appendChild(empty);
+    return;
+  }
+  rows.forEach(sub => {
+    const row = document.createElement('div');
+    row.className = 'table-row';
+    row.innerHTML = `
+      <span>${sub.email}</span>
+      <span>${sub.status}</span>
+      <span>${sub.source || '—'}</span>
+      <span>${new Date(sub.created_at).toLocaleString()}</span>
+      <span>${sub.last_sent_at ? new Date(sub.last_sent_at).toLocaleString() : '—'}</span>
+    `;
+    table.appendChild(row);
+  });
+}
+
+async function exportSubscribers() {
+  try {
+    const params = new URLSearchParams();
+    params.set('status', state.subscriberFilters.status || 'active');
+    const res = await fetch(`${API.subscribersExport}?${params.toString()}`, {
+      headers: buildHeaders()
+    });
+    if (!res.ok) throw new Error('export_failed');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `newsletter-subscribers-${Date.now()}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    showToast('Export gestartet');
+  } catch (err) {
+    handleRequestError('Export', err);
+  }
+}
 
 function renderCampaignPreview(html) {
   if (!dom.campaignPreview) return;
@@ -1039,6 +1099,16 @@ function attachEvents() {
   dom.campaignLogRefresh?.addEventListener('click', () => loadCampaignLog());
   dom.campaignPreviewRefresh?.addEventListener('click', () => renderCampaignPreview(dom.campaignForm?.elements.html?.value));
   dom.campaignReset?.addEventListener('click', () => dom.campaignForm?.reset());
+  dom.subscriberStatus?.addEventListener('change', () => {
+    state.subscriberFilters.status = dom.subscriberStatus.value;
+    loadSubscribers();
+  });
+  dom.subscriberSearch?.addEventListener('input', (event) => {
+    state.subscriberFilters.search = event.target.value.trim();
+    loadSubscribers({ silent: true });
+  });
+  dom.subscriberRefresh?.addEventListener('click', () => loadSubscribers());
+  dom.subscriberExport?.addEventListener('click', exportSubscribers);
   dom.globalSearch?.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') applyGlobalSearch();
   });
@@ -1061,6 +1131,7 @@ function startIntervals() {
   fetchDeals({ silent: true });
   fetchSettings({ silent: true });
   fetchPublicConfig({ silent: true });
+  loadSubscribers({ silent: true });
 
   setInterval(() => loadStats({ silent: true }), STATS_INTERVAL);
   setInterval(loadHealth, HEALTH_INTERVAL);

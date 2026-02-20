@@ -550,3 +550,22 @@ textarea { resize: vertical; }
 }
 .campaign-log-entry.success .status { color: #5ad7ff; }
 .campaign-log-entry.failed .status { color: #ff6f6f; }
+
+
+.email-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  align-items: flex-end;
+  margin: 1rem 0;
+}
+.email-filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.85rem;
+}
+.email-filters .head-actions {
+  display: flex;
+  gap: 0.5rem;
+}

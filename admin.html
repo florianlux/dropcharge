@@ -468,11 +468,28 @@
           </article>
         </div>
         <article class="admin-card full">
+          <div class="email-filters">
+            <label>Status
+              <select id="subscriber-status">
+                <option value="active">Active</option>
+                <option value="unsubscribed">Unsubscribed</option>
+                <option value="bounced">Bounced</option>
+                <option value="all">Alle</option>
+              </select>
+            </label>
+            <label>Search<input id="subscriber-search" placeholder="email@example.com" /></label>
+            <div class="head-actions">
+              <button class="btn mini ghost" id="subscriber-refresh">Refresh</button>
+              <button class="btn mini" id="subscriber-export">Export CSV</button>
+            </div>
+          </div>
           <div class="table" id="email-leads-table">
             <div class="table-head">
               <span>Email</span>
               <span>Status</span>
+              <span>Source</span>
               <span>Created</span>
+              <span>Last Sent</span>
             </div>
           </div>
         </article>

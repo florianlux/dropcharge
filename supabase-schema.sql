@@ -100,6 +100,60 @@ create table if not exists public.settings (
 );
 
 create index if not exists settings_updated_idx on public.settings (updated_at desc);
+create table if not exists public.newsletter_subscribers (
+  id uuid primary key default gen_random_uuid(),
+  email text not null,
+  status text default 'active',
+  created_at timestamptz default now(),
+  unsubscribed_at timestamptz,
+  source text,
+  utm_source text,
+  utm_medium text,
+  utm_campaign text,
+  utm_term text,
+  utm_content text,
+  last_sent_at timestamptz,
+  meta jsonb default '{}'::jsonb
+);
+
+create unique index if not exists newsletter_subscribers_email_unique on public.newsletter_subscribers ((lower(email)));
+create index if not exists newsletter_subscribers_status_idx on public.newsletter_subscribers (status);
+create index if not exists newsletter_subscribers_created_idx on public.newsletter_subscribers (created_at desc);
+
+create table if not exists public.newsletter_campaigns (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  subject text not null,
+  body_html text not null,
+  status text default 'draft',
+  segment text,
+  total_recipients integer default 0,
+  sent_count integer default 0,
+  failed_count integer default 0,
+  error text,
+  started_at timestamptz,
+  completed_at timestamptz
+);
+
+create index if not exists newsletter_campaigns_created_idx on public.newsletter_campaigns (created_at desc);
+create index if not exists newsletter_campaigns_status_idx on public.newsletter_campaigns (status);
+
+create table if not exists public.newsletter_sends (
+  id uuid primary key default gen_random_uuid(),
+  campaign_id uuid references public.newsletter_campaigns(id) on delete cascade,
+  subscriber_id uuid references public.newsletter_subscribers(id) on delete cascade,
+  email text not null,
+  status text default 'queued',
+  error text,
+  attempts integer default 0,
+  queued_at timestamptz default now(),
+  sent_at timestamptz
+);
+
+create index if not exists newsletter_sends_campaign_idx on public.newsletter_sends (campaign_id, status);
+create index if not exists newsletter_sends_subscriber_idx on public.newsletter_sends (subscriber_id);
+
 
 create table if not exists public.admin_sessions (
   token text primary key,
@@ -123,17 +177,3 @@ create table if not exists public.admin_audit_log (
 
 create index if not exists admin_login_attempts_ip_created_idx on public.admin_login_attempts (ip, created_at desc);
 create index if not exists admin_sessions_expires_idx on public.admin_sessions (expires_at);
-
-create table if not exists public.campaigns (
-  id uuid primary key default gen_random_uuid(),
-  created_at timestamptz default now(),
-  subject text,
-  segment text,
-  sent_count integer default 0,
-  failed_count integer default 0,
-  status text,
-  error text,
-  meta jsonb default '{}'::jsonb
-);
-
-create index if not exists campaigns_created_idx on public.campaigns (created_at desc);
