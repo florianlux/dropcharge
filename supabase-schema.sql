@@ -123,3 +123,17 @@ create table if not exists public.admin_audit_log (
 
 create index if not exists admin_login_attempts_ip_created_idx on public.admin_login_attempts (ip, created_at desc);
 create index if not exists admin_sessions_expires_idx on public.admin_sessions (expires_at);
+
+create table if not exists public.campaigns (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz default now(),
+  subject text,
+  segment text,
+  sent_count integer default 0,
+  failed_count integer default 0,
+  status text,
+  error text,
+  meta jsonb default '{}'::jsonb
+);
+
+create index if not exists campaigns_created_idx on public.campaigns (created_at desc);
