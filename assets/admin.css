@@ -508,3 +508,45 @@ textarea { resize: vertical; }
   .admin-shell { grid-template-columns: 1fr; }
   .admin-sidebar { position: static; height: auto; }
 }
+
+
+.campaign-preview {
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 1rem;
+  background: rgba(255,255,255,0.02);
+  min-height: 300px;
+  overflow-y: auto;
+}
+.campaign-preview iframe {
+  border: none;
+  width: 100%;
+  min-height: 280px;
+}
+.campaign-preview .empty {
+  color: var(--muted);
+  text-align: center;
+  padding: 2rem 0;
+}
+.campaign-log-entry {
+  padding: 0.8rem 1rem;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+.campaign-log-entry .meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.campaign-log-entry .status {
+  font-size: 0.85rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+}
+.campaign-log-entry.success .status { color: #5ad7ff; }
+.campaign-log-entry.failed .status { color: #ff6f6f; }

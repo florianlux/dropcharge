@@ -33,6 +33,7 @@
         <button class="nav-link" data-tab="live">Live Events</button>
         <button class="nav-link" data-tab="funnels">Funnels & Conversion</button>
         <button class="nav-link" data-tab="ab">A/B Tests</button>
+        <button class="nav-link" data-tab="campaigns">Campaigns</button>
         <button class="nav-link" data-tab="deals">Deals & Spotlights</button>
         <button class="nav-link" data-tab="email">Email & Leads</button>
         <button class="nav-link" data-tab="settings">Settings</button>
@@ -217,6 +218,49 @@
               <span>Aktionen</span>
             </div>
             <p class="empty">Noch keine Experimente hinterlegt.</p>
+          </div>
+        </article>
+      </section>
+
+      <section class="tab-panel" data-panel="campaigns">
+        <div class="panel-head">
+          <h2>Campaigns</h2>
+          <p>Newsletter & Drops an die Community schicken</p>
+        </div>
+        <div class="panel-split">
+          <article class="admin-card">
+            <div class="admin-head">
+              <h3>Neue Kampagne</h3>
+              <button class="btn mini ghost" id="campaign-reset">Reset</button>
+            </div>
+            <form id="campaign-form" class="stack">
+              <label>Betreff<input name="subject" placeholder="DropCharge Weekly" required /></label>
+              <label>Segment (optional)<input name="segment" placeholder="z.B. tiktok" /></label>
+              <label>HTML Inhalt<textarea name="html" rows="10" placeholder="<h1>Hi!</h1>"></textarea></label>
+              <div class="form-row">
+                <label>Test E-Mail<input name="testEmail" type="email" placeholder="test@example.com" /></label>
+                <div class="stack">
+                  <button type="button" class="btn ghost" id="campaign-test">Test senden</button>
+                  <button type="submit" class="btn primary">An alle senden</button>
+                </div>
+              </div>
+            </form>
+          </article>
+          <article class="admin-card">
+            <div class="admin-head">
+              <h3>Preview</h3>
+              <button class="btn mini ghost" id="campaign-preview-refresh">Aktualisieren</button>
+            </div>
+            <div class="campaign-preview" id="campaign-preview"></div>
+          </article>
+        </div>
+        <article class="admin-card full">
+          <div class="admin-head">
+            <h3>Letzte Kampagnen</h3>
+            <button class="btn mini ghost" id="campaign-log-refresh">Refresh</button>
+          </div>
+          <div class="optimizer-log" id="campaign-log">
+            <p class="empty">Noch keine Kampagnen gesendet.</p>
           </div>
         </article>
       </section>

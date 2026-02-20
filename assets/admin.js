@@ -42,6 +42,7 @@ const state = {
   deals: [],
   dealSummary: {},
   optimizerHistory: [],
+  campaigns: [],
   currentDealId: null,
   quickLive: true,
   emailRows: [],
@@ -104,6 +105,13 @@ const dom = {
   optimizerRun: document.getElementById('optimizer-run'),
   optimizerRefresh: document.getElementById('optimizer-refresh'),
   optimizerLog: document.getElementById('optimizer-log'),
+  campaignForm: document.getElementById('campaign-form'),
+  campaignPreview: document.getElementById('campaign-preview'),
+  campaignTest: document.getElementById('campaign-test'),
+  campaignReset: document.getElementById('campaign-reset'),
+  campaignPreviewRefresh: document.getElementById('campaign-preview-refresh'),
+  campaignLog: document.getElementById('campaign-log'),
+  campaignLogRefresh: document.getElementById('campaign-log-refresh'),
   emailLeadsTable: document.getElementById('email-leads-table'),
   leadStats: document.getElementById('lead-stats'),
   seedQuick: document.getElementById('seed-data'),
@@ -583,6 +591,39 @@ function renderDeals() {
 }
 
 
+
+function renderCampaignPreview(html) {
+  if (!dom.campaignPreview) return;
+  if (!html) {
+    dom.campaignPreview.innerHTML = '<p class="empty">Noch kein Inhalt.</p>';
+    return;
+  }
+  dom.campaignPreview.innerHTML = html;
+}
+
+function renderCampaignLog(entries = []) {
+  if (!dom.campaignLog) return;
+  if (!entries.length) {
+    dom.campaignLog.innerHTML = '<p class="empty">Noch keine Kampagnen gesendet.</p>';
+    return;
+  }
+  dom.campaignLog.innerHTML = entries
+    .map(entry => `
+      <div class="campaign-log-entry ${entry.status === 'failed' ? 'failed' : 'success'}">
+        <div>
+          <strong>${entry.subject || 'Ohne Betreff'}</strong>
+          <div class="meta">${new Date(entry.created_at).toLocaleString()} · Segment: ${entry.segment || 'Alle'}</div>
+        </div>
+        <div>
+          <span class="status">${entry.status || 'unknown'}</span>
+          <div class="meta">Gesendet: ${entry.sent_count || 0} · Failed: ${entry.failed_count || 0}</div>
+          ${entry.error ? `<div class="meta">Error: ${entry.error}</div>` : ''}
+        </div>
+      </div>
+    `)
+    .join('');
+}
+
 function renderOptimizerLog(entries = []) {
   if (!dom.optimizerLog) return;
   if (!entries.length) {
@@ -993,6 +1034,11 @@ function attachEvents() {
   dom.toggleLiveMode?.addEventListener('click', toggleLiveMode);
   dom.optimizerRun?.addEventListener('click', runOptimizer);
   dom.optimizerRefresh?.addEventListener('click', refreshOptimizerLog);
+  dom.campaignForm?.addEventListener('submit', submitCampaign);
+  dom.campaignTest?.addEventListener('click', sendCampaignTest);
+  dom.campaignLogRefresh?.addEventListener('click', () => loadCampaignLog());
+  dom.campaignPreviewRefresh?.addEventListener('click', () => renderCampaignPreview(dom.campaignForm?.elements.html?.value));
+  dom.campaignReset?.addEventListener('click', () => dom.campaignForm?.reset());
   dom.globalSearch?.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') applyGlobalSearch();
   });
@@ -1037,6 +1083,8 @@ function init() {
   }
   state.optimizerHistory = readOptimizerHistory();
   renderOptimizerLog(state.optimizerHistory);
+  loadCampaignLog({ silent: true });
+  renderCampaignPreview(dom.campaignForm?.elements.html?.value || '');
   startIntervals();
 }
 
