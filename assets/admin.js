@@ -32,9 +32,12 @@ const state = {
   devices: null,
   settings: {},
   deals: [],
+  dealSummary: {},
   currentDealId: null,
   quickLive: true,
-  emailRows: []
+  emailRows: [],
+  dealFilters: { platform: 'all', active: 'all', range: '7' },
+  dealSort: { field: 'priority', direction: 'desc' }
 };
 
 const dom = {
@@ -78,6 +81,12 @@ const dom = {
   spotlightReset: document.getElementById('spotlight-reset'),
   dealsTable: document.getElementById('deals-table'),
   dealStatus: document.getElementById('deal-status'),
+  dealAnalytics: document.getElementById('deal-analytics'),
+  dealFilterPlatform: document.getElementById('deal-filter-platform'),
+  dealFilterActive: document.getElementById('deal-filter-active'),
+  dealFilterRange: document.getElementById('deal-filter-range'),
+  dealSortField: document.getElementById('deal-sort-field'),
+  dealFilterApply: document.getElementById('deals-filter-apply'),
   factoryForm: document.getElementById('factory-form'),
   factoryResult: document.getElementById('factory-result'),
   emailLeadsTable: document.getElementById('email-leads-table'),
@@ -128,6 +137,20 @@ function showToast(message, tone = 'success') {
   dom.toast.style.opacity = '1';
   clearTimeout(dom.toast._timer);
   dom.toast._timer = setTimeout(() => { dom.toast.style.opacity = '0'; }, 3500);
+}
+
+function escapeAttr(value) {
+  return (value ?? '').toString().replace(/"/g, '&quot;');
+}
+
+function formatPercent(value) {
+  if (!Number.isFinite(value)) return '0%';
+  return `${value.toFixed(1)}%`;
+}
+
+function formatCurrency(value) {
+  if (!Number.isFinite(value)) return '0€';
+  return `${value.toFixed(2)}€`;
 }
 
 function buildHeaders(extra = {}) {
@@ -432,9 +455,17 @@ function updateSpotlightPreview(entry) {
 
 async function fetchDeals() {
   try {
-    const data = await request(API.deals);
+    const params = new URLSearchParams();
+    if (state.dealFilters.platform !== 'all') params.set('platform', state.dealFilters.platform);
+    if (state.dealFilters.active !== 'all') params.set('active', state.dealFilters.active);
+    if (state.dealFilters.range && state.dealFilters.range !== 'all') params.set('since', state.dealFilters.range);
+    params.set('sort', state.dealSort.field);
+    params.set('direction', state.dealSort.direction);
+    const data = await request(`${API.deals}?${params.toString()}`);
     state.deals = data.deals || [];
+    state.dealSummary = data.summary || {};
     renderDeals();
+    renderDealAnalytics();
   } catch (err) {
     console.error('deals load failed', err.message);
   }
@@ -443,16 +474,24 @@ async function fetchDeals() {
 function renderDeals() {
   dom.dealsTable.querySelectorAll('.table-row').forEach(row => row.remove());
   state.deals.forEach(deal => {
+    const metrics = deal.metrics || {};
     const row = document.createElement('div');
     row.className = 'table-row';
     row.dataset.id = deal.id;
     row.innerHTML = `
-      <span>${deal.title}</span>
-      <span>${deal.platform || '—'}</span>
-      <span>${deal.price || '—'}</span>
-      <span>${deal.active ? 'Active' : 'Paused'}</span>
-      <span>${deal.priority || 0}</span>
-      <span>${deal.starts_at || '—'} → ${deal.ends_at || '—'}</span>
+      <span><input class="deal-field" data-field="title" value="${escapeAttr(deal.title || '')}" /></span>
+      <span><input class="deal-field" data-field="price" value="${escapeAttr(deal.price || '')}" /></span>
+      <span><input class="deal-field" data-field="affiliate_url" value="${escapeAttr(deal.affiliate_url || '')}" /></span>
+      <span><input class="deal-field" data-field="priority" type="number" value="${deal.priority ?? 0}" /></span>
+      <span>
+        <label class="toggle mini">
+          <input type="checkbox" class="deal-field" data-field="active" ${deal.active ? 'checked' : ''} />
+        </label>
+      </span>
+      <span>${metrics.clicks24 || 0} / ${metrics.clicks7 || 0}</span>
+      <span>${formatPercent(metrics.ctr24 || 0)}</span>
+      <span>${formatPercent(metrics.conversion24 || 0)}</span>
+      <span>${formatCurrency(metrics.revenue24 || 0)}</span>
       <span class="table-actions">
         <button class="btn mini ghost" data-action="edit">Edit</button>
         <button class="btn mini" data-action="live">Set Live</button>
@@ -464,16 +503,32 @@ function renderDeals() {
   });
 }
 
+function renderDealAnalytics() {
+  if (!dom.dealAnalytics) return;
+  const summary = state.dealSummary || {};
+  const items = [
+    { label: 'Clicks 24h', value: summary.clicks24 || 0 },
+    { label: 'Clicks 7d', value: summary.clicks7 || 0 },
+    { label: 'Revenue 24h', value: formatCurrency(summary.revenue24 || 0) },
+    { label: 'Revenue 7d', value: formatCurrency(summary.revenue7 || 0) },
+    { label: 'Leads 24h', value: summary.emails24 || 0 },
+    { label: 'Leads 7d', value: summary.emails7 || 0 }
+  ];
+  dom.dealAnalytics.innerHTML = items
+    .map(item => `<div class="analytics-stat"><span>${item.label}</span><strong>${item.value}</strong></div>`)
+    .join('');
+}
+
 function renderFactoryResult(payload) {
   if (!dom.factoryResult) return;
-  if (!payload) {
+  if (!payload?.slug) {
     dom.factoryResult.innerHTML = '';
     return;
   }
   const goUrl = `${window.location.origin}/go/${payload.slug}`;
   dom.factoryResult.innerHTML = `
     <p><strong>${goUrl}</strong></p>
-    <p><small>${payload.affiliate_url}</small></p>
+    <p><small>${payload.affiliate_url || ''}</small></p>
     <button type="button" class="btn mini ghost" data-factory-copy>Copy /go URL</button>
   `;
   dom.factoryResult.querySelector('[data-factory-copy]')?.addEventListener('click', () => {
@@ -488,7 +543,6 @@ async function submitFactory(event) {
   const formData = new FormData(dom.factoryForm);
   const payload = Object.fromEntries(formData.entries());
   payload.auto_live = formData.get('auto_live') === 'on';
-  if (payload.priority) payload.priority = Number(payload.priority);
   try {
     const data = await request(API.factory, { method: 'POST', body: JSON.stringify(payload) });
     showToast('Affiliate Link erstellt');
@@ -562,6 +616,39 @@ async function dealAction(id, action) {
   } catch (err) {
     console.error('deal action failed', err.message);
     showToast('Aktion fehlgeschlagen', 'error');
+  }
+}
+
+function applyDealFilters() {
+  state.dealFilters.platform = dom.dealFilterPlatform?.value || 'all';
+  state.dealFilters.active = dom.dealFilterActive?.value || 'all';
+  state.dealFilters.range = dom.dealFilterRange?.value || '7';
+  fetchDeals();
+}
+
+function handleDealInlineChange(event) {
+  const target = event.target;
+  if (!target.classList.contains('deal-field')) return;
+  const row = target.closest('.table-row');
+  const id = row?.dataset.id;
+  if (!id) return;
+  const field = target.dataset.field;
+  if (!field) return;
+  let value = target.type === 'number' ? Number(target.value || 0) : target.value;
+  if (target.type === 'checkbox') {
+    value = target.checked;
+  }
+  updateDealField(id, { [field]: value });
+}
+
+async function updateDealField(id, patch) {
+  try {
+    await request(API.deals, { method: 'PUT', body: JSON.stringify({ id, ...patch }) });
+    showToast('Deal aktualisiert');
+    fetchDeals();
+  } catch (err) {
+    console.error('inline update failed', err.message);
+    showToast('Update fehlgeschlagen', 'error');
   }
 }
 
@@ -683,6 +770,12 @@ function attachEvents() {
     const id = btn.closest('.table-row')?.dataset.id;
     if (!id) return;
     dealAction(id, btn.dataset.action);
+  });
+  dom.dealsTable?.addEventListener('change', handleDealInlineChange);
+  dom.dealFilterApply?.addEventListener('click', applyDealFilters);
+  dom.dealSortField?.addEventListener('change', () => {
+    state.dealSort.field = dom.dealSortField.value;
+    fetchDeals();
   });
   dom.seedQuick?.addEventListener('click', () => {
     switchTab('email');

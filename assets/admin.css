@@ -368,6 +368,40 @@ textarea { resize: vertical; }
 }
 .factory-result strong { font-size: 1rem; }
 .factory-result a { color: #5ad7ff; }
+.deal-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  align-items: flex-end;
+  margin: 1.2rem 0;
+}
+.deal-filters label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  color: var(--muted);
+  gap: 0.2rem;
+}
+.analytics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(140px,1fr));
+  gap: 0.9rem;
+}
+.analytics-stat {
+  padding: 0.9rem 1rem;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.04);
+}
+.analytics-stat span {
+  font-size: 0.8rem;
+  color: var(--muted);
+  display: block;
+}
+.analytics-stat strong {
+  font-size: 1.2rem;
+  display: block;
+  margin-top: 0.2rem;
+}
 
 @media (max-width: 960px) {
   .admin-shell { grid-template-columns: 1fr; }

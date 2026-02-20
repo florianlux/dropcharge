@@ -223,6 +223,45 @@
           <h2>Deals & Spotlights</h2>
           <p>Deals kuratieren, Live Drop setzen</p>
         </div>
+        <div class="deal-filters">
+          <label>Plattform
+            <select id="deal-filter-platform">
+              <option value="all">Alle</option>
+              <option value="PSN">PSN</option>
+              <option value="Xbox">Xbox</option>
+              <option value="Nintendo">Nintendo</option>
+            </select>
+          </label>
+          <label>Status
+            <select id="deal-filter-active">
+              <option value="all">Alle</option>
+              <option value="true">Aktiv</option>
+              <option value="false">Inaktiv</option>
+            </select>
+          </label>
+          <label>Zeitraum
+            <select id="deal-filter-range">
+              <option value="7">7 Tage</option>
+              <option value="30">30 Tage</option>
+            </select>
+          </label>
+          <label>Sortierung
+            <select id="deal-sort-field">
+              <option value="priority">Priority</option>
+              <option value="clicks">Clicks 24h</option>
+              <option value="conversion">Conversion</option>
+              <option value="revenue">Revenue 24h</option>
+            </select>
+          </label>
+          <button class="btn mini" id="deals-filter-apply">Filter anwenden</button>
+        </div>
+        <article class="admin-card" id="deal-analytics-card">
+          <div class="admin-head">
+            <h3>Deal Analytics</h3>
+            <p class="micro">Aggregiert nach aktuellem Filter</p>
+          </div>
+          <div class="analytics-grid" id="deal-analytics"></div>
+        </article>
         <article class="admin-card">
           <div class="admin-head">
             <h3>Affiliate Link Factory</h3>
@@ -323,11 +362,14 @@
           <div class="table" id="deals-table">
             <div class="table-head">
               <span>Titel</span>
-              <span>Platform</span>
               <span>Preis</span>
-              <span>Status</span>
+              <span>Affiliate URL</span>
               <span>Priority</span>
-              <span>Zeitraum</span>
+              <span>Aktiv</span>
+              <span>Klicks 24h / 7d</span>
+              <span>CTR 24h</span>
+              <span>Conversion</span>
+              <span>Revenue 24h</span>
               <span>Aktionen</span>
             </div>
           </div>
