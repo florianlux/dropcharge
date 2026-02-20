@@ -16,6 +16,22 @@ async function getFlags() {
   }
 }
 
+async function insertEmailRecord(email, confirmed) {
+  const basePayload = { email, created_at: new Date().toISOString() };
+  const payload = { ...basePayload, confirmed };
+  const { error } = await supabase.from('emails').insert(payload);
+  if (error) {
+    if ((error.message || '').toLowerCase().includes('confirmed')) {
+      console.log('emails table missing confirmed column, retrying without it');
+      const retry = await supabase.from('emails').insert(basePayload);
+      if (retry.error) throw retry.error;
+      return { fallback: true };
+    }
+    throw error;
+  }
+  return { fallback: false };
+}
+
 async function handler(event) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
@@ -59,19 +75,13 @@ async function handler(event) {
 
     if (existing) {
       return {
-        statusCode: 409,
+        statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ok: false, error: 'already_exists' })
+        body: JSON.stringify({ ok: true, duplicate: true })
       };
     }
 
-    const { error } = await supabase.from('emails').insert({
-      email,
-      confirmed,
-      created_at: new Date().toISOString()
-    });
-
-    if (error) throw error;
+    await insertEmailRecord(email, confirmed);
 
     return {
       statusCode: 200,

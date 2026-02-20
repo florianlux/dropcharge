@@ -309,8 +309,7 @@ function copyEmailList() {
     showToast('Keine Emails verfügbar', 'error');
     return;
   }
-  const text = state.emailRows.map(entry => entry.email).join('
-');
+  const text = state.emailRows.map(entry => entry.email).join('\n');
   navigator.clipboard.writeText(text).then(() => showToast('Emails kopiert')).catch(() => showToast('Clipboard blockiert', 'error'));
 }
 
@@ -320,8 +319,7 @@ function exportEmailsCsv() {
     return;
   }
   const header = ['email','confirmed','created_at'];
-  const csv = [header.join(',')].concat(state.emailRows.map(entry => header.map(key => JSON.stringify(entry[key] ?? '')).join(','))).join('
-');
+  const csv = [header.join(',')].concat(state.emailRows.map(entry => header.map(key => JSON.stringify(entry[key] ?? '')).join(','))).join('\n');
   navigator.clipboard.writeText(csv).then(() => showToast('CSV kopiert')).catch(() => showToast('Clipboard blockiert', 'error'));
 }
 
