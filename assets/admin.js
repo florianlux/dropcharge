@@ -1,47 +1,149 @@
-const API_STATS = '/.netlify/functions/stats';
-const API_HEALTH = '/.netlify/functions/admin-health';
-const API_SPOTLIGHT = '/.netlify/functions/spotlight';
-const API_SEED = '/.netlify/functions/admin-seed';
+const API_BASE = (window.ADMIN_API_BASE
+  || document.documentElement.getAttribute('data-api-base')
+  || (window.location.origin.includes('dropchargeadmin') ? 'https://dropcharge.netlify.app' : window.location.origin)
+).replace(/\/$/, '');
+
+const API = {
+  stats: `${API_BASE}/.netlify/functions/stats`,
+  health: `${API_BASE}/.netlify/functions/admin-health`,
+  events: `${API_BASE}/.netlify/functions/events`,
+  funnel: `${API_BASE}/.netlify/functions/funnel`,
+  utm: `${API_BASE}/.netlify/functions/utm`,
+  devices: `${API_BASE}/.netlify/functions/devices`,
+  seed: `${API_BASE}/.netlify/functions/admin-seed`,
+  spotlight: `${API_BASE}/.netlify/functions/spotlight`,
+  deals: `${API_BASE}/.netlify/functions/deals-admin`,
+  optimizer: `${API_BASE}/.netlify/functions/optimize-deals`,
+  settings: `${API_BASE}/.netlify/functions/settings`,
+  publicConfig: `${API_BASE}/.netlify/functions/public-config`,
+  factory: `${API_BASE}/.netlify/functions/affiliate-factory`,
+  leads: `${API_BASE}/.netlify/functions/admin-list-leads`,
+  leadsExport: `${API_BASE}/.netlify/functions/admin-export-leads`,
+  campaigns: `${API_BASE}/.netlify/functions/admin-campaigns`,
+  campaignSend: `${API_BASE}/.netlify/functions/admin-campaign-send`,
+  campaignCreate: `${API_BASE}/.netlify/functions/admin-campaign-create`,
+  campaignCancel: `${API_BASE}/.netlify/functions/admin-campaign-cancel`,
+  campaignTick: `${API_BASE}/.netlify/functions/admin-campaign-tick`,
+  newsletterSignup: '/.netlify/functions/newsletter_signup'
+};
 
 const TOKEN_STORAGE_KEY = 'admin_token';
-const STATS_INTERVAL = 10000;
-const HEALTH_INTERVAL = 15000;
+const LIVE_MODE_STORAGE_KEY = 'admin_live_mode';
+const STATS_INTERVAL = 15000;
+const HEALTH_INTERVAL = 20000;
+const LIVE_INTERVAL = 4000;
 
-const platformEls = {
-  PSN: document.querySelector('#platform-stats .stat:nth-child(1) strong'),
-  Xbox: document.querySelector('#platform-stats .stat:nth-child(2) strong'),
-  Nintendo: document.querySelector('#platform-stats .stat:nth-child(3) strong')
+const state = {
+  live: {
+    paused: false,
+    filter: 'all',
+    session: '',
+    interval: null,
+    events: []
+  },
+  funnels: {},
+  funnelSummary: null,
+  funnelWindow: '24h',
+  utm: null,
+  devices: null,
+  settings: {},
+  deals: [],
+  dealSummary: {},
+  optimizerHistory: [],
+  campaigns: [],
+  subscribers: [],
+  subscriberFilters: { status: 'active', search: '' },
+  currentDealId: null,
+  quickLive: true,
+  emailRows: [],
+  dealFilters: { platform: 'all', active: 'all', range: '7' },
+  dealSort: { field: 'priority', direction: 'desc' }
 };
-const amountList = document.getElementById('amount-stats');
-const feedTable = document.getElementById('feed');
-const emailCountEl = document.getElementById('email-count');
-const emailConvEl = document.getElementById('email-conv');
-const clicksMetaEl = document.getElementById('clicks-meta');
-const bannerEl = document.getElementById('admin-banner');
-const healthStatusEl = document.querySelector('[data-health-status]');
-const healthAuthEl = document.querySelector('[data-health-auth]');
-const healthSupabaseEl = document.querySelector('[data-health-supabase]');
-const healthBuildEl = document.querySelector('[data-health-build]');
-const healthErrorEl = document.querySelector('[data-health-error]');
-const emailTable = document.getElementById('email-table');
-const spotlightForm = document.getElementById('spotlight-form');
-const spotlightFetchBtn = document.getElementById('spotlight-fetch');
-const seedBtn = document.getElementById('seed-data');
-const clearTokenBtn = document.getElementById('admin-clear-token');
-const toast = document.createElement('div');
-toast.id = 'toast';
-toast.style.position = 'fixed';
-toast.style.right = '1.5rem';
-toast.style.bottom = '1.5rem';
-toast.style.padding = '0.9rem 1.4rem';
-toast.style.borderRadius = '14px';
-toast.style.background = 'rgba(16, 124, 16, 0.9)';
-toast.style.color = '#fdfdfd';
-toast.style.boxShadow = '0 15px 35px rgba(0,0,0,0.35)';
-toast.style.opacity = '0';
-toast.style.pointerEvents = 'none';
-toast.style.transition = 'opacity 0.3s ease';
-document.body.appendChild(toast);
+
+const dom = {
+  tabs: document.querySelectorAll('.nav-link'),
+  panels: document.querySelectorAll('.tab-panel'),
+  platformStats: document.getElementById('platform-stats'),
+  clicksMeta: document.getElementById('clicks-meta'),
+  emailCount: document.getElementById('email-count'),
+  emailConv: document.getElementById('email-conv'),
+  amountStats: document.getElementById('amount-stats'),
+  emailTable: document.getElementById('email-table'),
+  emailsRefresh: document.getElementById('emails-refresh'),
+  emailsCopy: document.getElementById('emails-copy'),
+  healthStatus: document.querySelector('[data-health-status]'),
+  healthAuth: document.querySelector('[data-health-auth]'),
+  healthSupabase: document.querySelector('[data-health-supabase]'),
+  healthBuild: document.querySelector('[data-health-build]'),
+  healthSchema: document.querySelector('[data-health-schema]'),
+  healthError: document.querySelector('[data-health-error]'),
+  liveTable: document.getElementById('live-table'),
+  liveLatest: document.getElementById('live-latest'),
+  liveCount: document.getElementById('live-count'),
+  livePause: document.getElementById('live-pause'),
+  liveFilters: document.getElementById('live-filters'),
+  sessionInput: document.getElementById('session-filter'),
+  sessionApply: document.getElementById('session-apply'),
+  funnelGrid: document.getElementById('funnel-grid'),
+  funnelVisual: document.getElementById('funnel-visual'),
+  funnelDropoff: document.getElementById('funnel-dropoff'),
+  funnelWindow: document.getElementById('funnel-window'),
+  funnelRefresh: document.getElementById('funnel-refresh'),
+  utmLists: document.getElementById('utm-lists'),
+  deviceGrid: document.getElementById('device-grid'),
+  quickToggle: document.getElementById('toggle-live'),
+  quickRefresh: document.getElementById('refresh-all'),
+  quickExport: document.getElementById('export-csv'),
+  quickSeed: document.getElementById('seed-data'),
+  globalSearch: document.getElementById('global-search'),
+  searchTrigger: document.getElementById('search-trigger'),
+  spotlightPreview: document.getElementById('spotlight-preview'),
+  spotlightMeta: document.getElementById('spotlight-meta'),
+  spotlightForm: document.getElementById('spotlight-form'),
+  spotlightFetch: document.getElementById('spotlight-fetch'),
+  spotlightReset: document.getElementById('spotlight-reset'),
+  dealsTable: document.getElementById('deals-table'),
+  dealStatus: document.getElementById('deal-status'),
+  dealAnalytics: document.getElementById('deal-analytics'),
+  dealFilterPlatform: document.getElementById('deal-filter-platform'),
+  dealFilterActive: document.getElementById('deal-filter-active'),
+  dealFilterRange: document.getElementById('deal-filter-range'),
+  dealSortField: document.getElementById('deal-sort-field'),
+  dealFilterApply: document.getElementById('deals-filter-apply'),
+  factoryForm: document.getElementById('factory-form'),
+  factoryResult: document.getElementById('factory-result'),
+  optimizerRun: document.getElementById('optimizer-run'),
+  optimizerRefresh: document.getElementById('optimizer-refresh'),
+  optimizerLog: document.getElementById('optimizer-log'),
+  campaignForm: document.getElementById('campaign-form'),
+  campaignPreview: document.getElementById('campaign-preview'),
+  campaignTest: document.getElementById('campaign-test'),
+  campaignReset: document.getElementById('campaign-reset'),
+  campaignPreviewRefresh: document.getElementById('campaign-preview-refresh'),
+  campaignLog: document.getElementById('campaign-log'),
+  campaignLogRefresh: document.getElementById('campaign-log-refresh'),
+  subscriberTable: document.getElementById('email-leads-table'),
+  subscriberSearch: document.getElementById('subscriber-search'),
+  subscriberStatus: document.getElementById('subscriber-status'),
+  subscriberExport: document.getElementById('subscriber-export'),
+  subscriberRefresh: document.getElementById('subscriber-refresh'),
+  emailLeadsTable: document.getElementById('email-leads-table'),
+  leadStats: document.getElementById('lead-stats'),
+  seedQuick: document.getElementById('seed-data'),
+  seedForm: document.getElementById('seed-form'),
+  seedClicks: document.getElementById('seed-clicks'),
+  seedEmails: document.getElementById('seed-emails'),
+  seedEvents: document.getElementById('seed-events'),
+  seedMix: document.getElementById('seed-mix'),
+  emailExport: document.getElementById('email-export'),
+  emailRefresh: document.getElementById('email-refresh'),
+  settingsForm: document.getElementById('settings-form'),
+  settingsRefresh: document.getElementById('settings-refresh'),
+  publicConfig: document.getElementById('public-config'),
+  toggleLiveMode: document.getElementById('toggle-live'),
+  apiBaseDisplay: document.getElementById('api-base-display'),
+  toast: null
+};
 
 (function ensureTokenPresent() {
   if (!localStorage.getItem(TOKEN_STORAGE_KEY)) {
@@ -49,10 +151,50 @@ document.body.appendChild(toast);
   }
 })();
 
-function showToast(message) {
-  toast.textContent = message;
-  toast.style.opacity = '1';
-  setTimeout(() => { toast.style.opacity = '0'; }, 3500);
+function initToast() {
+  const toast = document.createElement('div');
+  toast.id = 'toast';
+  toast.style.position = 'fixed';
+  toast.style.right = '1.5rem';
+  toast.style.bottom = '1.5rem';
+  toast.style.padding = '0.9rem 1.4rem';
+  toast.style.borderRadius = '14px';
+  toast.style.background = 'rgba(16, 124, 16, 0.9)';
+  toast.style.color = '#fdfdfd';
+  toast.style.boxShadow = '0 15px 35px rgba(0,0,0,0.35)';
+  toast.style.opacity = '0';
+  toast.style.pointerEvents = 'none';
+  toast.style.transition = 'opacity 0.3s ease';
+  document.body.appendChild(toast);
+  dom.toast = toast;
+}
+
+function showToast(message, tone = 'success') {
+  if (!dom.toast) initToast();
+  dom.toast.textContent = message;
+  dom.toast.style.background = tone === 'error' ? 'rgba(211,63,63,0.92)' : 'rgba(16,124,16,0.92)';
+  dom.toast.style.opacity = '1';
+  clearTimeout(dom.toast._timer);
+  dom.toast._timer = setTimeout(() => { dom.toast.style.opacity = '0'; }, 3500);
+}
+
+function handleRequestError(context, error) {
+  const message = error?.message || 'request_failed';
+  showToast(`${context}: ${message}`, 'error');
+}
+
+function escapeAttr(value) {
+  return (value ?? '').toString().replace(/"/g, '&quot;');
+}
+
+function formatPercent(value) {
+  if (!Number.isFinite(value)) return '0%';
+  return `${value.toFixed(1)}%`;
+}
+
+function formatCurrency(value) {
+  if (!Number.isFinite(value)) return '0€';
+  return `${value.toFixed(2)}€`;
 }
 
 function buildHeaders(extra = {}) {
@@ -62,76 +204,88 @@ function buildHeaders(extra = {}) {
   return headers;
 }
 
-function handleUnauthorized() {
-  localStorage.removeItem(TOKEN_STORAGE_KEY);
-  window.location.href = '/admin-login.html';
-}
-
-function updateBanner(authEnabled) {
-  if (!bannerEl) return;
-  if (authEnabled) {
-    bannerEl.classList.remove('visible');
-  } else {
-    bannerEl.classList.add('visible');
+async function request(path, options = {}) {
+  const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
+  const config = { ...options };
+  config.headers = buildHeaders({ 'Content-Type': options.body ? 'application/json' : undefined, ...options.headers });
+  if (config.headers['Content-Type'] === undefined) delete config.headers['Content-Type'];
+  try {
+    const res = await fetch(url, config);
+    if (res.status === 401) {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      window.location.href = '/admin-login.html';
+      return null;
+    }
+    if (!res.ok) {
+      const text = await res.text();
+      const message = text || res.statusText || 'request_failed';
+      console.error('[API]', url, res.status, message);
+      const error = new Error(`HTTP ${res.status}: ${message}`);
+      error.status = res.status;
+      error.url = url;
+      throw error;
+    }
+    const isJson = res.headers.get('content-type')?.includes('application/json');
+    return isJson ? res.json() : res.text();
+  } catch (err) {
+    if (!err.url) {
+      console.error('[API] network_error', url, err.message);
+    }
+    throw err;
   }
 }
 
-function renderStats(data) {
-  const metrics = data?.metrics;
-  if (!metrics) return;
-  const { platformCounts = {}, emails24h = 0, conversion24h = 0, topAmounts = [], feed = [], clicks24h = 0, clicks30m = 0 } = metrics;
+function switchTab(tabId) {
+  dom.tabs.forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tabId));
+  dom.panels.forEach(panel => panel.classList.toggle('active', panel.dataset.panel === tabId));
+}
 
-  const values = { PSN: platformCounts.PSN || 0, Xbox: platformCounts.Xbox || 0, Nintendo: platformCounts.Nintendo || 0 };
-  Object.entries(values).forEach(([key, value]) => {
-    if (platformEls[key]) platformEls[key].textContent = value;
-  });
-  if (clicksMetaEl) {
-    clicksMetaEl.textContent = `${clicks24h} Klicks / ${clicks30m} in 30 Min`;
-  }
+dom.tabs.forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
 
-  if (emailCountEl) emailCountEl.textContent = emails24h;
-  if (emailConvEl) emailConvEl.textContent = `${conversion24h.toFixed(1)}%`;
-
-  if (amountList) {
-    amountList.innerHTML = '';
-    if (!topAmounts.length) {
-      amountList.innerHTML = '<div class="list-item"><span>Keine Daten</span><strong>0</strong></div>';
-    } else {
-      topAmounts.forEach(item => {
-        const row = document.createElement('div');
-        row.className = 'list-item';
-        row.innerHTML = `
-          <div>
-            <strong>${item.amount || '—'}</strong>
-            <small>${item.platform || '—'} · ${item.slug || ''}</small>
-          </div>
-          <strong>${item.count}</strong>
-        `;
-        amountList.appendChild(row);
+async function loadStats({ silent = false } = {}) {
+  try {
+    const data = await request(API.stats);
+    if (!data?.ok) throw new Error('stats_failed');
+    const metrics = data.metrics || {};
+    const counts = metrics.platformCounts || {};
+    if (dom.platformStats) {
+      const order = ['PSN', 'Xbox', 'Nintendo'];
+      Array.from(dom.platformStats.querySelectorAll('.stat strong')).forEach((el, idx) => {
+        const key = order[idx];
+        el.textContent = counts[key] || 0;
       });
     }
-  }
-
-  if (feedTable) {
-    feedTable.querySelectorAll('.table-row').forEach(row => row.remove());
-    feed.forEach(entry => {
-      const row = document.createElement('div');
-      row.className = 'table-row';
-      row.innerHTML = `
-        <span>${new Date(entry.created_at).toLocaleTimeString()}</span>
-        <span>${entry.slug || '—'}</span>
-        <span>${entry.platform || '—'}</span>
-        <span>${entry.amount || '—'}</span>
-      `;
-      feedTable.appendChild(row);
-    });
+    if (dom.clicksMeta) dom.clicksMeta.textContent = `${metrics.clicks24h || 0} Klicks / ${metrics.clicks30m || 0} in 30 Min`;
+    if (dom.emailCount) dom.emailCount.textContent = metrics.emails24h || 0;
+    if (dom.emailConv) dom.emailConv.textContent = `${metrics.conversion24h?.toFixed ? metrics.conversion24h.toFixed(1) : (metrics.conversion24h || 0)}%`;
+    if (dom.amountStats) {
+      const list = metrics.topAmounts || [];
+      dom.amountStats.innerHTML = '';
+      if (!list.length) {
+        dom.amountStats.innerHTML = '<div class="list-item"><span>Keine Daten</span><strong>0</strong></div>';
+      } else {
+        list.forEach(item => {
+          const row = document.createElement('div');
+          row.className = 'list-item';
+          row.innerHTML = `<div><strong>${item.amount || '—'}</strong><small>${item.platform || '—'} · ${item.slug || ''}</small></div><strong>${item.count}</strong>`;
+          dom.amountStats.appendChild(row);
+        });
+      }
+    }
+    state.emailRows = metrics.emailRows || [];
+    if (dom.emailTable) renderEmailTable(state.emailRows);
+    if (dom.leadStats) renderLeadStats(state.emailRows);
+  } catch (err) {
+    console.error('stats load failed', err.message);
+    if (!silent) handleRequestError('Stats', err);
   }
 }
 
-function renderEmails(emails = []) {
-  if (!emailTable) return;
-  emailTable.querySelectorAll('.table-row').forEach(row => row.remove());
-  emails.forEach(entry => {
+function renderEmailTable(rows) {
+  dom.emailTable.querySelectorAll('.table-row').forEach(row => row.remove());
+  rows.forEach(entry => {
     const row = document.createElement('div');
     row.className = 'table-row';
     row.innerHTML = `
@@ -139,129 +293,871 @@ function renderEmails(emails = []) {
       <span>${new Date(entry.created_at).toLocaleString()}</span>
       <span>${entry.confirmed ? 'Confirmed' : 'Pending'}</span>
     `;
-    emailTable.appendChild(row);
+    dom.emailTable.appendChild(row);
   });
 }
 
-async function loadStats() {
-  try {
-    const res = await fetch(API_STATS, { headers: buildHeaders() });
-    if (res.status === 401) {
-      handleUnauthorized();
-      return;
-    }
-    if (!res.ok) throw new Error('Failed to load stats');
-    const json = await res.json();
-    if (!json.ok) throw new Error(json.error || 'Stats error');
-    renderStats(json);
-    renderEmails(json.metrics?.emailRows || []);
-  } catch (err) {
-    console.error('stats load failed', err.message);
+function renderLeadStats(rows) {
+  const stats = {
+    confirmed: rows.filter(r => r.confirmed).length,
+    pending: rows.filter(r => !r.confirmed).length,
+  };
+  dom.leadStats.innerHTML = '';
+  Object.entries(stats).forEach(([label, value]) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
+    dom.leadStats.appendChild(li);
+  });
+}
+
+function copyEmailList() {
+  if (!state.emailRows.length) {
+    showToast('Keine Emails verfügbar', 'error');
+    return;
   }
+  const text = state.emailRows.map(entry => entry.email).join('\n');
+  navigator.clipboard.writeText(text).then(() => showToast('Emails kopiert')).catch(() => showToast('Clipboard blockiert', 'error'));
+}
+
+function exportEmailsCsv() {
+  if (!state.emailRows.length) {
+    showToast('Keine Emails verfügbar', 'error');
+    return;
+  }
+  const header = ['email','confirmed','created_at'];
+  const csv = [header.join(',')].concat(state.emailRows.map(entry => header.map(key => JSON.stringify(entry[key] ?? '')).join(','))).join('\n');
+  navigator.clipboard.writeText(csv).then(() => showToast('CSV kopiert')).catch(() => showToast('Clipboard blockiert', 'error'));
 }
 
 async function loadHealth() {
   try {
-    const res = await fetch(API_HEALTH, { headers: buildHeaders() });
-    if (res.status === 401) {
-      handleUnauthorized();
-      return;
-    }
-    if (!res.ok) throw new Error('Failed health');
-    const json = await res.json();
-    updateBanner(json.authEnabled);
-    if (healthStatusEl) {
-      healthStatusEl.textContent = json.ok ? 'CONNECTED' : 'ISSUE';
-      healthStatusEl.classList.toggle('ok', json.ok);
-      healthStatusEl.classList.toggle('fail', !json.ok);
-    }
-    if (healthAuthEl) healthAuthEl.textContent = json.authEnabled ? 'Aktiv' : 'Offen';
-    if (healthSupabaseEl) healthSupabaseEl.textContent = json.hasSupabase ? 'OK' : 'Fehlt';
-    if (healthBuildEl) healthBuildEl.textContent = json.build || 'local';
-    if (healthErrorEl) healthErrorEl.textContent = json.ok ? '' : (json.error || 'Unbekannter Fehler');
+    const data = await request(API.health);
+    if (!data) return;
+    dom.healthStatus.textContent = data.ok ? 'CONNECTED' : 'ISSUE';
+    dom.healthStatus.classList.toggle('ok', data.ok);
+    dom.healthStatus.classList.toggle('fail', !data.ok);
+    dom.healthAuth.textContent = data.authEnabled ? 'Aktiv' : 'Offen';
+    dom.healthSupabase.textContent = data.hasSupabase ? 'OK' : 'Fehlt';
+    dom.healthBuild.textContent = data.build || 'local';
+    dom.healthSchema.textContent = data.schemaOk ? 'OK' : (data.missingTables?.join(', ') || '—');
+    dom.healthError.textContent = data.ok ? '' : (data.error || 'Unbekannter Fehler');
   } catch (err) {
     console.error('health load failed', err.message);
-    if (healthStatusEl) {
-      healthStatusEl.textContent = 'ISSUE';
-      healthStatusEl.classList.add('fail');
-    }
-    if (healthErrorEl) healthErrorEl.textContent = err.message;
   }
 }
 
-const spotlightPreviewEl = document.getElementById('spotlight-preview');
-
-function updateSpotlightPreview(data) {
-  if (!spotlightPreviewEl) return;
-  const entry = data || {};
-  spotlightPreviewEl.querySelector('h3').textContent = entry.title || '—';
-  const desc = spotlightPreviewEl.querySelector('.desc');
-  if (desc) desc.textContent = entry.description || 'Noch kein Text.';
-  const meta = spotlightPreviewEl.querySelector('.meta');
-  const details = [entry.subtitle, entry.platform, entry.discount].filter(Boolean).join(' · ');
-  meta.textContent = details || '—';
-}
-
-async function fetchSpotlightAdmin() {
+async function loadLiveEvents({ silent = false } = {}) {
+  if (state.live.paused) return;
   try {
-    const res = await fetch(API_SPOTLIGHT);
-    if (!res.ok) throw new Error('spotlight fetch');
-    const data = await res.json();
-    updateSpotlightPreview(data.spotlight);
+    const params = new URLSearchParams({ limit: 100 });
+    if (state.live.filter && state.live.filter !== 'all') params.set('type', state.live.filter);
+    if (state.live.session) params.set('session', state.live.session);
+    const data = await request(`${API.events}?${params.toString()}`);
+    if (!data?.ok) throw new Error('live_failed');
+    state.live.events = data.events || [];
+    renderLiveEvents();
+    if (dom.liveLatest) dom.liveLatest.textContent = data.summary?.latest ? new Date(data.summary.latest).toLocaleTimeString() : '—';
+    if (dom.liveCount) dom.liveCount.textContent = data.events?.length || 0;
   } catch (err) {
-    console.warn('spotlight admin fetch failed', err.message);
+    console.error('live events failed', err.message);
+    if (!silent) handleRequestError('Live Events', err);
   }
 }
 
-spotlightFetchBtn?.addEventListener('click', fetchSpotlightAdmin);
-spotlightForm?.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const formData = new FormData(spotlightForm);
-  const payload = Object.fromEntries(formData.entries());
+function renderLiveEvents() {
+  dom.liveTable.querySelectorAll('.table-row').forEach(row => row.remove());
+  state.live.events.forEach(evt => {
+    const row = document.createElement('div');
+    row.className = 'table-row';
+    row.innerHTML = `
+      <span>${new Date(evt.created_at).toLocaleTimeString()}</span>
+      <span>${evt.type}</span>
+      <span>${evt.slug || '—'}</span>
+      <span>${evt.path || '—'}</span>
+      <span>${evt.platform || '—'}</span>
+      <span>${evt.session_id || '—'}</span>
+      <span>${evt.country || '—'}</span>
+      <span>${JSON.stringify(evt.meta || {})}</span>
+    `;
+    dom.liveTable.appendChild(row);
+  });
+}
+
+async function loadFunnels({ silent = false } = {}) {
   try {
-    const res = await fetch(API_SPOTLIGHT, {
-      method: 'POST',
-      headers: buildHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify(payload)
+    const params = new URLSearchParams({ range: state.funnelWindow });
+    const data = await request(`${API.funnel}?${params.toString()}`);
+    if (!data?.ok) throw new Error('funnel_failed');
+    state.funnels = data.funnels || {};
+    state.funnelSummary = data.funnel || null;
+    renderFunnelVisual();
+    renderFunnelGrid(state.funnelWindow);
+  } catch (err) {
+    console.error('funnel load failed', err.message);
+    if (!silent) handleRequestError('Funnel Daten', err);
+  }
+}
+
+function renderFunnelVisual() {
+  if (!dom.funnelVisual) return;
+  const summary = state.funnelSummary || {};
+  const stages = [
+    { key: 'landing_views', label: 'Landing Views', count: summary.landing_views || 0 },
+    { key: 'cta_clicks', label: 'CTA Clicks', count: summary.cta_clicks || 0, conversion: summary.conversion_landing_to_cta },
+    { key: 'deal_clicks', label: 'Deal Clicks', count: summary.deal_clicks || 0, conversion: summary.conversion_cta_to_deal },
+    { key: 'email_submits', label: 'Email Submits', count: summary.email_submits || 0, conversion: summary.conversion_deal_to_email }
+  ];
+  const maxCount = Math.max(...stages.map(stage => stage.count), 1);
+  dom.funnelVisual.innerHTML = stages
+    .map((stage, index) => {
+      const width = Math.max(5, (stage.count / maxCount) * 100);
+      const conversion = stage.conversion ?? null;
+      const prevCount = index === 0 ? null : stages[index - 1].count;
+      const drop = prevCount ? prevCount - stage.count : null;
+      return `
+        <div class="funnel-stage">
+          <span>${stage.label}</span>
+          <strong>${stage.count}</strong>
+          <div class="funnel-bar"><i style="width:${width}%"></i></div>
+          ${conversion !== null && prevCount ? `<div class="conversion">${conversion}% → ${drop > 0 ? `-${drop}` : '0'} drop</div>` : ''}
+        </div>
+      `;
+    })
+    .join('');
+  renderFunnelDropoff(summary);
+}
+
+function renderFunnelDropoff(summary) {
+  if (!dom.funnelDropoff) return;
+  const dropData = [
+    { label: 'Landing → CTA', value: summary?.dropoff_landing_to_cta || 0 },
+    { label: 'CTA → Deal', value: summary?.dropoff_cta_to_deal || 0 },
+    { label: 'Deal → Email', value: summary?.dropoff_deal_to_email || 0 }
+  ];
+  const maxDrop = Math.max(...dropData.map(item => item.value), 0);
+  dom.funnelDropoff.innerHTML = dropData
+    .map(item => `<div class="dropoff-card ${item.value === maxDrop ? 'highlight' : ''}"><span>${item.label}</span><strong>${item.value}%</strong></div>`)
+    .join('');
+}
+
+function renderFunnelGrid(label) {
+  if (!dom.funnelGrid) return;
+  const dataset = state.funnels[label] || { counts: {}, conversions: {} };
+  dom.funnelGrid.innerHTML = '';
+  const stages = ['landing_view', 'cta_click', 'deal_click', 'email_submit', 'email_confirmed'];
+  stages.forEach(stage => {
+    const card = document.createElement('div');
+    card.className = 'funnel-card';
+    const count = dataset.counts?.[stage] || 0;
+    card.innerHTML = `<h4>${stage.replace('_', ' ')}</h4><div class="progress"><span style="width:${Math.min(100, count)}%"></span></div><p>${count} Events</p>`;
+    dom.funnelGrid.appendChild(card);
+  });
+  dom.funnelMeta?.replaceChildren?.();
+}
+
+async function loadUtm(windowLabel = '7d', { silent = false } = {}) {
+  try {
+    const data = await request(`${API.utm}?window=${windowLabel}`);
+    state.utm = data.top;
+    renderUtm();
+  } catch (err) {
+    console.error('utm load failed', err.message);
+    if (!silent) handleRequestError('UTM Daten', err);
+  }
+}
+
+function renderUtm() {
+  if (!state.utm || !dom.utmLists) return;
+  dom.utmLists.innerHTML = '';
+  Object.entries(state.utm).forEach(([key, list]) => {
+    const block = document.createElement('div');
+    block.className = 'utm-block';
+    block.innerHTML = `<h4>${key}</h4>`;
+    (list || []).forEach(entry => {
+      const row = document.createElement('div');
+      row.className = 'device-row';
+      row.innerHTML = `<span>${entry.value || '—'}</span><strong>${entry.count}</strong>`;
+      block.appendChild(row);
     });
-    if (res.status === 401) {
-      handleUnauthorized();
-      return;
-    }
-    if (!res.ok) throw new Error('spotlight save');
-    showToast('Spotlight gespeichert');
-    spotlightForm.reset();
-    fetchSpotlightAdmin();
-  } catch (err) {
-    alert('Spotlight konnte nicht gespeichert werden.');
-  }
-});
+    dom.utmLists.appendChild(block);
+  });
+}
 
-seedBtn?.addEventListener('click', async () => {
-  seedBtn.disabled = true;
+async function loadDevices({ silent = false } = {}) {
   try {
-    const res = await fetch(API_SEED, { method: 'POST', headers: buildHeaders() });
-    if (res.status === 401) {
-      handleUnauthorized();
-      return;
+    const data = await request(API.devices);
+    if (!data?.ok) throw new Error('devices_failed');
+    state.devices = data;
+    renderDevices();
+  } catch (err) {
+    console.error('devices load failed', err.message);
+    if (!silent) handleRequestError('Device Daten', err);
+  }
+}
+
+function renderDevices() {
+  if (!state.devices) return;
+  dom.deviceGrid.innerHTML = '';
+  ['devices', 'platforms', 'countries'].forEach(key => {
+    const list = state.devices[key] || [];
+    const block = document.createElement('div');
+    block.className = 'utm-block';
+    block.innerHTML = `<h4>${key}</h4>`;
+    list.forEach(entry => {
+      const row = document.createElement('div');
+      row.className = 'device-row';
+      row.innerHTML = `<span>${entry.value}</span><strong>${entry.count}</strong>`;
+      block.appendChild(row);
+    });
+    dom.deviceGrid.appendChild(block);
+  });
+}
+
+async function fetchSpotlight({ silent = false } = {}) {
+  try {
+    const data = await request(API.spotlight);
+    updateSpotlightPreview(data?.spotlight);
+  } catch (err) {
+    console.error('spotlight fetch failed', err.message);
+    if (!silent) handleRequestError('Spotlight laden', err);
+  }
+}
+
+function updateSpotlightPreview(entry) {
+  if (!entry || !dom.spotlightPreview) return;
+  dom.spotlightPreview.querySelector('h3').textContent = entry.title || '—';
+  dom.spotlightPreview.querySelector('.desc').textContent = entry.description || 'Noch kein Text.';
+  dom.spotlightPreview.querySelector('.meta').textContent = [entry.subtitle, entry.platform, entry.discount].filter(Boolean).join(' · ') || '—';
+  dom.spotlightMeta.innerHTML = `
+    <p>Vendor: ${entry.vendor || '—'}</p>
+    <p>Preis: ${entry.price || '—'}</p>
+    <p>Zeitraum: ${entry.starts_at || '—'} → ${entry.ends_at || '—'}</p>
+  `;
+  dom.dealStatus.textContent = entry.active ? 'Live' : 'Draft';
+  dom.dealStatus.classList.toggle('ok', entry.active);
+}
+
+async function fetchDeals({ silent = false } = {}) {
+  try {
+    const params = new URLSearchParams();
+    if (state.dealFilters.platform !== 'all') params.set('platform', state.dealFilters.platform);
+    if (state.dealFilters.active !== 'all') params.set('active', state.dealFilters.active);
+    if (state.dealFilters.range && state.dealFilters.range !== 'all') params.set('since', state.dealFilters.range);
+    params.set('sort', state.dealSort.field);
+    params.set('direction', state.dealSort.direction);
+    const data = await request(`${API.deals}?${params.toString()}`);
+    state.deals = data.deals || [];
+    state.dealSummary = data.summary || {};
+    renderDeals();
+    renderDealAnalytics();
+  } catch (err) {
+    console.error('deals load failed', err.message);
+    if (!silent) handleRequestError('Deals laden', err);
+  }
+}
+
+function renderDeals() {
+  dom.dealsTable.querySelectorAll('.table-row').forEach(row => row.remove());
+  state.deals.forEach(deal => {
+    const metrics = deal.metrics || {};
+    const row = document.createElement('div');
+    row.className = 'table-row';
+    row.dataset.id = deal.id;
+    row.innerHTML = `
+      <span><input class="deal-field" data-field="title" value="${escapeAttr(deal.title || '')}" /></span>
+      <span><input class="deal-field" data-field="price" value="${escapeAttr(deal.price || '')}" /></span>
+      <span><input class="deal-field" data-field="affiliate_url" value="${escapeAttr(deal.affiliate_url || '')}" /></span>
+      <span><input class="deal-field" data-field="priority" type="number" value="${deal.priority ?? 0}" /></span>
+      <span>
+        <label class="toggle mini">
+          <input type="checkbox" class="deal-field" data-field="active" ${deal.active ? 'checked' : ''} />
+        </label>
+      </span>
+      <span>${metrics.clicks24 || 0} / ${metrics.clicks7 || 0}</span>
+      <span>${formatPercent(metrics.ctr24 || 0)}</span>
+      <span>${formatPercent(metrics.conversion24 || 0)}</span>
+      <span>${formatCurrency(metrics.revenue24 || 0)}</span>
+      <span class="table-actions">
+        <button class="btn mini ghost" data-action="edit">Edit</button>
+        <button class="btn mini" data-action="live">Set Live</button>
+        <button class="btn mini ghost" data-action="toggle">${deal.active ? 'Deactivate' : 'Activate'}</button>
+        <button class="btn mini ghost" data-action="delete">Delete</button>
+      </span>
+    `;
+    dom.dealsTable.appendChild(row);
+  });
+}
+
+
+
+
+async function loadSubscribers({ silent = false } = {}) {
+  try {
+    const params = new URLSearchParams();
+    params.set('status', state.subscriberFilters.status || 'active');
+    if (state.subscriberFilters.search) params.set('search', state.subscriberFilters.search);
+    const data = await request(`${API.leads}?${params.toString()}`);
+    state.subscribers = data.items || [];
+    renderSubscribers(state.subscribers);
+  } catch (err) {
+    console.error('subscribers load failed', err.message);
+    if (!silent) handleRequestError('Subscribers', err);
+  }
+}
+
+function renderSubscribers(rows = []) {
+  const table = dom.subscriberTable;
+  if (!table) return;
+  table.querySelectorAll('.table-row').forEach(row => row.remove());
+  if (!rows.length) {
+    const empty = document.createElement('p');
+    empty.className = 'empty';
+    empty.textContent = 'Noch keine Subscriber vorhanden.';
+    table.appendChild(empty);
+    return;
+  }
+  rows.forEach(sub => {
+    const row = document.createElement('div');
+    row.className = 'table-row';
+    row.innerHTML = `
+      <span>${sub.email}</span>
+      <span>${sub.status}</span>
+      <span>${sub.source || '—'}</span>
+      <span>${new Date(sub.created_at).toLocaleString()}</span>
+      <span>${sub.last_sent_at ? new Date(sub.last_sent_at).toLocaleString() : '—'}</span>
+    `;
+    table.appendChild(row);
+  });
+}
+
+async function exportSubscribers() {
+  try {
+    const params = new URLSearchParams();
+    params.set('status', state.subscriberFilters.status || 'active');
+    const res = await fetch(`${API.leadsExport}?${params.toString()}`, {
+      headers: buildHeaders()
+    });
+    if (!res.ok) throw new Error('export_failed');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `newsletter-subscribers-${Date.now()}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    showToast('Export gestartet');
+  } catch (err) {
+    handleRequestError('Export', err);
+  }
+}
+
+function renderCampaignPreview(html) {
+  if (!dom.campaignPreview) return;
+  if (!html) {
+    dom.campaignPreview.innerHTML = '<p class="empty">Noch kein Inhalt.</p>';
+    return;
+  }
+  dom.campaignPreview.innerHTML = html;
+}
+
+function renderCampaignLog(entries = []) {
+  if (!dom.campaignLog) return;
+  if (!entries.length) {
+    dom.campaignLog.innerHTML = '<p class="empty">Noch keine Kampagnen gesendet.</p>';
+    return;
+  }
+  dom.campaignLog.innerHTML = entries
+    .map(entry => `
+      <div class="campaign-log-entry ${entry.status === 'failed' ? 'failed' : 'success'}">
+        <div>
+          <strong>${entry.subject || 'Ohne Betreff'}</strong>
+          <div class="meta">${new Date(entry.created_at).toLocaleString()} · Segment: ${entry.segment || 'Alle'}</div>
+        </div>
+        <div>
+          <span class="status">${entry.status || 'unknown'}</span>
+          <div class="meta">Gesendet: ${entry.sent_count || 0} · Failed: ${entry.failed_count || 0}</div>
+          ${entry.error ? `<div class="meta">Error: ${entry.error}</div>` : ''}
+        </div>
+      </div>
+    `)
+    .join('');
+}
+
+function renderOptimizerLog(entries = []) {
+  if (!dom.optimizerLog) return;
+  if (!entries.length) {
+    dom.optimizerLog.innerHTML = '<p class="empty">Noch keine Optimizer-Runs protokolliert.</p>';
+    return;
+  }
+  dom.optimizerLog.innerHTML = entries
+    .map(entry => {
+      const details = entry.ctr !== undefined
+        ? `CTR ${entry.ctr}%`
+        : entry.clicks !== undefined
+        ? `${entry.clicks} Klicks`
+        : '';
+      return `
+        <div class="optimizer-entry ${entry.action}">
+          <div>
+            <div class="action">${entry.action}</div>
+            <div class="meta">${entry.slug || '—'} · ${entry.title || ''}</div>
+          </div>
+          <div>
+            <div>${details}</div>
+            ${entry.to !== undefined ? `<div>Priority ${entry.from || 0} → ${entry.to}</div>` : ''}
+            ${entry.clicks ? `<div>${entry.clicks} Klicks</div>` : ''}
+          </div>
+        </div>`;
+    })
+    .join('');
+}
+
+function renderDealAnalytics() {
+  if (!dom.dealAnalytics) return;
+  const summary = state.dealSummary || {};
+  const items = [
+    { label: 'Clicks 24h', value: summary.clicks24 || 0 },
+    { label: 'Clicks 7d', value: summary.clicks7 || 0 },
+    { label: 'Revenue 24h', value: formatCurrency(summary.revenue24 || 0) },
+    { label: 'Revenue 7d', value: formatCurrency(summary.revenue7 || 0) },
+    { label: 'Leads 24h', value: summary.emails24 || 0 },
+    { label: 'Leads 7d', value: summary.emails7 || 0 }
+  ];
+  dom.dealAnalytics.innerHTML = items
+    .map(item => `<div class="analytics-stat"><span>${item.label}</span><strong>${item.value}</strong></div>`)
+    .join('');
+}
+
+function renderFactoryResult(payload) {
+  if (!dom.factoryResult) return;
+  if (!payload?.slug) {
+    dom.factoryResult.innerHTML = '';
+    return;
+  }
+  const goUrl = `${API_BASE}/go/${payload.slug}`;
+  dom.factoryResult.innerHTML = `
+    <p><strong>${goUrl}</strong></p>
+    <p><small>${payload.affiliate_url || ''}</small></p>
+    <button type="button" class="btn mini ghost" data-factory-copy>Copy /go URL</button>
+  `;
+  dom.factoryResult.querySelector('[data-factory-copy]')?.addEventListener('click', () => {
+    navigator.clipboard.writeText(goUrl)
+      .then(() => showToast('Link kopiert'))
+      .catch(() => showToast('Clipboard blockiert', 'error'));
+  });
+}
+
+async function submitFactory(event) {
+  event.preventDefault();
+  const formData = new FormData(dom.factoryForm);
+  const payload = Object.fromEntries(formData.entries());
+  payload.auto_live = formData.get('auto_live') === 'on';
+  try {
+    const data = await request(API.factory, { method: 'POST', body: JSON.stringify(payload) });
+    showToast('Affiliate Link erstellt');
+    dom.factoryForm.reset();
+    renderFactoryResult(data);
+    fetchDeals();
+  } catch (err) {
+    console.error('factory failed', err.message);
+    handleRequestError('Factory Fehler', err);
+  }
+}
+
+function populateDealForm(deal) {
+  state.currentDealId = deal.id;
+  Array.from(dom.spotlightForm.elements).forEach(el => {
+    if (!el.name) return;
+    if (el.type === 'checkbox') {
+      el.checked = Boolean(deal[el.name]);
+    } else {
+      el.value = deal[el.name] || '';
     }
-    if (!res.ok) throw new Error('seed failed');
+  });
+}
+
+async function submitDeal(event) {
+  event.preventDefault();
+  const formData = new FormData(dom.spotlightForm);
+  const payload = Object.fromEntries(formData.entries());
+  payload.active = formData.get('active') === 'on';
+  if (payload.price_cents) payload.price_cents = Number(payload.price_cents);
+  const method = state.currentDealId ? 'PUT' : 'POST';
+  if (state.currentDealId) payload.id = state.currentDealId;
+  try {
+    await request(API.spotlight, { method, body: JSON.stringify(payload) });
+    showToast('Deal gespeichert');
+    dom.spotlightForm.reset();
+    state.currentDealId = null;
+    fetchDeals();
+    fetchSpotlight();
+  } catch (err) {
+    console.error('spotlight save failed', err.message);
+    handleRequestError('Deal speichern', err);
+  }
+}
+
+async function dealAction(id, action) {
+  const deal = state.deals.find(item => item.id === id);
+  if (!deal) return;
+  if (action === 'edit') {
+    populateDealForm(deal);
+    updateSpotlightPreview(deal);
+    return;
+  }
+  const payload = { id: deal.id };
+  if (action === 'live') {
+    payload.active = true;
+    payload.priority = 999;
+  }
+  if (action === 'toggle') {
+    payload.active = !deal.active;
+  }
+  try {
+    if (action === 'delete') {
+      await request(API.spotlight, { method: 'DELETE', body: JSON.stringify({ id: deal.id }) });
+    } else {
+      await request(API.spotlight, { method: 'PUT', body: JSON.stringify(payload) });
+    }
+    showToast('Deal aktualisiert');
+    fetchDeals();
+    fetchSpotlight();
+  } catch (err) {
+    console.error('deal action failed', err.message);
+    handleRequestError('Deal Aktion', err);
+  }
+}
+
+function applyDealFilters() {
+  state.dealFilters.platform = dom.dealFilterPlatform?.value || 'all';
+  state.dealFilters.active = dom.dealFilterActive?.value || 'all';
+  state.dealFilters.range = dom.dealFilterRange?.value || '7';
+  fetchDeals();
+}
+
+function handleDealInlineChange(event) {
+  const target = event.target;
+  if (!target.classList.contains('deal-field')) return;
+  const row = target.closest('.table-row');
+  const id = row?.dataset.id;
+  if (!id) return;
+  const field = target.dataset.field;
+  if (!field) return;
+  let value = target.type === 'number' ? Number(target.value || 0) : target.value;
+  if (target.type === 'checkbox') {
+    value = target.checked;
+  }
+  updateDealField(id, { [field]: value });
+}
+
+async function updateDealField(id, patch) {
+  try {
+    await request(API.deals, { method: 'PUT', body: JSON.stringify({ id, ...patch }) });
+    showToast('Deal aktualisiert');
+    fetchDeals();
+  } catch (err) {
+    console.error('inline update failed', err.message);
+    handleRequestError('Inline Update', err);
+  }
+}
+
+async function runSeedGenerator(event) {
+  event.preventDefault();
+  const payload = {
+    clicks: Number(dom.seedClicks.value),
+    includeEmails: dom.seedEmails.checked,
+    includeEvents: dom.seedEvents.checked,
+    platformMix: dom.seedMix.value
+  };
+  try {
+    showToast('Generator läuft...');
+    await request(API.seed, { method: 'POST', body: JSON.stringify(payload) });
     showToast('Seed erstellt');
     loadStats();
+    loadLiveEvents();
   } catch (err) {
-    alert('Seed fehlgeschlagen.');
-  } finally {
-    seedBtn.disabled = false;
+    console.error('seed failed', err.message);
+    handleRequestError('Seed fehlgeschlagen', err);
   }
-});
+}
 
-clearTokenBtn?.addEventListener('click', () => {
-  localStorage.removeItem(TOKEN_STORAGE_KEY);
-  window.location.href = '/admin-login.html';
-});
+async function submitSettings(event) {
+  event.preventDefault();
+  const formData = new FormData(dom.settingsForm);
+  const flags = {
+    disable_email_capture: formData.get('disable_email_capture') === 'on',
+    disable_affiliate_redirect: formData.get('disable_affiliate_redirect') === 'on',
+    banner_message: formData.get('banner_message') || ''
+  };
+  try {
+    await request(API.settings, { method: 'PUT', body: JSON.stringify({ updates: { flags, banner_message: flags.banner_message } }) });
+    showToast('Settings gespeichert');
+    fetchSettings();
+    fetchPublicConfig();
+  } catch (err) {
+    console.error('settings failed', err.message);
+    handleRequestError('Settings speichern', err);
+  }
+}
 
-fetchSpotlightAdmin();
-loadStats();
-loadHealth();
-setInterval(loadStats, STATS_INTERVAL);
-setInterval(loadHealth, HEALTH_INTERVAL);
+async function fetchSettings({ silent = false } = {}) {
+  try {
+    const data = await request(API.settings);
+    state.settings = data.settings || {};
+    const flags = state.settings.flags || {};
+    dom.settingsForm.elements['disable_email_capture'].checked = Boolean(flags.disable_email_capture);
+    dom.settingsForm.elements['disable_affiliate_redirect'].checked = Boolean(flags.disable_affiliate_redirect);
+    dom.settingsForm.elements['banner_message'].value = state.settings.banner_message || flags.banner_message || '';
+  } catch (err) {
+    console.error('settings fetch failed', err.message);
+    if (!silent) handleRequestError('Settings laden', err);
+  }
+}
+
+async function fetchPublicConfig({ silent = false } = {}) {
+  try {
+    const data = await request(API.publicConfig);
+    dom.publicConfig.textContent = JSON.stringify(data, null, 2);
+  } catch (err) {
+    console.error('public config failed', err.message);
+    if (!silent) handleRequestError('Public Config', err);
+  }
+}
+
+function toggleLiveMode() {
+  state.quickLive = !state.quickLive;
+  state.live.paused = !state.quickLive;
+  localStorage.setItem(LIVE_MODE_STORAGE_KEY, state.quickLive ? 'on' : 'off');
+  dom.toggleLiveMode.textContent = `Live Mode: ${state.quickLive ? 'ON' : 'OFF'}`;
+  showToast(`Live Mode ${state.quickLive ? 'aktiviert' : 'pausiert'}`);
+}
+
+
+function persistOptimizerHistory(entries) {
+  try {
+    localStorage.setItem('admin_optimizer_history', JSON.stringify(entries));
+  } catch (err) {
+    console.error('optimizer history persist failed', err.message);
+  }
+}
+
+function readOptimizerHistory() {
+  try {
+    const raw = localStorage.getItem('admin_optimizer_history');
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch (err) {
+    return [];
+  }
+}
+
+async function runOptimizer() {
+  if (dom.optimizerRun) dom.optimizerRun.disabled = true;
+  showToast('Optimizer läuft...');
+  try {
+    const data = await request(API.optimizer, { method: 'POST' });
+    const actions = data.actions || [];
+    state.optimizerHistory = actions;
+    persistOptimizerHistory(actions);
+    renderOptimizerLog(actions);
+    showToast(`Optimizer: ${actions.length} Aktionen`);
+  } catch (err) {
+    handleRequestError('Optimizer Fehler', err);
+  } finally {
+    if (dom.optimizerRun) dom.optimizerRun.disabled = false;
+  }
+}
+
+function refreshOptimizerLog() {
+  state.optimizerHistory = readOptimizerHistory();
+  renderOptimizerLog(state.optimizerHistory);
+  showToast('Optimizer Historie geladen');
+}
+
+async function triggerQuickSeed() {
+  const payload = {
+    clicks: 25,
+    includeEmails: true,
+    includeEvents: true,
+    platformMix: 'balanced'
+  };
+  try {
+    showToast('Seed wird ausgeführt...');
+    await request(API.seed, { method: 'POST', body: JSON.stringify(payload) });
+    showToast('Seed erstellt');
+    loadStats({ silent: true });
+    loadLiveEvents({ silent: true });
+  } catch (err) {
+    handleRequestError('Seed fehlgeschlagen', err);
+  }
+}
+
+async function runRefreshAll() {
+  showToast('Aktualisierung gestartet');
+  try {
+    await Promise.all([
+      loadStats({ silent: true }),
+      loadLiveEvents({ silent: true }),
+      loadFunnels({ silent: true }),
+      loadUtm('7d', { silent: true }),
+      loadDevices({ silent: true }),
+      fetchDeals({ silent: true }),
+      fetchSpotlight({ silent: true }),
+      fetchSettings({ silent: true }),
+      fetchPublicConfig({ silent: true })
+    ]);
+    showToast('Daten aktualisiert');
+  } catch (err) {
+    handleRequestError('Refresh fehlgeschlagen', err);
+  }
+}
+
+async function exportLiveCsv() {
+  try {
+    showToast('Export wird vorbereitet...');
+    const data = await request(`${API.events}?limit=500`);
+    const rows = data.events || [];
+    if (!rows.length) throw new Error('Keine Events verfügbar');
+    const header = ['timestamp', 'type', 'slug', 'path', 'platform', 'session', 'country'];
+    const csv = [header.join(',')]
+      .concat(rows.map(evt => header.map(key => JSON.stringify(evt[key] || evt[key === 'timestamp' ? 'created_at' : key] || '')).join(',')))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `live-events-${Date.now()}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    showToast('CSV Export gestartet');
+  } catch (err) {
+    handleRequestError('CSV Export', err);
+  }
+}
+
+function applyGlobalSearch() {
+  const term = (dom.globalSearch.value || '').trim();
+  if (!term) return;
+  switchTab('live');
+  state.live.session = term;
+  loadLiveEvents();
+}
+
+function attachEvents() {
+  dom.livePause?.addEventListener('click', () => {
+    state.live.paused = !state.live.paused;
+    dom.livePause.textContent = state.live.paused ? 'Resume' : 'Pause';
+  });
+  dom.liveFilters?.addEventListener('click', (event) => {
+    const btn = event.target.closest('button');
+    if (!btn) return;
+    Array.from(dom.liveFilters.children).forEach(child => child.classList.toggle('active', child === btn));
+    state.live.filter = btn.dataset.filter;
+    loadLiveEvents();
+  });
+  dom.sessionApply?.addEventListener('click', () => {
+    state.live.session = dom.sessionInput.value.trim();
+    loadLiveEvents();
+  });
+  dom.funnelWindow?.addEventListener('change', (event) => {
+    state.funnelWindow = event.target.value;
+    loadFunnels();
+  });
+  dom.funnelRefresh?.addEventListener('click', loadFunnels);
+  dom.spotlightForm?.addEventListener('submit', submitDeal);
+  dom.spotlightFetch?.addEventListener('click', fetchSpotlight);
+  dom.spotlightReset?.addEventListener('click', () => {
+    dom.spotlightForm.reset();
+    state.currentDealId = null;
+  });
+  dom.dealsTable?.addEventListener('click', (event) => {
+    const btn = event.target.closest('button[data-action]');
+    if (!btn) return;
+    const id = btn.closest('.table-row')?.dataset.id;
+    if (!id) return;
+    dealAction(id, btn.dataset.action);
+  });
+  dom.dealsTable?.addEventListener('change', handleDealInlineChange);
+  dom.dealFilterApply?.addEventListener('click', applyDealFilters);
+  dom.dealSortField?.addEventListener('change', () => {
+    state.dealSort.field = dom.dealSortField.value;
+    fetchDeals();
+  });
+  dom.quickSeed?.addEventListener('click', triggerQuickSeed);
+  dom.seedForm?.addEventListener('submit', runSeedGenerator);
+  dom.settingsForm?.addEventListener('submit', submitSettings);
+  dom.quickRefresh?.addEventListener('click', runRefreshAll);
+  dom.quickExport?.addEventListener('click', exportLiveCsv);
+  dom.toggleLiveMode?.addEventListener('click', toggleLiveMode);
+  dom.optimizerRun?.addEventListener('click', runOptimizer);
+  dom.optimizerRefresh?.addEventListener('click', refreshOptimizerLog);
+  dom.campaignForm?.addEventListener('submit', submitCampaign);
+  dom.campaignTest?.addEventListener('click', sendCampaignTest);
+  dom.campaignLogRefresh?.addEventListener('click', () => loadCampaignLog());
+  dom.campaignPreviewRefresh?.addEventListener('click', () => renderCampaignPreview(dom.campaignForm?.elements.html?.value));
+  dom.campaignReset?.addEventListener('click', () => dom.campaignForm?.reset());
+  dom.subscriberStatus?.addEventListener('change', () => {
+    state.subscriberFilters.status = dom.subscriberStatus.value;
+    loadSubscribers();
+  });
+  dom.subscriberSearch?.addEventListener('input', (event) => {
+    state.subscriberFilters.search = event.target.value.trim();
+    loadSubscribers({ silent: true });
+  });
+  dom.subscriberRefresh?.addEventListener('click', () => loadSubscribers());
+  dom.subscriberExport?.addEventListener('click', exportSubscribers);
+  dom.globalSearch?.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') applyGlobalSearch();
+  });
+  dom.searchTrigger?.addEventListener('click', applyGlobalSearch);
+  dom.emailRefresh?.addEventListener('click', loadStats);
+  dom.emailsRefresh?.addEventListener('click', loadStats);
+  dom.emailExport?.addEventListener('click', exportEmailsCsv);
+  dom.emailsCopy?.addEventListener('click', copyEmailList);
+  dom.settingsRefresh?.addEventListener('click', fetchSettings);
+}
+
+function startIntervals() {
+  loadStats({ silent: true });
+  loadHealth();
+  loadLiveEvents({ silent: true });
+  loadFunnels({ silent: true });
+  loadUtm('7d', { silent: true });
+  loadDevices({ silent: true });
+  fetchSpotlight({ silent: true });
+  fetchDeals({ silent: true });
+  fetchSettings({ silent: true });
+  fetchPublicConfig({ silent: true });
+  loadSubscribers({ silent: true });
+
+  setInterval(() => loadStats({ silent: true }), STATS_INTERVAL);
+  setInterval(loadHealth, HEALTH_INTERVAL);
+  setInterval(() => loadFunnels({ silent: true }), 60000);
+  setInterval(() => loadUtm('7d', { silent: true }), 45000);
+  setInterval(() => loadDevices({ silent: true }), 45000);
+  state.live.interval = setInterval(() => loadLiveEvents({ silent: true }), LIVE_INTERVAL);
+}
+
+function init() {
+  attachEvents();
+  if (dom.apiBaseDisplay) {
+    dom.apiBaseDisplay.textContent = API_BASE;
+  }
+  const storedLiveMode = localStorage.getItem(LIVE_MODE_STORAGE_KEY);
+  if (storedLiveMode === 'off') {
+    state.quickLive = false;
+    state.live.paused = true;
+    dom.toggleLiveMode.textContent = 'Live Mode: OFF';
+  }
+  state.optimizerHistory = readOptimizerHistory();
+  renderOptimizerLog(state.optimizerHistory);
+  loadCampaignLog({ silent: true });
+  renderCampaignPreview(dom.campaignForm?.elements.html?.value || '');
+  startIntervals();
+}
+
+init();

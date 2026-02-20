@@ -1,0 +1,3 @@
+- Discovery complete; docs/IMPLEMENTATION.md summarizes current/target state.
+- Proceeding to Supabase schema & security (Phase 1).
+- next: implement supabase/newsletter.sql + apply policies.

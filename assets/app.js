@@ -315,17 +315,30 @@ emailForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
   const formData = new FormData(emailForm);
   const email = formData.get('email');
+  const submitBtn = emailForm.querySelector('button[type="submit"]');
+  const utmParams = Object.fromEntries(new URLSearchParams(window.location.search));
+  if (submitBtn) submitBtn.disabled = true;
   try {
-    const res = await fetch('/.netlify/functions/subscribe', {
+    const res = await fetch('/.netlify/functions/newsletter_signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
+      body: JSON.stringify({
+        email,
+        source: 'popup',
+        page: window.location.pathname,
+        utm: utmParams,
+        consent: true
+      })
     });
-    if (!res.ok) throw new Error('Failed');
-    emailForm.innerHTML = '<p class="success">Danke! Deals landen im Postfach.</p>';
-    setTimeout(() => popup?.classList.remove('visible'), 2000);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed');
+    const status = data.status || 'inserted';
+    const copy = status === 'exists' ? '✅ Du bist schon eingetragen.' : '✅ Danke! Check dein Postfach.';
+    emailForm.innerHTML = `<p class="success">${copy}</p>`;
+    setTimeout(() => popup?.classList.remove('visible'), 2500);
   } catch (err) {
-    alert('Speichern fehlgeschlagen. Bitte später erneut versuchen.');
+    alert(err.message === 'invalid_email' ? 'Bitte eine gültige E-Mail eingeben.' : 'Signup fehlgeschlagen. Bitte später erneut versuchen.');
+    if (submitBtn) submitBtn.disabled = false;
   }
 });
 

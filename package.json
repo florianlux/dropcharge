@@ -1,10 +1,12 @@
 {
   "name": "price-compare-site",
   "version": "1.0.0",
-  "description": "Schneller Affiliate-Onepager (Preisvergleich / Deals) – optimiert für Social Traffic.",
+  "description": "Schneller Affiliate-Onepager (Preisvergleich / Deals) \u2013 optimiert f\u00fcr Social Traffic.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "echo 'Static bundle \u2013 no build step'",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:e2e": "playwright test"
   },
   "keywords": [],
   "author": "",
@@ -16,6 +18,7 @@
     "geoip-lite": "^1.4.10"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "netlify": "^23.15.1"
   }
 }

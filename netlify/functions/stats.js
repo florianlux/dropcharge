@@ -1,5 +1,6 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
+const { withCors } = require('./_lib/cors');
 
 function parseIso(dateString) {
   return new Date(dateString).getTime();
@@ -9,7 +10,7 @@ function basePlatformCounts() {
   return { PSN: 0, Xbox: 0, Nintendo: 0, Other: 0 };
 }
 
-exports.handler = async function(event) {
+async function handler(event) {
   const authError = requireAdmin(event.headers || {});
   if (authError) return authError;
 
@@ -31,13 +32,27 @@ exports.handler = async function(event) {
       .limit(500);
     if (clickErr) throw clickErr;
 
-    const { data: emailRows = [], error: emailErr } = await supabase
+    let emailRows = [];
+    let emailErr;
+    ({ data: emailRows = [], error: emailErr } = await supabase
       .from('emails')
-      .select('id, created_at')
+      .select('id, email, confirmed, created_at, source')
       .gte('created_at', since24h)
       .order('created_at', { ascending: false })
-      .limit(500);
+      .limit(200));
+    if (emailErr && (emailErr.message || '').toLowerCase().includes('confirmed')) {
+      ({ data: emailRows = [], error: emailErr } = await supabase
+        .from('emails')
+        .select('id, email, created_at, source')
+        .gte('created_at', since24h)
+        .order('created_at', { ascending: false })
+        .limit(200));
+    }
     if (emailErr) throw emailErr;
+    emailRows = (emailRows || []).map(row => ({
+      ...row,
+      confirmed: Boolean(row.confirmed)
+    }));
 
     const clicks24h = clickRows.filter(row => row.created_at >= since24h);
     const clicks30m = clickRows.filter(row => row.created_at >= since30m);
@@ -90,7 +105,8 @@ exports.handler = async function(event) {
           topAmounts,
           emails24h,
           conversion24h: Number(conversion.toFixed(1)),
-          feed
+          feed,
+          emailRows
         }
       })
     };
@@ -103,3 +119,5 @@ exports.handler = async function(event) {
     };
   }
 };
+
+exports.handler = withCors(handler);

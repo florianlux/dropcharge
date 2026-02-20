@@ -1,0 +1,36 @@
+const DEFAULT_ORIGINS = (process.env.ADMIN_ALLOWED_ORIGINS || 'https://dropchargeadmin.netlify.app,https://dropcharge.netlify.app,http://localhost:8888')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean);
+
+function pickOrigin(event) {
+  const requestOrigin = event?.headers?.origin;
+  if (requestOrigin && DEFAULT_ORIGINS.includes(requestOrigin)) {
+    return requestOrigin;
+  }
+  return DEFAULT_ORIGINS[0] || requestOrigin || '*';
+}
+
+function corsHeaders(origin, extra = {}) {
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Headers': 'content-type,x-admin-token',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
+    'Access-Control-Allow-Credentials': 'true',
+    ...extra
+  };
+}
+
+function withCors(handler) {
+  return async function corsWrapper(event, context) {
+    const origin = pickOrigin(event);
+    if (event.httpMethod === 'OPTIONS') {
+      return { statusCode: 200, headers: corsHeaders(origin), body: '' };
+    }
+    const response = await handler(event, context);
+    const nextHeaders = corsHeaders(origin, response?.headers || {});
+    return { ...response, headers: nextHeaders };
+  };
+}
+
+module.exports = { withCors };

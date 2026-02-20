@@ -1,4 +1,5 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
+const { withCors } = require('./_lib/cors');
 const labelMap = {
   'psn-10': 'PSN 10€',
   'psn-20': 'PSN 20€',
@@ -21,7 +22,7 @@ function formatResponse(count, topSlug) {
   };
 }
 
-exports.handler = async function() {
+async function handler() {
   const now = new Date();
   const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000).toISOString();
   const startOfDay = new Date(now);
@@ -59,3 +60,5 @@ exports.handler = async function() {
 
   return { statusCode: 500, body: 'Storage not configured' };
 };
+
+exports.handler = withCors(handler);
