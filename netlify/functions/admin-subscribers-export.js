@@ -24,7 +24,7 @@ exports.handler = async function handler(event) {
 
   try {
     let query = supabase
-      .from('newsletter_subscribers')
+      .from('newsletter_signups')
       .select('email, status, created_at, last_sent_at, source')
       .order('created_at', { ascending: false });
     if (status) query = query.eq('status', status);

@@ -18,7 +18,7 @@ async function handler(event) {
 
   try {
     let query = supabase
-      .from('newsletter_subscribers')
+      .from('newsletter_signups')
       .select('id, email, status, created_at, unsubscribed_at, source, last_sent_at', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);

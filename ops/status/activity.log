@@ -10,3 +10,7 @@
 2026-02-20T18:55:27Z diagnose github/netlify access
 2026-02-20T19:17:05Z netlify deploy attempted (needs auth)
 2026-02-20T19:28:15Z netlify deploy success (new token)
+2026-02-20T19:32:11Z landing changes pushed
+2026-02-20T19:33:20Z deploy dropchargeadmin -> dropcharge.io
+2026-02-20T19:39:17Z root cause: api 500 due to missing newsletter_subscribers table/policy
+2026-02-20T19:42:27Z newsletter signup fix implemented

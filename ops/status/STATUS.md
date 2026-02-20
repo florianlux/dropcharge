@@ -1,3 +1,3 @@
-- Netlify deploy via new token succeeded (dropchargeadmin).
-- State back to in_progress (continue Phase 3 work).
-- Latest deploy URL: https://6998b5b95dd465197f8146a9--dropchargeadmin.netlify.app
+- Newsletter signup now posts to netlify function -> newsletter_signups table.
+- SQL migration supabase/newsletter_signups.sql added.
+- npm run build ok; ready for deploy.

@@ -325,6 +325,7 @@ emailForm?.addEventListener('submit', async (event) => {
       body: JSON.stringify({
         email,
         source: 'popup',
+        page: window.location.pathname,
         utm: utmParams,
         consent: true
       })

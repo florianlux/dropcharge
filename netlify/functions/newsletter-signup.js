@@ -37,34 +37,54 @@ async function handler(event) {
     return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'invalid_email' }) };
   }
 
-  const source = (payload.source || 'landing').slice(0, 64);
+  const source = (payload.source || 'popup').slice(0, 64);
+  const page = (payload.page || '/').slice(0, 160);
+  const userAgent = (event.headers['user-agent'] || event.headers['User-Agent'] || '').slice(0, 255);
   const utms = normalizeUtm(payload.utm || {});
   const meta = {
     consent: Boolean(payload.consent),
     context: payload.meta?.context || null,
   };
 
-  const record = {
-    email,
-    status: 'active',
-    source,
-    ...utms,
-    unsubscribed_at: null,
-    last_sent_at: null,
-    meta
-  };
-
   try {
-    const { error } = await supabase
-      .from('newsletter_subscribers')
-      .upsert(record, { onConflict: 'email', ignoreDuplicates: false });
+    const { data: existing, error: selectErr } = await supabase
+      .from('newsletter_signups')
+      .select('id, status')
+      .eq('email', email)
+      .maybeSingle();
 
-    if (error) {
-      if ((error.message || '').includes('duplicate')) {
-        return { statusCode: 200, body: JSON.stringify({ ok: true, duplicate: true }) };
-      }
-      throw error;
+    if (selectErr && selectErr.code !== 'PGRST116') throw selectErr;
+
+    if (existing) {
+      await supabase
+        .from('newsletter_signups')
+        .update({
+          status: 'active',
+          unsubscribed_at: null,
+          source,
+          page,
+          user_agent: userAgent,
+          meta
+        })
+        .eq('id', existing.id);
+      return { statusCode: 200, body: JSON.stringify({ ok: true, duplicate: true }) };
     }
+
+    const insertPayload = {
+      email,
+      status: 'active',
+      source,
+      page,
+      user_agent: userAgent,
+      meta,
+      ...utms
+    };
+
+    const { error: insertErr } = await supabase
+      .from('newsletter_signups')
+      .insert(insertPayload);
+
+    if (insertErr) throw insertErr;
 
     return { statusCode: 200, body: JSON.stringify({ ok: true }) };
   } catch (err) {
