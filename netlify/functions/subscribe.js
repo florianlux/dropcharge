@@ -1,3 +1,26 @@
+async function insertEmailRecord({ email, confirmed, source, meta }) {
+  const basePayload = { email, created_at: new Date().toISOString() };
+  if (typeof confirmed === 'boolean') basePayload.confirmed = confirmed;
+  if (source) basePayload.source = source;
+  if (meta && typeof meta === 'object') basePayload.meta = meta;
+
+  const fallbackFields = ['confirmed', 'source', 'meta'];
+  let payload = { ...basePayload };
+
+  while (true) {
+    const { error } = await supabase.from('emails').insert(payload);
+    if (!error) return;
+    const message = (error.message || '').toLowerCase();
+    const missingField = fallbackFields.find(field => message.includes(field));
+    if (missingField && payload[missingField] !== undefined) {
+      console.log(`emails table missing ${missingField} column, retrying without it`);
+      delete payload[missingField];
+      continue;
+    }
+    throw error;
+  }
+}
+
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { fetchSettings, extractFlags } = require('./_lib/settings');
 const { withCors } = require('./_lib/cors');
@@ -14,22 +37,6 @@ async function getFlags() {
     console.log('settings fetch (subscribe) failed', err.message);
     return extractFlags();
   }
-}
-
-async function insertEmailRecord(email, confirmed) {
-  const basePayload = { email, created_at: new Date().toISOString() };
-  const payload = { ...basePayload, confirmed };
-  const { error } = await supabase.from('emails').insert(payload);
-  if (error) {
-    if ((error.message || '').toLowerCase().includes('confirmed')) {
-      console.log('emails table missing confirmed column, retrying without it');
-      const retry = await supabase.from('emails').insert(basePayload);
-      if (retry.error) throw retry.error;
-      return { fallback: true };
-    }
-    throw error;
-  }
-  return { fallback: false };
 }
 
 async function handler(event) {
@@ -62,7 +69,7 @@ async function handler(event) {
     return { statusCode: 500, body: JSON.stringify({ ok: false, error: 'supabase_not_configured' }) };
   }
 
-  const confirmed = process.env.ENABLE_DOUBLE_OPT_IN ? false : true;
+  const confirmed = false;
 
   try {
     const { data: existing, error: selectErr } = await supabase
@@ -75,13 +82,16 @@ async function handler(event) {
 
     if (existing) {
       return {
-        statusCode: 200,
+        statusCode: 409,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ok: true, duplicate: true })
+        body: JSON.stringify({ ok: false, error: 'already_exists' })
       };
     }
 
-    await insertEmailRecord(email, confirmed);
+    const source = typeof payload.source === 'string' ? payload.source.slice(0, 64) : 'landing_page';
+    const meta = payload.meta && typeof payload.meta === 'object' && !Array.isArray(payload.meta) ? payload.meta : undefined;
+
+    await insertEmailRecord({ email, confirmed, source, meta });
 
     return {
       statusCode: 200,

@@ -24,12 +24,19 @@ create index if not exists clicks_platform_idx on public.clicks (platform);
 
 create table if not exists public.emails (
   id uuid primary key default gen_random_uuid(),
-  created_at timestamptz default now(),
   email text not null,
-  confirmed boolean default true
+  confirmed boolean default false,
+  created_at timestamptz default now(),
+  source text,
+  meta jsonb default '{}'::jsonb
 );
 
 create unique index if not exists emails_lower_unique on public.emails ((lower(email)));
+
+alter table if exists public.emails
+  add column if not exists confirmed boolean default false,
+  add column if not exists source text,
+  add column if not exists meta jsonb default '{}'::jsonb;
 
 create table if not exists public.events (
   id uuid primary key default gen_random_uuid(),

@@ -32,13 +32,27 @@ async function handler(event) {
       .limit(500);
     if (clickErr) throw clickErr;
 
-    const { data: emailRows = [], error: emailErr } = await supabase
+    let emailRows = [];
+    let emailErr;
+    ({ data: emailRows = [], error: emailErr } = await supabase
       .from('emails')
-      .select('id, email, confirmed, created_at')
+      .select('id, email, confirmed, created_at, source')
       .gte('created_at', since24h)
       .order('created_at', { ascending: false })
-      .limit(200);
+      .limit(200));
+    if (emailErr && (emailErr.message || '').toLowerCase().includes('confirmed')) {
+      ({ data: emailRows = [], error: emailErr } = await supabase
+        .from('emails')
+        .select('id, email, created_at, source')
+        .gte('created_at', since24h)
+        .order('created_at', { ascending: false })
+        .limit(200));
+    }
     if (emailErr) throw emailErr;
+    emailRows = (emailRows || []).map(row => ({
+      ...row,
+      confirmed: Boolean(row.confirmed)
+    }));
 
     const clicks24h = clickRows.filter(row => row.created_at >= since24h);
     const clicks30m = clickRows.filter(row => row.created_at >= since30m);
