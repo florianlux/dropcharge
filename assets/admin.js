@@ -13,12 +13,14 @@ const API = {
   seed: `${API_BASE}/.netlify/functions/admin-seed`,
   spotlight: `${API_BASE}/.netlify/functions/spotlight`,
   deals: `${API_BASE}/.netlify/functions/deals-admin`,
+  optimizer: `${API_BASE}/.netlify/functions/optimize-deals`,
   settings: `${API_BASE}/.netlify/functions/settings`,
   publicConfig: `${API_BASE}/.netlify/functions/public-config`,
   factory: `${API_BASE}/.netlify/functions/affiliate-factory`
 };
 
 const TOKEN_STORAGE_KEY = 'admin_token';
+const LIVE_MODE_STORAGE_KEY = 'admin_live_mode';
 const STATS_INTERVAL = 15000;
 const HEALTH_INTERVAL = 20000;
 const LIVE_INTERVAL = 4000;
@@ -39,6 +41,7 @@ const state = {
   settings: {},
   deals: [],
   dealSummary: {},
+  optimizerHistory: [],
   currentDealId: null,
   quickLive: true,
   emailRows: [],
@@ -80,6 +83,7 @@ const dom = {
   quickToggle: document.getElementById('toggle-live'),
   quickRefresh: document.getElementById('refresh-all'),
   quickExport: document.getElementById('export-csv'),
+  quickSeed: document.getElementById('seed-data'),
   globalSearch: document.getElementById('global-search'),
   searchTrigger: document.getElementById('search-trigger'),
   spotlightPreview: document.getElementById('spotlight-preview'),
@@ -97,6 +101,9 @@ const dom = {
   dealFilterApply: document.getElementById('deals-filter-apply'),
   factoryForm: document.getElementById('factory-form'),
   factoryResult: document.getElementById('factory-result'),
+  optimizerRun: document.getElementById('optimizer-run'),
+  optimizerRefresh: document.getElementById('optimizer-refresh'),
+  optimizerLog: document.getElementById('optimizer-log'),
   emailLeadsTable: document.getElementById('email-leads-table'),
   leadStats: document.getElementById('lead-stats'),
   seedQuick: document.getElementById('seed-data'),
@@ -577,6 +584,36 @@ function renderDeals() {
   });
 }
 
+
+function renderOptimizerLog(entries = []) {
+  if (!dom.optimizerLog) return;
+  if (!entries.length) {
+    dom.optimizerLog.innerHTML = '<p class="empty">Noch keine Optimizer-Runs protokolliert.</p>';
+    return;
+  }
+  dom.optimizerLog.innerHTML = entries
+    .map(entry => {
+      const details = entry.ctr !== undefined
+        ? `CTR ${entry.ctr}%`
+        : entry.clicks !== undefined
+        ? `${entry.clicks} Klicks`
+        : '';
+      return `
+        <div class="optimizer-entry ${entry.action}">
+          <div>
+            <div class="action">${entry.action}</div>
+            <div class="meta">${entry.slug || '—'} · ${entry.title || ''}</div>
+          </div>
+          <div>
+            <div>${details}</div>
+            ${entry.to !== undefined ? `<div>Priority ${entry.from || 0} → ${entry.to}</div>` : ''}
+            ${entry.clicks ? `<div>${entry.clicks} Klicks</div>` : ''}
+          </div>
+        </div>`;
+    })
+    .join('');
+}
+
 function renderDealAnalytics() {
   if (!dom.dealAnalytics) return;
   const summary = state.dealSummary || {};
@@ -792,18 +829,114 @@ async function fetchPublicConfig({ silent = false } = {}) {
 function toggleLiveMode() {
   state.quickLive = !state.quickLive;
   state.live.paused = !state.quickLive;
+  localStorage.setItem(LIVE_MODE_STORAGE_KEY, state.quickLive ? 'on' : 'off');
   dom.toggleLiveMode.textContent = `Live Mode: ${state.quickLive ? 'ON' : 'OFF'}`;
+  showToast(`Live Mode ${state.quickLive ? 'aktiviert' : 'pausiert'}`);
 }
 
-function exportLiveCsv() {
-  const rows = state.live.events;
-  if (!rows.length) {
-    showToast('Keine Events zum Export', 'error');
-    return;
+
+function persistOptimizerHistory(entries) {
+  try {
+    localStorage.setItem('admin_optimizer_history', JSON.stringify(entries));
+  } catch (err) {
+    console.error('optimizer history persist failed', err.message);
   }
-  const header = ['timestamp', 'type', 'slug', 'path', 'platform', 'session', 'country'];
-  const csv = [header.join(',')].concat(rows.map(evt => header.map(key => JSON.stringify(evt[key] || evt[ key === 'timestamp' ? 'created_at' : key ] || '')).join(','))).join('\n');
-  navigator.clipboard.writeText(csv).then(() => showToast('CSV kopiert')).catch(() => showToast('Clipboard blockiert', 'error'));
+}
+
+function readOptimizerHistory() {
+  try {
+    const raw = localStorage.getItem('admin_optimizer_history');
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch (err) {
+    return [];
+  }
+}
+
+async function runOptimizer() {
+  if (dom.optimizerRun) dom.optimizerRun.disabled = true;
+  showToast('Optimizer läuft...');
+  try {
+    const data = await request(API.optimizer, { method: 'POST' });
+    const actions = data.actions || [];
+    state.optimizerHistory = actions;
+    persistOptimizerHistory(actions);
+    renderOptimizerLog(actions);
+    showToast(`Optimizer: ${actions.length} Aktionen`);
+  } catch (err) {
+    handleRequestError('Optimizer Fehler', err);
+  } finally {
+    if (dom.optimizerRun) dom.optimizerRun.disabled = false;
+  }
+}
+
+function refreshOptimizerLog() {
+  state.optimizerHistory = readOptimizerHistory();
+  renderOptimizerLog(state.optimizerHistory);
+  showToast('Optimizer Historie geladen');
+}
+
+async function triggerQuickSeed() {
+  const payload = {
+    clicks: 25,
+    includeEmails: true,
+    includeEvents: true,
+    platformMix: 'balanced'
+  };
+  try {
+    showToast('Seed wird ausgeführt...');
+    await request(API.seed, { method: 'POST', body: JSON.stringify(payload) });
+    showToast('Seed erstellt');
+    loadStats({ silent: true });
+    loadLiveEvents({ silent: true });
+  } catch (err) {
+    handleRequestError('Seed fehlgeschlagen', err);
+  }
+}
+
+async function runRefreshAll() {
+  showToast('Aktualisierung gestartet');
+  try {
+    await Promise.all([
+      loadStats({ silent: true }),
+      loadLiveEvents({ silent: true }),
+      loadFunnels({ silent: true }),
+      loadUtm('7d', { silent: true }),
+      loadDevices({ silent: true }),
+      fetchDeals({ silent: true }),
+      fetchSpotlight({ silent: true }),
+      fetchSettings({ silent: true }),
+      fetchPublicConfig({ silent: true })
+    ]);
+    showToast('Daten aktualisiert');
+  } catch (err) {
+    handleRequestError('Refresh fehlgeschlagen', err);
+  }
+}
+
+async function exportLiveCsv() {
+  try {
+    showToast('Export wird vorbereitet...');
+    const data = await request(`${API.events}?limit=500`);
+    const rows = data.events || [];
+    if (!rows.length) throw new Error('Keine Events verfügbar');
+    const header = ['timestamp', 'type', 'slug', 'path', 'platform', 'session', 'country'];
+    const csv = [header.join(',')]
+      .concat(rows.map(evt => header.map(key => JSON.stringify(evt[key] || evt[key === 'timestamp' ? 'created_at' : key] || '')).join(',')))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `live-events-${Date.now()}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    showToast('CSV Export gestartet');
+  } catch (err) {
+    handleRequestError('CSV Export', err);
+  }
 }
 
 function applyGlobalSearch() {
@@ -854,23 +987,14 @@ function attachEvents() {
     state.dealSort.field = dom.dealSortField.value;
     fetchDeals();
   });
-  dom.seedQuick?.addEventListener('click', () => {
-    switchTab('email');
-    dom.seedForm?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  });
+  dom.quickSeed?.addEventListener('click', triggerQuickSeed);
   dom.seedForm?.addEventListener('submit', runSeedGenerator);
   dom.settingsForm?.addEventListener('submit', submitSettings);
-  dom.quickRefresh?.addEventListener('click', () => {
-    showToast('Aktualisierung gestartet');
-    loadStats();
-    loadLiveEvents();
-    loadFunnels();
-    loadUtm();
-    loadDevices();
-    fetchDeals();
-  });
+  dom.quickRefresh?.addEventListener('click', runRefreshAll);
   dom.quickExport?.addEventListener('click', exportLiveCsv);
   dom.toggleLiveMode?.addEventListener('click', toggleLiveMode);
+  dom.optimizerRun?.addEventListener('click', runOptimizer);
+  dom.optimizerRefresh?.addEventListener('click', refreshOptimizerLog);
   dom.globalSearch?.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') applyGlobalSearch();
   });
@@ -907,6 +1031,14 @@ function init() {
   if (dom.apiBaseDisplay) {
     dom.apiBaseDisplay.textContent = API_BASE;
   }
+  const storedLiveMode = localStorage.getItem(LIVE_MODE_STORAGE_KEY);
+  if (storedLiveMode === 'off') {
+    state.quickLive = false;
+    state.live.paused = true;
+    dom.toggleLiveMode.textContent = 'Live Mode: OFF';
+  }
+  state.optimizerHistory = readOptimizerHistory();
+  renderOptimizerLog(state.optimizerHistory);
   startIntervals();
 }
 

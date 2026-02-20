@@ -473,6 +473,36 @@ textarea { resize: vertical; }
   border-color: rgba(241,91,91,0.8);
   background: rgba(241,91,91,0.1);
 }
+.optimizer-log {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.optimizer-entry {
+  padding: 0.8rem 1rem;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.05);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.optimizer-entry .meta {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.optimizer-entry .action {
+  font-weight: 600;
+  text-transform: uppercase;
+}
+.optimizer-entry.boost .action {
+  color: #5ad7ff;
+}
+.optimizer-entry.deactivate .action {
+  color: #ff6f6f;
+}
 
 @media (max-width: 960px) {
   .admin-shell { grid-template-columns: 1fr; }
