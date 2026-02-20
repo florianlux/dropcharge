@@ -1,7 +1,7 @@
 {
   "state": "in_progress",
-  "updatedAt": "2026-02-20T19:42:39.019974Z",
+  "updatedAt": "2026-02-20T20:49:14.756043Z",
   "notes": [
-    "Newsletter signup via netlify function + table fix"
+    "Discovery documented in docs/IMPLEMENTATION.md"
   ]
 }

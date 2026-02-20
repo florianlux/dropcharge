@@ -2,8 +2,8 @@ const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
 
 function toCsv(rows) {
-  if (!rows.length) return 'email,status,created_at,last_sent_at,source';
-  const header = ['email', 'status', 'created_at', 'last_sent_at', 'source'];
+  const header = ['email', 'status', 'source', 'page', 'created_at', 'confirmed_at', 'unsubscribed_at'];
+  if (!rows.length) return header.join(',');
   const lines = [header.join(',')];
   rows.forEach((row) => {
     lines.push(header.map((key) => JSON.stringify(row[key] ?? '')).join(','));
@@ -21,13 +21,15 @@ exports.handler = async function handler(event) {
 
   const params = event.queryStringParameters || {};
   const status = params.status && params.status !== 'all' ? params.status : null;
+  const search = (params.search || '').trim();
 
   try {
     let query = supabase
-      .from('newsletter_signups')
-      .select('email, status, created_at, last_sent_at, source')
+      .from('newsletter_leads')
+      .select('email,status,source,page,created_at,confirmed_at,unsubscribed_at')
       .order('created_at', { ascending: false });
     if (status) query = query.eq('status', status);
+    if (search) query = query.ilike('email', `%${search}%`);
 
     const { data, error } = await query;
     if (error) throw error;
@@ -37,12 +39,12 @@ exports.handler = async function handler(event) {
       statusCode: 200,
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': 'attachment; filename="newsletter-subscribers.csv"'
+        'Content-Disposition': 'attachment; filename="newsletter-leads.csv"'
       },
       body: csv
     };
   } catch (err) {
-    console.log('subscribers export error', err.message);
+    console.log('admin export leads error', err.message);
     return { statusCode: 500, body: 'export_failed' };
   }
 };

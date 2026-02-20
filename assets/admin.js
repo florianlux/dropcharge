@@ -17,13 +17,14 @@ const API = {
   settings: `${API_BASE}/.netlify/functions/settings`,
   publicConfig: `${API_BASE}/.netlify/functions/public-config`,
   factory: `${API_BASE}/.netlify/functions/affiliate-factory`,
-  subscribers: `${API_BASE}/.netlify/functions/admin-subscribers`,
-  subscribersExport: `${API_BASE}/.netlify/functions/admin-subscribers-export`,
+  leads: `${API_BASE}/.netlify/functions/admin-list-leads`,
+  leadsExport: `${API_BASE}/.netlify/functions/admin-export-leads`,
   campaigns: `${API_BASE}/.netlify/functions/admin-campaigns`,
   campaignSend: `${API_BASE}/.netlify/functions/admin-campaign-send`,
   campaignCreate: `${API_BASE}/.netlify/functions/admin-campaign-create`,
   campaignCancel: `${API_BASE}/.netlify/functions/admin-campaign-cancel`,
-  campaignTick: `${API_BASE}/.netlify/functions/admin-campaign-tick`
+  campaignTick: `${API_BASE}/.netlify/functions/admin-campaign-tick`,
+  newsletterSignup: '/.netlify/functions/newsletter_signup'
 };
 
 const TOKEN_STORAGE_KEY = 'admin_token';
@@ -595,7 +596,7 @@ async function loadSubscribers({ silent = false } = {}) {
     const params = new URLSearchParams();
     params.set('status', state.subscriberFilters.status || 'active');
     if (state.subscriberFilters.search) params.set('search', state.subscriberFilters.search);
-    const data = await request(`${API.subscribers}?${params.toString()}`);
+    const data = await request(`${API.leads}?${params.toString()}`);
     state.subscribers = data.items || [];
     renderSubscribers(state.subscribers);
   } catch (err) {
@@ -633,7 +634,7 @@ async function exportSubscribers() {
   try {
     const params = new URLSearchParams();
     params.set('status', state.subscriberFilters.status || 'active');
-    const res = await fetch(`${API.subscribersExport}?${params.toString()}`, {
+    const res = await fetch(`${API.leadsExport}?${params.toString()}`, {
       headers: buildHeaders()
     });
     if (!res.ok) throw new Error('export_failed');

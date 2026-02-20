@@ -1,3 +1,3 @@
-- Newsletter signup now posts to netlify function -> newsletter_signups table.
-- SQL migration supabase/newsletter_signups.sql added.
-- npm run build ok; ready for deploy.
+- Discovery complete; docs/IMPLEMENTATION.md summarizes current/target state.
+- Proceeding to Supabase schema & security (Phase 1).
+- next: implement supabase/newsletter.sql + apply policies.

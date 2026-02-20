@@ -14,3 +14,6 @@
 2026-02-20T19:33:20Z deploy dropchargeadmin -> dropcharge.io
 2026-02-20T19:39:17Z root cause: api 500 due to missing newsletter_subscribers table/policy
 2026-02-20T19:42:27Z newsletter signup fix implemented
+2026-02-20T19:44:13Z deploy dropchargeadmin newsletter fix
+2026-02-20T19:50:05Z begin newsletter pipeline overhaul (phase full)
+2026-02-20T20:49:06Z docs IMPLEMENTATION.md discovery
