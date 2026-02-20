@@ -1,5 +1,6 @@
 const { requireAdmin } = require('./_lib/admin-token');
 const { fetchSettings, upsertSettings } = require('./_lib/settings');
+const { withCors } = require('./_lib/cors');
 
 async function handleGet() {
   const map = await fetchSettings();
@@ -37,7 +38,7 @@ async function handlePut(event) {
   };
 }
 
-exports.handler = async function(event) {
+async function handler(event) {
   const authError = requireAdmin(event.headers || {});
   if (authError) return authError;
 
@@ -58,3 +59,5 @@ exports.handler = async function(event) {
     };
   }
 };
+
+exports.handler = withCors(handler);

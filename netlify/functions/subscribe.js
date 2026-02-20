@@ -1,5 +1,6 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { fetchSettings, extractFlags } = require('./_lib/settings');
+const { withCors } = require('./_lib/cors');
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -15,7 +16,7 @@ async function getFlags() {
   }
 }
 
-exports.handler = async function(event) {
+async function handler(event) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
@@ -86,3 +87,5 @@ exports.handler = async function(event) {
     };
   }
 };
+
+exports.handler = withCors(handler);

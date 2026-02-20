@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { supabase, hasSupabase } = require('./_lib/supabase');
+const { withCors } = require('./_lib/cors');
 
 function readLocal() {
   const dir = path.join(__dirname, '..', '..', 'data');
@@ -30,7 +31,7 @@ function buildResponse(slug, entries) {
   };
 }
 
-exports.handler = async function(event) {
+async function handler(event) {
   const slug = (event.queryStringParameters?.slug || 'psn-20').trim();
 
   if (hasSupabase && supabase) {
@@ -51,3 +52,5 @@ exports.handler = async function(event) {
   const entries = readLocal().filter(entry => entry.slug === slug).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   return buildResponse(slug, entries);
 };
+
+exports.handler = withCors(handler);

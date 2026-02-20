@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const geoip = require('geoip-lite');
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { fetchSettings, extractFlags } = require('./_lib/settings');
+const { withCors } = require('./_lib/cors');
 
 const germanStates = {
   BW: 'Baden-Württemberg',
@@ -96,7 +97,7 @@ async function loadDynamicOffer(slug) {
   }
 }
 
-exports.handler = async function(event) {
+async function handler(event) {
   const slug = event.path.replace('/go/', '').replace(/^\//, '');
   let offer = await loadDynamicOffer(slug);
   if (!offer) {
@@ -159,3 +160,5 @@ exports.handler = async function(event) {
     body: ''
   };
 };
+
+exports.handler = withCors(handler);

@@ -1,5 +1,6 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
+const { withCors } = require('./_lib/cors');
 
 const STAGE_EVENTS = [
   { key: 'landing_view', label: 'landing_views' },
@@ -65,7 +66,7 @@ function calcConversions(counts) {
   return conversions;
 }
 
-exports.handler = async function handler(event) {
+async function handler(event) {
   const authError = requireAdmin(event.headers || {});
   if (authError) return authError;
 
@@ -128,3 +129,5 @@ exports.handler = async function handler(event) {
     };
   }
 };
+
+exports.handler = withCors(handler);

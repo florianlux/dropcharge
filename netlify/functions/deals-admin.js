@@ -1,5 +1,6 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
+const { withCors } = require('./_lib/cors');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -313,9 +314,11 @@ async function handleInlineUpdate(event) {
   }
 }
 
-exports.handler = async function(event) {
+async function handler(event) {
   const method = event.httpMethod || 'GET';
   if (method === 'GET') return handleList(event);
   if (method === 'PUT') return handleInlineUpdate(event);
   return { statusCode: 405, body: 'Method Not Allowed' };
 };
+
+exports.handler = withCors(handler);

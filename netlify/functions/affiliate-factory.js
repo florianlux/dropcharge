@@ -1,5 +1,6 @@
 const { supabase, hasSupabase } = require('./_lib/supabase')
 const { requireAdmin } = require('./_lib/admin-token')
+const { withCors } = require('./_lib/cors');
 
 const NETWORKS = {
   amazon: {
@@ -92,7 +93,7 @@ function sanitizeRecord(payload, affiliateUrl) {
   }
 }
 
-exports.handler = async function handler(event) {
+async function handler(event) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' }
   }
@@ -162,3 +163,5 @@ exports.handler = async function handler(event) {
     return { statusCode: 500, body: 'Failed to create deal' }
   }
 }
+
+exports.handler = withCors(handler);

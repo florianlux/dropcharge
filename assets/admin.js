@@ -1,16 +1,21 @@
+const API_BASE = (window.ADMIN_API_BASE
+  || document.documentElement.getAttribute('data-api-base')
+  || (window.location.origin.includes('dropchargeadmin') ? 'https://dropcharge.netlify.app' : window.location.origin)
+).replace(/\/$/, '');
+
 const API = {
-  stats: '/.netlify/functions/stats',
-  health: '/.netlify/functions/admin-health',
-  events: '/.netlify/functions/events',
-  funnel: '/.netlify/functions/funnel',
-  utm: '/.netlify/functions/utm',
-  devices: '/.netlify/functions/devices',
-  seed: '/.netlify/functions/admin-seed',
-  spotlight: '/.netlify/functions/spotlight',
-  deals: '/.netlify/functions/deals-admin',
-  settings: '/.netlify/functions/settings',
-  publicConfig: '/.netlify/functions/public-config',
-  factory: '/.netlify/functions/affiliate-factory'
+  stats: `${API_BASE}/.netlify/functions/stats`,
+  health: `${API_BASE}/.netlify/functions/admin-health`,
+  events: `${API_BASE}/.netlify/functions/events`,
+  funnel: `${API_BASE}/.netlify/functions/funnel`,
+  utm: `${API_BASE}/.netlify/functions/utm`,
+  devices: `${API_BASE}/.netlify/functions/devices`,
+  seed: `${API_BASE}/.netlify/functions/admin-seed`,
+  spotlight: `${API_BASE}/.netlify/functions/spotlight`,
+  deals: `${API_BASE}/.netlify/functions/deals-admin`,
+  settings: `${API_BASE}/.netlify/functions/settings`,
+  publicConfig: `${API_BASE}/.netlify/functions/public-config`,
+  factory: `${API_BASE}/.netlify/functions/affiliate-factory`
 };
 
 const TOKEN_STORAGE_KEY = 'admin_token';
@@ -106,6 +111,7 @@ const dom = {
   settingsRefresh: document.getElementById('settings-refresh'),
   publicConfig: document.getElementById('public-config'),
   toggleLiveMode: document.getElementById('toggle-live'),
+  apiBaseDisplay: document.getElementById('api-base-display'),
   toast: null
 };
 
@@ -142,6 +148,11 @@ function showToast(message, tone = 'success') {
   dom.toast._timer = setTimeout(() => { dom.toast.style.opacity = '0'; }, 3500);
 }
 
+function handleRequestError(context, error) {
+  const message = error?.message || 'request_failed';
+  showToast(`${context}: ${message}`, 'error');
+}
+
 function escapeAttr(value) {
   return (value ?? '').toString().replace(/"/g, '&quot;');
 }
@@ -164,21 +175,34 @@ function buildHeaders(extra = {}) {
 }
 
 async function request(path, options = {}) {
+  const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
   const config = { ...options };
   config.headers = buildHeaders({ 'Content-Type': options.body ? 'application/json' : undefined, ...options.headers });
   if (config.headers['Content-Type'] === undefined) delete config.headers['Content-Type'];
-  const res = await fetch(path, config);
-  if (res.status === 401) {
-    localStorage.removeItem(TOKEN_STORAGE_KEY);
-    window.location.href = '/admin-login.html';
-    return null;
+  try {
+    const res = await fetch(url, config);
+    if (res.status === 401) {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      window.location.href = '/admin-login.html';
+      return null;
+    }
+    if (!res.ok) {
+      const text = await res.text();
+      const message = text || res.statusText || 'request_failed';
+      console.error('[API]', url, res.status, message);
+      const error = new Error(`HTTP ${res.status}: ${message}`);
+      error.status = res.status;
+      error.url = url;
+      throw error;
+    }
+    const isJson = res.headers.get('content-type')?.includes('application/json');
+    return isJson ? res.json() : res.text();
+  } catch (err) {
+    if (!err.url) {
+      console.error('[API] network_error', url, err.message);
+    }
+    throw err;
   }
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || 'request_failed');
-  }
-  const isJson = res.headers.get('content-type')?.includes('application/json');
-  return isJson ? res.json() : res.text();
 }
 
 function switchTab(tabId) {
@@ -190,7 +214,7 @@ dom.tabs.forEach(btn => {
   btn.addEventListener('click', () => switchTab(btn.dataset.tab));
 });
 
-async function loadStats() {
+async function loadStats({ silent = false } = {}) {
   try {
     const data = await request(API.stats);
     if (!data?.ok) throw new Error('stats_failed');
@@ -226,6 +250,7 @@ async function loadStats() {
     if (dom.leadStats) renderLeadStats(state.emailRows);
   } catch (err) {
     console.error('stats load failed', err.message);
+    if (!silent) handleRequestError('Stats', err);
   }
 }
 
@@ -310,7 +335,7 @@ async function loadHealth() {
   }
 }
 
-async function loadLiveEvents() {
+async function loadLiveEvents({ silent = false } = {}) {
   if (state.live.paused) return;
   try {
     const params = new URLSearchParams({ limit: 100 });
@@ -324,6 +349,7 @@ async function loadLiveEvents() {
     if (dom.liveCount) dom.liveCount.textContent = data.events?.length || 0;
   } catch (err) {
     console.error('live events failed', err.message);
+    if (!silent) handleRequestError('Live Events', err);
   }
 }
 
@@ -346,7 +372,7 @@ function renderLiveEvents() {
   });
 }
 
-async function loadFunnels() {
+async function loadFunnels({ silent = false } = {}) {
   try {
     const params = new URLSearchParams({ range: state.funnelWindow });
     const data = await request(`${API.funnel}?${params.toString()}`);
@@ -357,6 +383,7 @@ async function loadFunnels() {
     renderFunnelGrid(state.funnelWindow);
   } catch (err) {
     console.error('funnel load failed', err.message);
+    if (!silent) handleRequestError('Funnel Daten', err);
   }
 }
 
@@ -417,13 +444,14 @@ function renderFunnelGrid(label) {
   dom.funnelMeta?.replaceChildren?.();
 }
 
-async function loadUtm(windowLabel = '7d') {
+async function loadUtm(windowLabel = '7d', { silent = false } = {}) {
   try {
     const data = await request(`${API.utm}?window=${windowLabel}`);
     state.utm = data.top;
     renderUtm();
   } catch (err) {
     console.error('utm load failed', err.message);
+    if (!silent) handleRequestError('UTM Daten', err);
   }
 }
 
@@ -444,7 +472,7 @@ function renderUtm() {
   });
 }
 
-async function loadDevices() {
+async function loadDevices({ silent = false } = {}) {
   try {
     const data = await request(API.devices);
     if (!data?.ok) throw new Error('devices_failed');
@@ -452,6 +480,7 @@ async function loadDevices() {
     renderDevices();
   } catch (err) {
     console.error('devices load failed', err.message);
+    if (!silent) handleRequestError('Device Daten', err);
   }
 }
 
@@ -473,12 +502,13 @@ function renderDevices() {
   });
 }
 
-async function fetchSpotlight() {
+async function fetchSpotlight({ silent = false } = {}) {
   try {
     const data = await request(API.spotlight);
     updateSpotlightPreview(data?.spotlight);
   } catch (err) {
     console.error('spotlight fetch failed', err.message);
+    if (!silent) handleRequestError('Spotlight laden', err);
   }
 }
 
@@ -496,7 +526,7 @@ function updateSpotlightPreview(entry) {
   dom.dealStatus.classList.toggle('ok', entry.active);
 }
 
-async function fetchDeals() {
+async function fetchDeals({ silent = false } = {}) {
   try {
     const params = new URLSearchParams();
     if (state.dealFilters.platform !== 'all') params.set('platform', state.dealFilters.platform);
@@ -511,6 +541,7 @@ async function fetchDeals() {
     renderDealAnalytics();
   } catch (err) {
     console.error('deals load failed', err.message);
+    if (!silent) handleRequestError('Deals laden', err);
   }
 }
 
@@ -568,7 +599,7 @@ function renderFactoryResult(payload) {
     dom.factoryResult.innerHTML = '';
     return;
   }
-  const goUrl = `${window.location.origin}/go/${payload.slug}`;
+  const goUrl = `${API_BASE}/go/${payload.slug}`;
   dom.factoryResult.innerHTML = `
     <p><strong>${goUrl}</strong></p>
     <p><small>${payload.affiliate_url || ''}</small></p>
@@ -594,7 +625,7 @@ async function submitFactory(event) {
     fetchDeals();
   } catch (err) {
     console.error('factory failed', err.message);
-    showToast('Factory Fehler', 'error');
+    handleRequestError('Factory Fehler', err);
   }
 }
 
@@ -627,7 +658,7 @@ async function submitDeal(event) {
     fetchSpotlight();
   } catch (err) {
     console.error('spotlight save failed', err.message);
-    showToast('Speichern fehlgeschlagen', 'error');
+    handleRequestError('Deal speichern', err);
   }
 }
 
@@ -658,7 +689,7 @@ async function dealAction(id, action) {
     fetchSpotlight();
   } catch (err) {
     console.error('deal action failed', err.message);
-    showToast('Aktion fehlgeschlagen', 'error');
+    handleRequestError('Deal Aktion', err);
   }
 }
 
@@ -691,7 +722,7 @@ async function updateDealField(id, patch) {
     fetchDeals();
   } catch (err) {
     console.error('inline update failed', err.message);
-    showToast('Update fehlgeschlagen', 'error');
+    handleRequestError('Inline Update', err);
   }
 }
 
@@ -711,7 +742,7 @@ async function runSeedGenerator(event) {
     loadLiveEvents();
   } catch (err) {
     console.error('seed failed', err.message);
-    showToast('Seed fehlgeschlagen', 'error');
+    handleRequestError('Seed fehlgeschlagen', err);
   }
 }
 
@@ -730,11 +761,11 @@ async function submitSettings(event) {
     fetchPublicConfig();
   } catch (err) {
     console.error('settings failed', err.message);
-    showToast('Speichern fehlgeschlagen', 'error');
+    handleRequestError('Settings speichern', err);
   }
 }
 
-async function fetchSettings() {
+async function fetchSettings({ silent = false } = {}) {
   try {
     const data = await request(API.settings);
     state.settings = data.settings || {};
@@ -744,15 +775,17 @@ async function fetchSettings() {
     dom.settingsForm.elements['banner_message'].value = state.settings.banner_message || flags.banner_message || '';
   } catch (err) {
     console.error('settings fetch failed', err.message);
+    if (!silent) handleRequestError('Settings laden', err);
   }
 }
 
-async function fetchPublicConfig() {
+async function fetchPublicConfig({ silent = false } = {}) {
   try {
     const data = await request(API.publicConfig);
     dom.publicConfig.textContent = JSON.stringify(data, null, 2);
   } catch (err) {
     console.error('public config failed', err.message);
+    if (!silent) handleRequestError('Public Config', err);
   }
 }
 
@@ -828,6 +861,7 @@ function attachEvents() {
   dom.seedForm?.addEventListener('submit', runSeedGenerator);
   dom.settingsForm?.addEventListener('submit', submitSettings);
   dom.quickRefresh?.addEventListener('click', () => {
+    showToast('Aktualisierung gestartet');
     loadStats();
     loadLiveEvents();
     loadFunnels();
@@ -849,27 +883,30 @@ function attachEvents() {
 }
 
 function startIntervals() {
-  loadStats();
+  loadStats({ silent: true });
   loadHealth();
-  loadLiveEvents();
-  loadFunnels();
-  loadUtm();
-  loadDevices();
-  fetchSpotlight();
-  fetchDeals();
-  fetchSettings();
-  fetchPublicConfig();
+  loadLiveEvents({ silent: true });
+  loadFunnels({ silent: true });
+  loadUtm('7d', { silent: true });
+  loadDevices({ silent: true });
+  fetchSpotlight({ silent: true });
+  fetchDeals({ silent: true });
+  fetchSettings({ silent: true });
+  fetchPublicConfig({ silent: true });
 
-  setInterval(loadStats, STATS_INTERVAL);
+  setInterval(() => loadStats({ silent: true }), STATS_INTERVAL);
   setInterval(loadHealth, HEALTH_INTERVAL);
-  setInterval(loadFunnels, 60000);
-  setInterval(loadUtm, 45000);
-  setInterval(loadDevices, 45000);
-  state.live.interval = setInterval(loadLiveEvents, LIVE_INTERVAL);
+  setInterval(() => loadFunnels({ silent: true }), 60000);
+  setInterval(() => loadUtm('7d', { silent: true }), 45000);
+  setInterval(() => loadDevices({ silent: true }), 45000);
+  state.live.interval = setInterval(() => loadLiveEvents({ silent: true }), LIVE_INTERVAL);
 }
 
 function init() {
   attachEvents();
+  if (dom.apiBaseDisplay) {
+    dom.apiBaseDisplay.textContent = API_BASE;
+  }
   startIntervals();
 }
 

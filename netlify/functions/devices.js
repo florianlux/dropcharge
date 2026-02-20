@@ -1,5 +1,6 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
+const { withCors } = require('./_lib/cors');
 
 function aggregate(rows, field, limit = 5) {
   const map = new Map();
@@ -12,7 +13,7 @@ function aggregate(rows, field, limit = 5) {
   return Array.from(map.values()).sort((a, b) => b.count - a.count).slice(0, limit);
 }
 
-exports.handler = async function(event) {
+async function handler(event) {
   const authError = requireAdmin(event.headers || {});
   if (authError) return authError;
 
@@ -49,3 +50,5 @@ exports.handler = async function(event) {
     };
   }
 };
+
+exports.handler = withCors(handler);

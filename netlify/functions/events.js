@@ -1,5 +1,6 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
+const { withCors } = require('./_lib/cors');
 
 function parseIntParam(value, fallback) {
   if (!value && value !== 0) return fallback;
@@ -30,7 +31,7 @@ function summarizeEvents(items = []) {
   return summary;
 }
 
-exports.handler = async function(event) {
+async function handler(event) {
   const authError = requireAdmin(event.headers || {});
   if (authError) return authError;
 
@@ -86,3 +87,5 @@ exports.handler = async function(event) {
     };
   }
 };
+
+exports.handler = withCors(handler);

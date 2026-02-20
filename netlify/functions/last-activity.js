@@ -1,4 +1,5 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
+const { withCors } = require('./_lib/cors');
 
 function buildResponse(entry, slug) {
   const now = Date.now();
@@ -16,7 +17,7 @@ function buildResponse(entry, slug) {
   };
 }
 
-exports.handler = async function(event) {
+async function handler(event) {
   if (!hasSupabase || !supabase) {
     return { statusCode: 500, body: 'Storage not configured' };
   }
@@ -38,3 +39,5 @@ exports.handler = async function(event) {
     return { statusCode: 500, body: 'Failed to load activity' };
   }
 };
+
+exports.handler = withCors(handler);

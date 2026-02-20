@@ -1,5 +1,6 @@
 const { requireAdmin } = require('./_lib/admin-token');
 const { supabase, hasSupabase } = require('./_lib/supabase');
+const { withCors } = require('./_lib/cors');
 
 const platforms = ['PSN', 'Xbox', 'Nintendo'];
 const amounts = ['10€', '20€', '50€', '1 Monat', '3 Monate'];
@@ -29,7 +30,7 @@ function clamp(number, min, max) {
   return Math.max(min, Math.min(max, number));
 }
 
-exports.handler = async function(event) {
+async function handler(event) {
   const authError = requireAdmin(event.headers || {});
   if (authError) return authError;
 
@@ -113,3 +114,5 @@ exports.handler = async function(event) {
     };
   }
 };
+
+exports.handler = withCors(handler);

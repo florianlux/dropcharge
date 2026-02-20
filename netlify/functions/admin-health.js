@@ -1,5 +1,6 @@
 const { requireAdmin, authEnabled } = require('./_lib/admin-token');
 const { supabase, hasSupabase, supabaseUrlPresent, supabaseServiceKeyPresent, verifyConnection } = require('./_lib/supabase');
+const { withCors } = require('./_lib/cors');
 
 const buildSha = process.env.COMMIT_REF || process.env.VERCEL_GIT_COMMIT_SHA || 'local';
 const REQUIRED_TABLES = ['clicks', 'emails', 'events', 'spotlights', 'settings'];
@@ -20,7 +21,7 @@ async function checkSchema() {
   return { ok: missing.length === 0, missing };
 }
 
-exports.handler = async function(event) {
+async function handler(event) {
   const authError = requireAdmin(event.headers || {});
   if (authError) {
     return authError;
@@ -89,3 +90,5 @@ exports.handler = async function(event) {
     })
   };
 };
+
+exports.handler = withCors(handler);

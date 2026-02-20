@@ -1,5 +1,6 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
+const { withCors } = require('./_lib/cors');
 
 function slugify(value) {
   return (value || '')
@@ -134,9 +135,11 @@ async function handleAdminMutation(event) {
   return { statusCode: 405, body: 'Method Not Allowed' };
 }
 
-exports.handler = async function(event) {
+async function handler(event) {
   if (event.httpMethod === 'GET') {
     return handleGet(event);
   }
   return handleAdminMutation(event);
 };
+
+exports.handler = withCors(handler);

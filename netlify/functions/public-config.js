@@ -1,5 +1,6 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { extractFlags } = require('./_lib/settings');
+const { withCors } = require('./_lib/cors');
 
 function defaultResponse() {
   return {
@@ -10,7 +11,7 @@ function defaultResponse() {
   };
 }
 
-exports.handler = async function() {
+async function handler() {
   if (!hasSupabase || !supabase) {
     return {
       statusCode: 200,
@@ -55,3 +56,5 @@ exports.handler = async function() {
     };
   }
 };
+
+exports.handler = withCors(handler);

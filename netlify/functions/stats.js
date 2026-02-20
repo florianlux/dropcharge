@@ -1,5 +1,6 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
+const { withCors } = require('./_lib/cors');
 
 function parseIso(dateString) {
   return new Date(dateString).getTime();
@@ -9,7 +10,7 @@ function basePlatformCounts() {
   return { PSN: 0, Xbox: 0, Nintendo: 0, Other: 0 };
 }
 
-exports.handler = async function(event) {
+async function handler(event) {
   const authError = requireAdmin(event.headers || {});
   if (authError) return authError;
 
@@ -104,3 +105,5 @@ exports.handler = async function(event) {
     };
   }
 };
+
+exports.handler = withCors(handler);
