@@ -402,3 +402,118 @@ details { background: rgba(255,255,255,0.03); border-radius: 16px; padding: 1rem
   gap: 0.3rem;
 }
 .drop-benefits li { display: flex; align-items: center; gap: 0.4rem; }
+
+
+.hero-points {
+  list-style: none;
+  margin: 1.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.hero-points li {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  color: rgba(255,255,255,0.8);
+}
+.hero-points li::before {
+  content: '•';
+  color: #5ad7ff;
+}
+.social-proof {
+  background: radial-gradient(circle at top, rgba(90,215,255,0.08), transparent);
+}
+.proof-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit,minmax(220px,1fr));
+  gap: 1rem;
+}
+.proof-grid article {
+  padding: 1.2rem;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  font-size: 0.95rem;
+  min-height: 150px;
+}
+.proof-grid span {
+  display: block;
+  margin-top: 0.6rem;
+  font-size: 0.8rem;
+  color: rgba(255,255,255,0.6);
+}
+.compare-card {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(55,53,92,0.9), rgba(16,17,32,0.95));
+  border: 1px solid rgba(255,255,255,0.04);
+  transition: transform 0.3s ease, border 0.3s ease;
+}
+.compare-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at top right, rgba(90,215,255,0.25), transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.compare-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(90,215,255,0.3);
+}
+.compare-card:hover::after {
+  opacity: 1;
+}
+.compare-card .badge {
+  background: rgba(90,215,255,0.2);
+  color: #5ad7ff;
+}
+.email-popup {
+  max-width: 420px;
+  padding: 2rem;
+}
+.email-popup form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.9rem;
+}
+.email-popup input {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(0,0,0,0.3);
+  color: #fff;
+  padding: 0.8rem 1rem;
+}
+.email-popup button {
+  margin-top: 0.8rem;
+  width: 100%;
+  border-radius: 12px;
+  background: linear-gradient(120deg,#5ad7ff,#9b66ff);
+  border: none;
+  padding: 0.9rem 1rem;
+  font-weight: 600;
+  color: #0b0b0f;
+}
+.email-popup small {
+  display: block;
+  margin-top: 0.6rem;
+  color: rgba(255,255,255,0.7);
+}
+.email-popup .success {
+  text-align: center;
+  font-weight: 600;
+}
+@media (max-width: 768px) {
+  .hero-points {
+    grid-template-columns: 1fr;
+  }
+  .compare-grid {
+    gap: 1rem;
+  }
+  .email-popup {
+    width: 90%;
+  }
+}
