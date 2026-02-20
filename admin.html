@@ -168,20 +168,23 @@
 
       <section class="tab-panel" data-panel="funnels">
         <div class="panel-head">
-          <h2>Funnels & Conversion</h2>
+          <h2>Funnel Engine</h2>
           <div class="head-actions">
             <label class="select">
               <span>Zeitraum</span>
               <select id="funnel-window">
                 <option value="24h">24h</option>
                 <option value="7d">7 Tage</option>
-                <option value="30d">30 Tage</option>
               </select>
             </label>
+            <button class="btn mini ghost" id="funnel-refresh">Refresh</button>
           </div>
         </div>
+        <article class="admin-card full">
+          <div class="funnel-visual" id="funnel-visual"></div>
+          <div class="funnel-dropoff" id="funnel-dropoff"></div>
+        </article>
         <div class="funnel-grid" id="funnel-grid"></div>
-        <div class="funnel-meta" id="funnel-meta"></div>
         <div class="panel-split">
           <article class="admin-card">
             <h3>UTM / Source Dashboard</h3>

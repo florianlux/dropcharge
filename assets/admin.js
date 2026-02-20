@@ -27,6 +27,7 @@ const state = {
     events: []
   },
   funnels: {},
+  funnelSummary: null,
   funnelWindow: '24h',
   utm: null,
   devices: null,
@@ -65,8 +66,10 @@ const dom = {
   sessionInput: document.getElementById('session-filter'),
   sessionApply: document.getElementById('session-apply'),
   funnelGrid: document.getElementById('funnel-grid'),
-  funnelMeta: document.getElementById('funnel-meta'),
+  funnelVisual: document.getElementById('funnel-visual'),
+  funnelDropoff: document.getElementById('funnel-dropoff'),
   funnelWindow: document.getElementById('funnel-window'),
+  funnelRefresh: document.getElementById('funnel-refresh'),
   utmLists: document.getElementById('utm-lists'),
   deviceGrid: document.getElementById('device-grid'),
   quickToggle: document.getElementById('toggle-live'),
@@ -345,16 +348,62 @@ function renderLiveEvents() {
 
 async function loadFunnels() {
   try {
-    const data = await request(API.funnel);
+    const params = new URLSearchParams({ range: state.funnelWindow });
+    const data = await request(`${API.funnel}?${params.toString()}`);
     if (!data?.ok) throw new Error('funnel_failed');
     state.funnels = data.funnels || {};
-    renderFunnelWindow(state.funnelWindow);
+    state.funnelSummary = data.funnel || null;
+    renderFunnelVisual();
+    renderFunnelGrid(state.funnelWindow);
   } catch (err) {
     console.error('funnel load failed', err.message);
   }
 }
 
-function renderFunnelWindow(label) {
+function renderFunnelVisual() {
+  if (!dom.funnelVisual) return;
+  const summary = state.funnelSummary || {};
+  const stages = [
+    { key: 'landing_views', label: 'Landing Views', count: summary.landing_views || 0 },
+    { key: 'cta_clicks', label: 'CTA Clicks', count: summary.cta_clicks || 0, conversion: summary.conversion_landing_to_cta },
+    { key: 'deal_clicks', label: 'Deal Clicks', count: summary.deal_clicks || 0, conversion: summary.conversion_cta_to_deal },
+    { key: 'email_submits', label: 'Email Submits', count: summary.email_submits || 0, conversion: summary.conversion_deal_to_email }
+  ];
+  const maxCount = Math.max(...stages.map(stage => stage.count), 1);
+  dom.funnelVisual.innerHTML = stages
+    .map((stage, index) => {
+      const width = Math.max(5, (stage.count / maxCount) * 100);
+      const conversion = stage.conversion ?? null;
+      const prevCount = index === 0 ? null : stages[index - 1].count;
+      const drop = prevCount ? prevCount - stage.count : null;
+      return `
+        <div class="funnel-stage">
+          <span>${stage.label}</span>
+          <strong>${stage.count}</strong>
+          <div class="funnel-bar"><i style="width:${width}%"></i></div>
+          ${conversion !== null && prevCount ? `<div class="conversion">${conversion}% → ${drop > 0 ? `-${drop}` : '0'} drop</div>` : ''}
+        </div>
+      `;
+    })
+    .join('');
+  renderFunnelDropoff(summary);
+}
+
+function renderFunnelDropoff(summary) {
+  if (!dom.funnelDropoff) return;
+  const dropData = [
+    { label: 'Landing → CTA', value: summary?.dropoff_landing_to_cta || 0 },
+    { label: 'CTA → Deal', value: summary?.dropoff_cta_to_deal || 0 },
+    { label: 'Deal → Email', value: summary?.dropoff_deal_to_email || 0 }
+  ];
+  const maxDrop = Math.max(...dropData.map(item => item.value), 0);
+  dom.funnelDropoff.innerHTML = dropData
+    .map(item => `<div class="dropoff-card ${item.value === maxDrop ? 'highlight' : ''}"><span>${item.label}</span><strong>${item.value}%</strong></div>`)
+    .join('');
+}
+
+function renderFunnelGrid(label) {
+  if (!dom.funnelGrid) return;
   const dataset = state.funnels[label] || { counts: {}, conversions: {} };
   dom.funnelGrid.innerHTML = '';
   const stages = ['landing_view', 'cta_click', 'deal_click', 'email_submit', 'email_confirmed'];
@@ -365,13 +414,7 @@ function renderFunnelWindow(label) {
     card.innerHTML = `<h4>${stage.replace('_', ' ')}</h4><div class="progress"><span style="width:${Math.min(100, count)}%"></span></div><p>${count} Events</p>`;
     dom.funnelGrid.appendChild(card);
   });
-  dom.funnelMeta.innerHTML = '';
-  Object.entries(dataset.conversions || {}).forEach(([key, value]) => {
-    const pill = document.createElement('div');
-    pill.className = 'chip';
-    pill.textContent = `${key.replace('_to_', ' → ')}: ${value}%`;
-    dom.funnelMeta.appendChild(pill);
-  });
+  dom.funnelMeta?.replaceChildren?.();
 }
 
 async function loadUtm(windowLabel = '7d') {
@@ -756,8 +799,9 @@ function attachEvents() {
   });
   dom.funnelWindow?.addEventListener('change', (event) => {
     state.funnelWindow = event.target.value;
-    renderFunnelWindow(state.funnelWindow);
+    loadFunnels();
   });
+  dom.funnelRefresh?.addEventListener('click', loadFunnels);
   dom.spotlightForm?.addEventListener('submit', submitDeal);
   dom.spotlightFetch?.addEventListener('click', fetchSpotlight);
   dom.spotlightReset?.addEventListener('click', () => {
