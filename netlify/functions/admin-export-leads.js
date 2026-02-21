@@ -2,7 +2,7 @@ const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
 
 function toCsv(rows) {
-  const header = ['email', 'status', 'source', 'page', 'created_at', 'confirmed_at', 'unsubscribed_at'];
+  const header = ['email', 'status', 'source', 'created_at', 'unsubscribed_at', 'last_sent_at', 'utm_source', 'utm_campaign'];
   if (!rows.length) return header.join(',');
   const lines = [header.join(',')];
   rows.forEach((row) => {
@@ -24,27 +24,33 @@ exports.handler = async function handler(event) {
   const search = (params.search || '').trim();
 
   try {
+    console.log('[admin-export-leads] Exporting with filters:', { status, search });
+    
     let query = supabase
-      .from('newsletter_leads')
-      .select('email,status,source,page,created_at,confirmed_at,unsubscribed_at')
+      .from('newsletter_subscribers')
+      .select('email,status,source,created_at,unsubscribed_at,last_sent_at,utm_source,utm_campaign')
       .order('created_at', { ascending: false });
     if (status) query = query.eq('status', status);
     if (search) query = query.ilike('email', `%${search}%`);
 
     const { data, error } = await query;
-    if (error) throw error;
+    if (error) {
+      console.error('[admin-export-leads] Query error:', error.message);
+      throw error;
+    }
 
+    console.log('[admin-export-leads] Exporting', data?.length || 0, 'subscribers');
     const csv = toCsv(data || []);
     return {
       statusCode: 200,
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': 'attachment; filename="newsletter-leads.csv"'
+        'Content-Disposition': 'attachment; filename="newsletter-subscribers.csv"'
       },
       body: csv
     };
   } catch (err) {
-    console.log('admin export leads error', err.message);
+    console.error('[admin-export-leads] Error:', err.message);
     return { statusCode: 500, body: 'export_failed' };
   }
 };

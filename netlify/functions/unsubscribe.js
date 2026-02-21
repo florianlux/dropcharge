@@ -9,9 +9,9 @@ function htmlResponse(body) {
 }
 
 exports.handler = async function handler(event) {
-  const token = event.queryStringParameters?.token;
-  if (!token) {
-    return htmlResponse('<h1>Fehler</h1><p>Token fehlt.</p>');
+  const email = event.queryStringParameters?.email;
+  if (!email) {
+    return htmlResponse('<h1>Fehler</h1><p>Email fehlt.</p>');
   }
   if (!hasSupabase || !supabase) {
     return htmlResponse('<h1>Fehler</h1><p>Service nicht verfügbar.</p>');
@@ -19,13 +19,13 @@ exports.handler = async function handler(event) {
   try {
     const now = new Date().toISOString();
     const { data, error } = await supabase
-      .from('newsletter_leads')
+      .from('newsletter_subscribers')
       .update({ status: 'unsubscribed', unsubscribed_at: now })
-      .eq('unsubscribe_token', token)
+      .eq('email', email.toLowerCase().trim())
       .select('email');
     if (error) throw error;
     if (!data || !data.length) {
-      return htmlResponse('<h1>Nicht gefunden</h1><p>Dieser Link ist ungültig oder wurde bereits verwendet.</p>');
+      return htmlResponse('<h1>Nicht gefunden</h1><p>Diese E-Mail ist nicht in unserer Liste.</p>');
     }
     return htmlResponse('<h1>Du bist abgemeldet ✅</h1><p>Du erhältst keine weiteren DropCharge E-Mails.</p>');
   } catch (err) {
