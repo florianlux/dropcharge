@@ -25,7 +25,7 @@ function withCors(handler) {
   return async function corsWrapper(event, context) {
     const origin = pickOrigin(event);
     if (event.httpMethod === 'OPTIONS') {
-      return { statusCode: 200, headers: corsHeaders(origin), body: '' };
+      return { statusCode: 204, headers: corsHeaders(origin), body: '' };
     }
     const response = await handler(event, context);
     const nextHeaders = corsHeaders(origin, response?.headers || {});
