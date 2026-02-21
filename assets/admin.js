@@ -187,7 +187,7 @@ async function exportSubscribers() {
     }
     const header = 'email,status,source,prize,created_at';
     const csvRows = data.items.map(s =>
-      `${csvEscape(s.email)},${csvEscape(s.status)},${csvEscape(s.source)},${csvEscape(s.meta && s.meta.prize ? s.meta.prize : '')},${csvEscape(s.created_at)}`
+      `${csvEscape(s.email)},${csvEscape(s.status)},${csvEscape(s.source || '')},${csvEscape(s.meta && s.meta.prize ? s.meta.prize : '')},${csvEscape(s.created_at)}`
     );
     const csv = [header, ...csvRows].join('\n');
     downloadCsv(csv, 'subscribers.csv');
