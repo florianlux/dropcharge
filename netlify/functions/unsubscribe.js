@@ -19,7 +19,7 @@ exports.handler = async function handler(event) {
   try {
     const now = new Date().toISOString();
     const { data, error } = await supabase
-      .from('newsletter_leads')
+      .from('newsletter_subscribers')
       .update({ status: 'unsubscribed', unsubscribed_at: now })
       .eq('unsubscribe_token', token)
       .select('email');
@@ -29,7 +29,7 @@ exports.handler = async function handler(event) {
     }
     return htmlResponse('<h1>Du bist abgemeldet ✅</h1><p>Du erhältst keine weiteren DropCharge E-Mails.</p>');
   } catch (err) {
-    console.log('unsubscribe error', err.message);
+    console.error('unsubscribe error', err.message, err.stack);
     return htmlResponse('<h1>Fehler</h1><p>Bitte später erneut versuchen.</p>');
   }
 };

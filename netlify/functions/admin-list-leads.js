@@ -18,8 +18,8 @@ exports.handler = withCors(async (event) => {
 
   try {
     let query = supabase
-      .from('newsletter_leads')
-      .select('id,email,status,source,page,created_at,last_sent_at,confirmed_at,unsubscribed_at', { count: 'exact' })
+      .from('newsletter_subscribers')
+      .select('id,email,status,source,created_at,last_sent_at,unsubscribed_at', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -35,7 +35,7 @@ exports.handler = withCors(async (event) => {
       body: JSON.stringify({ ok: true, items: data || [], total: count ?? 0 })
     };
   } catch (err) {
-    console.log('admin list leads error', err.message);
+    console.error('admin list leads error', err.message, err.stack);
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },

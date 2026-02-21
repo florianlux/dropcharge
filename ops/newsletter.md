@@ -2,17 +2,15 @@
 
 ## Flow
 1. Frontend popup (`assets/app.js`) POSTs to `/.netlify/functions/newsletter_signup`.
-2. Netlify function validates, upserts into `newsletter_leads` via service role, sends welcome mail (Resend), logs events.
+2. Netlify function validates, inserts into `newsletter_subscribers` via service role, optionally sends welcome mail (Resend).
 3. Admin dashboard (`Email & Leads` tab) calls:
    - `/.netlify/functions/admin-list-leads`
    - `/.netlify/functions/admin-export-leads`
 4. Users can unsubscribe via `/unsubscribe?token=...` handled by Netlify function `unsubscribe.js`.
 
 ## Supabase Schema
-Defined in `supabase/newsletter.sql`:
-- `newsletter_leads`: email (citext, unique), status (`pending|confirmed|unsubscribed|bounced`), source, page, user_agent, timestamps, unsubscribe_token, metadata.
-- `newsletter_events`: audit log per lead (created, welcome_sent, lead_updated, etc.).
-- RLS enabled (service role bypass).
+Defined in `supabase-schema.sql`:
+- `newsletter_subscribers`: email (unique), status (`active|unsubscribed`), source, utm fields, timestamps, last_sent_at, meta.
 
 ## Required ENV (Netlify)
 - `SUPABASE_URL`

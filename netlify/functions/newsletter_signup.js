@@ -66,11 +66,11 @@ async function handler(event) {
       };
     }
 
-    console.error('newsletter_signup insert error:', insertErr.message);
+    console.error('newsletter_signup insert error:', insertErr.message, insertErr.stack || '');
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ok: false, error: insertErr.message })
+      body: JSON.stringify({ ok: false, error: 'signup_failed', message: insertErr.message, details: insertErr.code || '' })
     };
   }
 
