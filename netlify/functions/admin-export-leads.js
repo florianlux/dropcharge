@@ -2,7 +2,7 @@ const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
 
 function toCsv(rows) {
-  const header = ['email', 'status', 'source', 'created_at', 'unsubscribed_at', 'last_sent_at', 'utm_source', 'utm_campaign'];
+  const header = ['email', 'status', 'source', 'created_at', 'unsubscribed_at', 'last_sent_at', 'utm_source', 'utm_medium', 'utm_campaign'];
   if (!rows.length) return header.join(',');
   const lines = [header.join(',')];
   rows.forEach((row) => {
@@ -28,7 +28,7 @@ exports.handler = async function handler(event) {
     
     let query = supabase
       .from('newsletter_subscribers')
-      .select('email,status,source,created_at,unsubscribed_at,last_sent_at,utm_source,utm_campaign')
+      .select('email,status,source,created_at,unsubscribed_at,last_sent_at,utm_source,utm_medium,utm_campaign')
       .order('created_at', { ascending: false });
     if (status) query = query.eq('status', status);
     if (search) query = query.ilike('email', `%${search}%`);

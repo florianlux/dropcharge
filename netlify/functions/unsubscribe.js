@@ -9,7 +9,7 @@ function htmlResponse(body) {
 }
 
 exports.handler = async function handler(event) {
-  const email = event.queryStringParameters?.email;
+  const email = (event.queryStringParameters?.email || '').toLowerCase().trim();
   if (!email) {
     return htmlResponse('<h1>Fehler</h1><p>Email fehlt.</p>');
   }
@@ -21,7 +21,7 @@ exports.handler = async function handler(event) {
     const { data, error } = await supabase
       .from('newsletter_subscribers')
       .update({ status: 'unsubscribed', unsubscribed_at: now })
-      .eq('email', email.toLowerCase().trim())
+      .eq('email', email)
       .select('email');
     if (error) throw error;
     if (!data || !data.length) {

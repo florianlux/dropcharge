@@ -345,6 +345,7 @@ emailForm?.addEventListener('submit', async (event) => {
       console.log('[newsletter] Already subscribed');
       emailForm.innerHTML = '<p class="success">✅ Du bist schon eingetragen.</p>';
       setTimeout(() => popup?.classList.remove('visible'), 2500);
+      track('EmailSubscribeDuplicate', { email });
     } else {
       throw new Error(data.error || 'Subscription failed');
     }
