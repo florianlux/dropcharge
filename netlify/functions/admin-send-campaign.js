@@ -22,9 +22,9 @@ function normalizeHtml(html = '') {
 async function fetchSubscribers(segment) {
   if (!hasSupabase || !supabase) throw new Error('supabase_not_configured');
   let query = supabase
-    .from('emails')
+    .from('newsletter_subscribers')
     .select('email')
-    .eq('confirmed', true);
+    .eq('status', 'active');
   if (segment) {
     query = query.eq('source', segment);
   }
@@ -38,20 +38,28 @@ async function fetchSubscribers(segment) {
 
 async function getLastCampaign() {
   if (!hasSupabase || !supabase) return null;
-  const { data, error } = await supabase
-    .from('campaigns')
-    .select('id, created_at')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  if (error) return null;
-  return data;
+  try {
+    const { data, error } = await supabase
+      .from('newsletter_campaigns')
+      .select('id, created_at')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error) return null;
+    return data;
+  } catch {
+    return null;
+  }
 }
 
 async function logCampaign(payload) {
   if (!hasSupabase || !supabase) return;
-  const { error } = await supabase.from('campaigns').insert(payload);
-  if (error) console.log('campaign log error', error.message);
+  try {
+    const { error } = await supabase.from('newsletter_campaigns').insert(payload);
+    if (error) console.log('campaign log error', error.message);
+  } catch (err) {
+    console.log('campaign log error', err.message);
+  }
 }
 
 async function sendEmail({ to, subject, html }) {
@@ -173,11 +181,13 @@ async function handler(event) {
     if (!testEmail) {
       await logCampaign({
         subject,
+        body_html: normalizedHtml,
         segment,
+        total_recipients: recipients.length,
         sent_count: result.sent,
         failed_count: result.failed.length,
         status: 'completed',
-        meta: { test: false }
+        completed_at: new Date().toISOString()
       });
     }
 
@@ -191,12 +201,14 @@ async function handler(event) {
     if (!testEmail) {
       await logCampaign({
         subject,
+        body_html: normalizedHtml,
         segment,
+        total_recipients: recipients.length,
         sent_count: 0,
         failed_count: recipients.length,
         status: 'failed',
         error: err.message,
-        meta: { test: false }
+        completed_at: new Date().toISOString()
       });
     }
     return {
