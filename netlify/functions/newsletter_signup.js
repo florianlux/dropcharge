@@ -10,7 +10,6 @@ async function handler(event) {
   if (event.httpMethod === 'OPTIONS') {
     return {
       statusCode: 204,
-      headers: { 'Content-Type': 'application/json' },
       body: ''
     };
   }
@@ -62,7 +61,7 @@ async function handler(event) {
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ok: false, success: false, status: 'error' })
+      body: JSON.stringify({ ok: false, success: false, status: 'error', message: error.message })
     };
   }
 
@@ -87,7 +86,7 @@ async function handler(event) {
   return {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ok: true, success: true, status: 'subscribed' })
+    body: JSON.stringify({ ok: true, success: true, status: 'subscribed', email_sent: emailSent })
   };
 }
 
