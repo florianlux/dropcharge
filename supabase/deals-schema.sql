@@ -41,7 +41,8 @@ create table if not exists public.deals (
   tags text[] default '{}',
   active boolean default true,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  constraint valid_discount check (old_price is null or price is null or old_price >= price)
 );
 
 -- Unique Index auf slug für SEO-freundliche URLs

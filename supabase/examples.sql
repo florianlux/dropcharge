@@ -186,23 +186,27 @@ order by hour;
 -- ============================================================================
 
 -- Deal deaktivieren (statt löschen - behält Analytics)
+-- Note: updated_at wird automatisch durch Trigger gesetzt
 update public.deals
-set active = false, updated_at = now()
+set active = false
 where slug = 'steam-guthaben-50';
 
 -- Preis aktualisieren
+-- Note: updated_at wird automatisch durch Trigger gesetzt
 update public.deals
-set price = 15.99, updated_at = now()
+set price = 15.99
 where slug = 'playstation-store-guthaben-20';
 
 -- Tag hinzufügen
+-- Note: updated_at wird automatisch durch Trigger gesetzt
 update public.deals
-set tags = array_append(tags, 'Hot Deal'), updated_at = now()
+set tags = array_append(tags, 'Hot Deal')
 where slug = 'xbox-game-pass-ultimate-3m';
 
 -- Tags komplett ersetzen
+-- Note: updated_at wird automatisch durch Trigger gesetzt
 update public.deals
-set tags = array['PlayStation', 'PSN', 'Top Deal', 'Limited'], updated_at = now()
+set tags = array['PlayStation', 'PSN', 'Top Deal', 'Limited']
 where slug = 'playstation-store-guthaben-20';
 
 -- ============================================================================

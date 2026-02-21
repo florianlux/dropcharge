@@ -22,7 +22,7 @@ Die Haupttabelle für alle Gaming-Credit Angebote und Deals.
 | `slug` | text (unique) | URL-freundlicher Identifier | SEO-optimierte URLs (z.B. `/deals/playstation-guthaben-20`), eindeutig indexiert |
 | `description` | text | Detaillierte Beschreibung | Flexibel für HTML/Markdown, wichtig für SEO und User-Information |
 | `price` | numeric(10,2) | Aktueller Preis | Numeric für exakte Geldbeträge, vermeidet Float-Rundungsfehler |
-| `old_price` | numeric(10,2) | Ursprünglicher Preis | Für Rabatt-Berechnung und "Spare X%" Anzeige |
+| `old_price` | numeric(10,2) | Ursprünglicher Preis | Für Rabatt-Berechnung und "Spare X%" Anzeige. CHECK Constraint verhindert old_price < price |
 | `affiliate_url` | text | Affiliate-Link | Der wichtigste Link - wohin User weitergeleitet werden |
 | `image_url` | text | Bild-URL | Für Deal-Cards und Social Media Sharing |
 | `tags` | text[] | Kategorien/Tags | Flexibles Array für Multi-Tagging (z.B. ["PlayStation", "Sale", "20EUR"]) |

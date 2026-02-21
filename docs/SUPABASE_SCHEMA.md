@@ -89,6 +89,11 @@
 - Typsicherheit
 - Keine invaliden Werte
 
+### CHECK Constraint für Preise
+- Verhindert old_price < price
+- Datenintegrität
+- Keine invaliden Rabatte
+
 ### Composite Indexes
 - Optimiert häufige Queries
 - deal_id + ts = "Events pro Deal"
