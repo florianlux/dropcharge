@@ -1,13 +1,13 @@
 const { createClient } = require('@supabase/supabase-js');
 
 const url = process.env.SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_KEY;
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 
 if (!url) {
   console.error('Supabase missing env: SUPABASE_URL');
 }
 if (!serviceKey) {
-  console.error('Supabase missing env: SUPABASE_SERVICE_KEY');
+  console.error('Supabase missing env: SUPABASE_SERVICE_ROLE_KEY');
 }
 
 const hasSupabase = Boolean(url && serviceKey);

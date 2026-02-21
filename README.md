@@ -13,8 +13,9 @@ High-conversion gaming-credit dropsite: TikTok-ready UI, Netlify Functions, Supa
 2. Run [`supabase-schema.sql`](./supabase-schema.sql) to create tables.
 3. Grab **Project URL** + **service_role key** → set as Netlify env vars:
    - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY` (also accepts legacy `SUPABASE_SERVICE_KEY`)
 4. Optional envs:
+   - `RESEND_API_KEY` (optional – enables welcome email on newsletter signup; signup works without it)
    - `ADMIN_PASSWORD_HASH` (bcrypt hash via `node scripts/hash-password.js "pass"`)
    - `ENABLE_DOUBLE_OPT_IN=1` (keeps emails in pending state)
    - `TIKTOK_PIXEL_ID` (or override in HTML bundle)
@@ -52,9 +53,30 @@ npx netlify dev
   - `ClickOutbound` (per /go click)
 
 ## Email Capture
-- Popup after 5 s, stores email in Supabase.
-- Duplicate submissions ignored.
+- Popup after 5 s, stores email in Supabase `newsletter_subscribers` table.
+- Duplicate submissions return `{ ok:true, status:"exists" }` (no error).
+- Welcome email sent via Resend if `RESEND_API_KEY` is set; signup succeeds without it.
 - Double opt-in ready via env flag.
+
+### Testing Newsletter Signup
+
+```bash
+# Local (netlify dev)
+curl -X POST http://localhost:8888/.netlify/functions/newsletter_signup \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"test@example.com","source":"curl"}'
+
+# Production
+curl -X POST https://YOUR-SITE.netlify.app/.netlify/functions/newsletter_signup \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"test@example.com","source":"curl"}'
+
+# OPTIONS (CORS preflight)
+curl -X OPTIONS http://localhost:8888/.netlify/functions/newsletter_signup -i
+
+# GET → 405
+curl http://localhost:8888/.netlify/functions/newsletter_signup
+```
 
 ## Security & Robots
 - `/admin` pages inject `noindex, nofollow` meta; `robots.txt` disallows `/admin`.
