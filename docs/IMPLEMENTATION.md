@@ -17,7 +17,7 @@
 - Domain alignment dropcharge.io ↔ Netlify prod must be ensured; envs consistent.
 
 ## Nächste Schritte
-1. Build Supabase migrations (`supabase/newsletter.sql`) for newsletter_leads + newsletter_events + tokens (confirm/unsub) with constraints.
+1. Build Supabase migrations (`supabase-schema.sql`) for newsletter_subscribers with constraints.
 2. Implement Netlify functions:
    - newsletter_signup (double opt-in + welcome via Resend + rate limiting)
    - newsletter_confirm / newsletter_unsubscribe endpoints
