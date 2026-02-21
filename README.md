@@ -10,7 +10,8 @@ High-conversion gaming-credit dropsite: TikTok-ready UI, Netlify Functions, Supa
 
 ## Supabase Setup
 1. Create a new Supabase project (or use existing project at `https://qoinlxpumoakfmkfrwqb.supabase.co`).
-2. Run [`supabase-schema.sql`](./supabase-schema.sql) to create tables.
+2. Run [`supabase-schema.sql`](./supabase-schema.sql) to create core tables (`clicks`, `emails`, `events`, etc.).
+   - **For newsletter**: Also run [`supabase/newsletter.sql`](./supabase/newsletter.sql) to create `newsletter_leads` and `newsletter_events` tables.
 3. Grab **Project URL** + keys from your Supabase dashboard → set as env vars:
    - For **local development**: Copy `.env.example` to `.env` and fill in your values
    - For **production**: Set in Netlify dashboard (Site settings → Environment)
