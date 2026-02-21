@@ -2,11 +2,11 @@ const { supabase, hasSupabase } = require('./_lib/supabase');
 const { withCors } = require('./_lib/cors');
 
 const PRIZES = [
-  { label: '5 % Discount', weight: 30 },
-  { label: '10 % Discount', weight: 25 },
-  { label: '15 % Discount', weight: 15 },
+  { label: '5% Discount', weight: 30 },
+  { label: '10% Discount', weight: 25 },
+  { label: '15% Discount', weight: 15 },
   { label: 'Free Shipping', weight: 15 },
-  { label: '20 % Discount', weight: 10 },
+  { label: '20% Discount', weight: 10 },
   { label: 'Mystery Bonus', weight: 5 },
 ];
 

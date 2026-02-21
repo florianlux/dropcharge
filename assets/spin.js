@@ -3,11 +3,11 @@
 
   /* ── Prize segments (must match server PRIZES order) ────── */
   var SEGMENTS = [
-    { label: '5 %',    color: '#6d28d9' },
-    { label: '10 %',   color: '#7c3aed' },
-    { label: '15 %',   color: '#8b5cf6' },
+    { label: '5%',     color: '#6d28d9' },
+    { label: '10%',    color: '#7c3aed' },
+    { label: '15%',    color: '#8b5cf6' },
     { label: 'Ship',   color: '#a78bfa' },
-    { label: '20 %',   color: '#c4b5fd' },
+    { label: '20%',    color: '#c4b5fd' },
     { label: 'Bonus',  color: '#ddd6fe' },
   ];
 
@@ -103,11 +103,11 @@
 
   /* ── Map server prizeLabel → segment index ────────── */
   var LABEL_MAP = {
-    '5 % Discount':  0,
-    '10 % Discount': 1,
-    '15 % Discount': 2,
+    '5% Discount':  0,
+    '10% Discount': 1,
+    '15% Discount': 2,
     'Free Shipping': 3,
-    '20 % Discount': 4,
+    '20% Discount': 4,
     'Mystery Bonus': 5,
   };
 
