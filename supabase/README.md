@@ -58,10 +58,11 @@ Event-Tracking für alle Deal-Interaktionen. Optimiert für hohe Schreiblast.
 
 #### Indexe:
 
-- **`deal_events_deal_id_idx`** - Composite Index (deal_id + ts) für "Zeige alle Events eines Deals"
-- **`deal_events_ts_idx`** - Zeitbasierte Queries (z.B. "Events der letzten 24h")
-- **`deal_events_type_idx`** - Filter nach Event-Type (z.B. nur Conversions)
-- **`deal_events_deal_type_idx`** - Composite für "Clicks pro Deal" Queries
+- **`deal_events_deal_type_idx`** - Primary composite index (deal_id + type + ts) für die meisten Analytics Queries. Deckt auch deal_id-only Queries ab.
+- **`deal_events_ts_idx`** - Optional für pure zeitbasierte Queries ohne deal_id/type Filter
+- **`deal_events_type_idx`** - Filter nach Event-Type (z.B. alle Conversions)
+
+**Note:** Der ursprünglich geplante `deal_events_deal_id_idx` wurde entfernt, da PostgreSQL den `deal_events_deal_type_idx` via Index-Prefix-Matching auch für `deal_id`-only Queries nutzen kann.
 
 ## Installation
 

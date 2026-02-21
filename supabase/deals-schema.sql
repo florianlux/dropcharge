@@ -69,16 +69,17 @@ create table if not exists public.deal_events (
   user_agent_hash text
 );
 
--- Index auf deal_id für Event-Abfragen pro Deal
-create index if not exists deal_events_deal_id_idx on public.deal_events (deal_id, ts desc);
+-- Index auf deal_id für Event-Abfragen pro Deal (wird auch von deal_events_deal_type_idx abgedeckt)
+-- create index if not exists deal_events_deal_id_idx on public.deal_events (deal_id, ts desc);
 
--- Index auf Timestamp für zeitbasierte Analytics
+-- Index auf Timestamp für zeitbasierte Analytics (nur wenn häufig ohne deal_id/type gefiltert wird)
+-- Falls nur selten benötigt, kann dieser Index entfernt werden - die Composite Indexes decken die meisten Fälle ab
 create index if not exists deal_events_ts_idx on public.deal_events (ts desc);
 
 -- Index auf Event-Type für gefilterte Aggregationen
 create index if not exists deal_events_type_idx on public.deal_events (type, ts desc);
 
--- Composite Index für häufige Analytics Queries (Deal + Type)
+-- Composite Index für häufige Analytics Queries (Deal + Type) - deckt auch deal_id-only Queries ab
 create index if not exists deal_events_deal_type_idx on public.deal_events (deal_id, type, ts desc);
 
 -- Funktion zum automatischen Update von updated_at

@@ -98,7 +98,7 @@ values (
   'instagram',
   'social',
   'https://instagram.com/dropcharge',
-  encode(sha256('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)'::bytea), 'hex')
+  encode(sha256(convert_to('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)', 'UTF8')), 'hex')
 );
 
 -- Conversion Event tracken (wenn Purchase bestätigt wurde)
