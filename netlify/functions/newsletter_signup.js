@@ -6,6 +6,15 @@ function isValidEmail(email) {
 }
 
 async function handler(event) {
+  // Handle CORS preflight before method guard
+  if (event.httpMethod === 'OPTIONS') {
+    return {
+      statusCode: 204,
+      headers: { 'Content-Type': 'application/json' },
+      body: ''
+    };
+  }
+
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -43,34 +52,17 @@ async function handler(event) {
     };
   }
 
-  // --- Insert into newsletter_subscribers ---
-  const row = {
-    email,
-    status: 'active',
-    source: typeof payload.source === 'string' ? payload.source.slice(0, 64) : undefined
-  };
-
-  const { error: insertErr } = await supabase
+  // --- Upsert into newsletter_subscribers (idempotent on email) ---
+  const { error } = await supabase
     .from('newsletter_subscribers')
-    .insert(row);
+    .upsert({ email, status: 'active' }, { onConflict: 'email' });
 
-  if (insertErr) {
-    const msg = (insertErr.message || '').toLowerCase();
-    const isDuplicate = insertErr.code === '23505' || msg.includes('duplicate') || msg.includes('unique');
-
-    if (isDuplicate) {
-      return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ok: true, success: true, status: 'exists', email_sent: false })
-      };
-    }
-
-    console.error('newsletter_signup insert error:', insertErr.message, insertErr.stack || '');
+  if (error) {
+    console.error('newsletter_signup upsert error:', error.message, error.stack || '');
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ok: false, error: 'signup_failed', message: insertErr.message, details: insertErr.code || '' })
+      body: JSON.stringify({ ok: false, success: false, status: 'error' })
     };
   }
 
@@ -95,7 +87,7 @@ async function handler(event) {
   return {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ok: true, success: true, status: 'inserted', email_sent: emailSent })
+    body: JSON.stringify({ ok: true, success: true, status: 'subscribed' })
   };
 }
 
