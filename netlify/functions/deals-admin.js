@@ -315,6 +315,11 @@ async function handleInlineUpdate(event) {
   }
 }
 
+/**
+ * Converts a string into a URL-safe slug.
+ * @param {string} value - The input string to slugify
+ * @returns {string|null} A lowercase, hyphenated slug (max 64 chars) or null if empty
+ */
 function slugify(value) {
   return (value || '')
     .toString()
@@ -324,6 +329,11 @@ function slugify(value) {
     .slice(0, MAX_SLUG_LENGTH) || null;
 }
 
+/**
+ * Builds a complete deal object from payload, normalizing and validating fields.
+ * @param {Object} payload - The raw deal data from the request
+ * @returns {Object} Normalized deal object ready for database insertion
+ */
 function buildFullDeal(payload = {}) {
   return {
     title: (payload.title || '').trim(),

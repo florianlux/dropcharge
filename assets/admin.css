@@ -713,5 +713,6 @@ textarea { resize: vertical; }
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(calc(-1 * var(--shake-distance))); }
-  75% { transform: translateX(var(--shake-distance)); }
+  50% { transform: translateX(var(--shake-distance)); }
+  75% { transform: translateX(calc(-1 * var(--shake-distance))); }
 }
