@@ -30,11 +30,11 @@
   <div class="card">
     <p class="eyebrow">DropCharge</p>
     <h1>Admin Login</h1>
-    <p class="hint">Gib deine Admin E-Mail ein. Du erhältst einen Magic Link per E-Mail.</p>
+    <p class="hint">Gib deine Admin E-Mail ein. Du erhältst einen magischen Link per E-Mail.</p>
     <form id="login-form">
       <label for="email">E-Mail</label>
       <input type="email" id="email" name="email" autocomplete="email" required />
-      <button type="submit" id="submit-btn">Magic Link senden</button>
+      <button type="submit" id="submit-btn">Magischen Link senden</button>
       <p class="message error" id="error"></p>
       <p class="message success" id="success"></p>
     </form>
@@ -44,10 +44,15 @@
   <script type="module">
     import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
     
-    const SUPABASE_URL = window.SUPABASE_URL || 'https://your-project.supabase.co';
-    const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'your-anon-key';
+    if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+      document.querySelector('.card').innerHTML = `
+        <h1>Konfigurationsfehler</h1>
+        <p style="color: #ff9f9f;">Supabase ist nicht konfiguriert. Bitte setze SUPABASE_URL und SUPABASE_ANON_KEY Umgebungsvariablen.</p>
+      `;
+      throw new Error('Supabase configuration missing');
+    }
     
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
     
     const form = document.getElementById('login-form');
     const error = document.getElementById('error');
@@ -91,10 +96,10 @@
         success.classList.add('visible');
         emailInput.disabled = true;
       } catch (err) {
-        error.textContent = err.message || 'Fehler beim Senden des Magic Links';
+        error.textContent = err.message || 'Fehler beim Senden des magischen Links';
         error.classList.add('visible');
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Magic Link senden';
+        submitBtn.textContent = 'Magischen Link senden';
       }
     });
   </script>

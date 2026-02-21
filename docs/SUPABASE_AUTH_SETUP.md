@@ -35,6 +35,17 @@ The schema now includes RLS policies that:
 - Allow write access only to authenticated admin users (via JWT)
 - Check the `admin_users` table to verify admin status
 
+**Security Note**: Public read access is enabled to allow the application to function with the service role key. If you need to restrict read access (e.g., prevent anonymous users from accessing analytics data), you can modify the RLS policies to require authentication:
+
+```sql
+-- Example: Restrict reads to authenticated users only
+drop policy "Allow public read on clicks" on public.clicks;
+create policy "Allow authenticated read on clicks" on public.clicks 
+  for select using (auth.uid() is not null);
+```
+
+However, this may require changes to how the application authenticates for read operations.
+
 ## Authentication Flow
 
 1. User visits `/admin-login.html`

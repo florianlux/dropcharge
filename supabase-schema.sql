@@ -200,6 +200,8 @@ end;
 $$ language plpgsql security definer;
 
 -- RLS Policies: Allow public read, only admins can write
+-- NOTE: Public read is enabled to allow service role operations
+-- If you need to restrict read access, modify these policies accordingly
 alter table public.clicks enable row level security;
 alter table public.emails enable row level security;
 alter table public.events enable row level security;
@@ -211,6 +213,7 @@ alter table public.newsletter_sends enable row level security;
 alter table public.admin_users enable row level security;
 
 -- Public read policies (for service role and anon)
+-- These allow the application to read data for display purposes
 create policy "Allow public read on clicks" on public.clicks for select using (true);
 create policy "Allow public read on emails" on public.emails for select using (true);
 create policy "Allow public read on events" on public.events for select using (true);

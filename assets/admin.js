@@ -1,9 +1,14 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const SUPABASE_URL = window.SUPABASE_URL || 'https://your-project.supabase.co';
-const SUPABASE_ANON_KEY = window.SUPABASE_ANON_KEY || 'your-anon-key';
+if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+  console.error('Supabase configuration missing. Please set SUPABASE_URL and SUPABASE_ANON_KEY environment variables.');
+  alert('Konfigurationsfehler: Supabase ist nicht konfiguriert. Bitte Administrator kontaktieren.');
+}
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabase = createClient(
+  window.SUPABASE_URL || 'https://placeholder.supabase.co',
+  window.SUPABASE_ANON_KEY || 'placeholder-key'
+);
 
 const API_BASE = (window.ADMIN_API_BASE
   || document.documentElement.getAttribute('data-api-base')
@@ -263,12 +268,13 @@ async function request(path, options = {}) {
     const res = await fetch(url, config);
     if (res.status === 401) {
       // Clear both JWT and legacy token
+      const hadSession = currentSession !== null;
       currentSession = null;
       currentAccessToken = null;
       localStorage.removeItem(TOKEN_STORAGE_KEY);
       
-      // Sign out from Supabase if using JWT
-      if (currentSession) {
+      // Sign out from Supabase if we had a session
+      if (hadSession) {
         await supabase.auth.signOut();
       }
       

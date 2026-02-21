@@ -34,7 +34,7 @@ async function verifyAdminJWT(headers) {
     // Verify the JWT and get user
     const { data: { user }, error } = await supabase.auth.getUser(token);
     
-    if (error || !user) {
+    if (error || !user || !user.email) {
       return { ok: false, error: 'Invalid or expired token' };
     }
 
@@ -61,27 +61,7 @@ async function verifyAdminJWT(headers) {
   }
 }
 
-function requireAdminAuth(headers) {
-  return async () => {
-    const result = await verifyAdminJWT(headers);
-    
-    if (!result.ok) {
-      return {
-        statusCode: 401,
-        headers: { 
-          'Content-Type': 'application/json',
-          'Cache-Control': 'no-store'
-        },
-        body: JSON.stringify({ error: result.error || 'Unauthorized' })
-      };
-    }
-    
-    return null;
-  };
-}
-
 module.exports = {
   verifyAdminJWT,
-  requireAdminAuth,
   getAuthToken
 };
