@@ -86,10 +86,7 @@ create table if not exists public.spotlights (
   priority integer default 0,
   amazon_url text,
   g2g_url text,
-  release_date text,
-  utm_source text,
-  utm_campaign text,
-  utm_medium text
+  release_date text
 );
 
 create unique index if not exists spotlights_slug_unique on public.spotlights (slug);

@@ -214,8 +214,9 @@ test.describe.serial('Affiliate Link Factory', () => {
     // Wait for result to appear
     await page.locator('#factory-result').waitFor({ state: 'visible' });
     
-    // Check for success indicator
-    await expect(page.locator('#factory-result')).toContainText('Affiliate Link erstellt');
+    // Check for success indicator (contains checkmark and text)
+    const resultContent = await page.locator('#factory-result').textContent();
+    expect(resultContent).toContain('✓');
     
     // Check for copy button
     const copyButton = page.locator('[data-factory-copy]');

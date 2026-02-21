@@ -15,7 +15,12 @@ function slugify(value) {
 
 function coerceUrl(raw = '') {
   try {
-    return new URL(raw)
+    const url = new URL(raw)
+    // Only allow http and https protocols for security
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return null
+    }
+    return url
   } catch (err) {
     return null
   }
@@ -144,15 +149,12 @@ test('coerceUrl rejects empty string', () => {
 
 test('coerceUrl rejects javascript: protocol', () => {
   const result = coerceUrl('javascript:alert(1)');
-  // URL constructor may accept this but we should validate protocol separately
-  assertTruthy(result); // Note: URL constructor accepts this
-  assertEqual(result.protocol, 'javascript:');
+  assertFalsy(result, 'Should reject javascript: protocol for security');
 });
 
 test('coerceUrl rejects FTP protocol', () => {
   const result = coerceUrl('ftp://example.com');
-  assertTruthy(result); // URL constructor accepts this
-  assertEqual(result.protocol, 'ftp:');
+  assertFalsy(result, 'Should reject FTP protocol, only HTTP(S) allowed');
 });
 
 console.log('\n=== Slug Generation Tests ===\n');

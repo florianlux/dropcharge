@@ -29,7 +29,12 @@ function slugify(value) {
 
 function coerceUrl(raw = '') {
   try {
-    return new URL(raw)
+    const url = new URL(raw)
+    // Only allow http and https protocols for security
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      return null
+    }
+    return url
   } catch (err) {
     return null
   }
