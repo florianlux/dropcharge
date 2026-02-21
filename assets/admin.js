@@ -136,12 +136,16 @@ const dom = {
   seedEvents: document.getElementById('seed-events'),
   seedMix: document.getElementById('seed-mix'),
   emailExport: document.getElementById('email-export'),
+  emailImport: document.getElementById('email-import'),
   emailRefresh: document.getElementById('email-refresh'),
   settingsForm: document.getElementById('settings-form'),
   settingsRefresh: document.getElementById('settings-refresh'),
   publicConfig: document.getElementById('public-config'),
   toggleLiveMode: document.getElementById('toggle-live'),
   apiBaseDisplay: document.getElementById('api-base-display'),
+  adminClearToken: document.getElementById('admin-clear-token'),
+  dealsRefresh: document.getElementById('deals-refresh'),
+  experimentAdd: document.getElementById('experiment-add'),
   toast: null
 };
 
@@ -327,6 +331,74 @@ function exportEmailsCsv() {
   const header = ['email','confirmed','created_at'];
   const csv = [header.join(',')].concat(state.emailRows.map(entry => header.map(key => JSON.stringify(entry[key] ?? '')).join(','))).join('\n');
   navigator.clipboard.writeText(csv).then(() => showToast('CSV kopiert')).catch(() => showToast('Clipboard blockiert', 'error'));
+}
+
+async function importEmailsCsv() {
+  // Create file input element
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.csv,text/csv';
+  
+  input.onchange = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    try {
+      showToast('Verarbeite CSV...');
+      const text = await file.text();
+      const lines = text.split('\n').filter(line => line.trim());
+      
+      if (lines.length === 0) {
+        throw new Error('CSV ist leer');
+      }
+      
+      // Parse CSV - expect format: email,confirmed,created_at or just email per line
+      const emails = [];
+      const header = lines[0].toLowerCase();
+      const hasHeader = header.includes('email');
+      const startIndex = hasHeader ? 1 : 0;
+      
+      for (let i = startIndex; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        
+        // Extract email (first column or whole line if no commas)
+        const parts = line.split(',').map(p => p.trim().replace(/^"|"$/g, ''));
+        const email = parts[0];
+        
+        // Improved email validation using regex
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (email && emailRegex.test(email)) {
+          emails.push(email);
+        }
+      }
+      
+      if (emails.length === 0) {
+        throw new Error('Keine gültigen E-Mails gefunden');
+      }
+      
+      // Note: Currently uses the newsletter signup endpoint for imports
+      // TODO: For production, consider implementing a dedicated bulk import endpoint
+      // that handles batch operations more efficiently and includes rate limiting
+      const response = await request(API.newsletterSignup, {
+        method: 'POST',
+        body: JSON.stringify({ 
+          emails: emails,
+          bulk_import: true 
+        })
+      });
+      
+      showToast(`${emails.length} E-Mails importiert`, 'success');
+      loadStats({ silent: true });
+      loadSubscribers({ silent: true });
+      
+    } catch (err) {
+      console.error('CSV import failed:', err);
+      handleRequestError('CSV Import', err);
+    }
+  };
+  
+  input.click();
 }
 
 async function loadHealth() {
@@ -1047,6 +1119,22 @@ function applyGlobalSearch() {
   loadLiveEvents();
 }
 
+function handleLogout() {
+  if (!confirm('Admin-Session beenden und abmelden?')) return;
+  localStorage.removeItem(TOKEN_STORAGE_KEY);
+  showToast('Abgemeldet', 'success');
+  setTimeout(() => {
+    window.location.href = '/admin-login.html';
+  }, 500);
+}
+
+function handleExperimentAdd() {
+  showToast('A/B Test Feature coming soon', 'error');
+  // TODO: Implement A/B test creation modal/form
+  // This would typically open a modal dialog or navigate to a dedicated page
+  // to create a new experiment with name, variants, traffic split, etc.
+}
+
 function attachEvents() {
   dom.livePause?.addEventListener('click', () => {
     state.live.paused = !state.live.paused;
@@ -1117,8 +1205,12 @@ function attachEvents() {
   dom.emailRefresh?.addEventListener('click', loadStats);
   dom.emailsRefresh?.addEventListener('click', loadStats);
   dom.emailExport?.addEventListener('click', exportEmailsCsv);
+  dom.emailImport?.addEventListener('click', importEmailsCsv);
   dom.emailsCopy?.addEventListener('click', copyEmailList);
   dom.settingsRefresh?.addEventListener('click', fetchSettings);
+  dom.adminClearToken?.addEventListener('click', handleLogout);
+  dom.dealsRefresh?.addEventListener('click', () => fetchDeals());
+  dom.experimentAdd?.addEventListener('click', handleExperimentAdd);
 }
 
 function startIntervals() {

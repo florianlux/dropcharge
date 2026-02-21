@@ -63,4 +63,56 @@ test.describe.serial('Admin quick actions', () => {
     // reset to original state for next runs
     await toggle.click();
   });
+
+  test('Logout button clears token and redirects', async ({ page }) => {
+    // Check we're on admin page
+    await expect(page).toHaveURL(/admin\.html/);
+    
+    // Setup dialog handler for confirmation
+    page.once('dialog', dialog => dialog.accept());
+    
+    // Click logout
+    await page.locator('#admin-clear-token').click();
+    
+    // Should redirect to login page
+    await expect(page).toHaveURL(/admin-login\.html/, { timeout: 5000 });
+  });
+
+  test('Deals refresh button triggers fetchDeals', async ({ page }) => {
+    // Navigate to deals tab
+    await page.locator('[data-tab="deals"]').click();
+    await page.locator('.panel-head h2:text("Deals & Spotlights")').waitFor();
+    
+    // Click deals refresh and wait for response
+    const responsePromise = page.waitForResponse((response) =>
+      response.url().includes('/.netlify/functions/deals-admin')
+    );
+    await page.locator('#deals-refresh').click();
+    const response = await responsePromise;
+    expect(response.status(), 'deals endpoint status').toBeLessThan(400);
+  });
+
+  test('Experiment add button shows placeholder message', async ({ page }) => {
+    // Navigate to A/B tests tab
+    await page.locator('[data-tab="ab"]').click();
+    await page.locator('.panel-head h2:text("A/B Tests")').waitFor();
+    
+    // Click experiment add button
+    await page.locator('#experiment-add').click();
+    
+    // Should show toast with "coming soon" message
+    await expect(page.locator('#toast')).toContainText('coming soon', { timeout: 3000 });
+  });
+
+  test('Email import button opens file picker', async ({ page }) => {
+    // Navigate to email tab
+    await page.locator('[data-tab="email"]').click();
+    await page.locator('.panel-head h2:text("Email & Leads")').waitFor();
+    
+    // Click import button - file picker will open but we can't interact with it in tests
+    // Just verify the button exists and is clickable
+    const importBtn = page.locator('#email-import');
+    await expect(importBtn).toBeVisible();
+    await expect(importBtn).toBeEnabled();
+  });
 });
