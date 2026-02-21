@@ -13,18 +13,40 @@ High-conversion gaming-credit dropsite: TikTok-ready UI, Netlify Functions, Supa
 2. Run [`supabase-schema.sql`](./supabase-schema.sql) to create tables.
 3. Grab **Project URL** + **service_role key** → set as Netlify env vars:
    - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY` (also accepted: `SUPABASE_SERVICE_KEY`)
 4. Optional envs:
+   - `ADMIN_TOKEN` (token for admin API calls)
    - `ADMIN_PASSWORD_HASH` (bcrypt hash via `node scripts/hash-password.js "pass"`)
-   - `ENABLE_DOUBLE_OPT_IN=1` (keeps emails in pending state)
+   - `ADMIN_ALLOWED_ORIGINS` (comma-separated allowed CORS origins)
    - `TIKTOK_PIXEL_ID` (or override in HTML bundle)
 
 ## Netlify Deployment
 ```bash
 # install deps, run dev
-cd price-compare-site
 npm install
 npx netlify dev
+```
+
+### Local testing with curl
+
+```bash
+# Newsletter signup (success)
+curl -s -X POST http://localhost:8888/.netlify/functions/newsletter_signup \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"test@example.com"}'
+
+# Newsletter signup (duplicate – returns ok with status "exists")
+curl -s -X POST http://localhost:8888/.netlify/functions/newsletter_signup \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"test@example.com"}'
+
+# Track event
+curl -s -X POST http://localhost:8888/.netlify/functions/track-event \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"ViewContent"}'
+
+# Spotlight
+curl -s http://localhost:8888/.netlify/functions/spotlight
 ```
 - **netlify.toml** already defines redirects + security headers.
 - `/go/*` → `go` function (logs click → Supabase → 302 affiliate).
