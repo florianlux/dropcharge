@@ -1,66 +1,87 @@
-export async function handler(event) {
+const { supabase, hasSupabase } = require('./_lib/supabase');
+const { withCors } = require('./_lib/cors');
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+async function handler(event) {
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: false, error: 'Method not allowed' })
+    };
+  }
+
+  let payload = {};
   try {
-    if (event.httpMethod !== "POST") {
-      return {
-        statusCode: 405,
-        body: JSON.stringify({ error: "Method not allowed" })
-      };
+    payload = event.body ? JSON.parse(event.body) : {};
+  } catch {
+    return {
+      statusCode: 400,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: false, error: 'Invalid JSON body' })
+    };
+  }
+
+  const email = (payload.email || '').trim().toLowerCase();
+
+  if (!email || !EMAIL_RE.test(email)) {
+    return {
+      statusCode: 400,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: false, error: 'invalid_email' })
+    };
+  }
+
+  if (!hasSupabase || !supabase) {
+    console.error('newsletter_signup: Supabase not configured');
+    return {
+      statusCode: 503,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: false, error: 'Service temporarily unavailable' })
+    };
+  }
+
+  const record = {
+    email,
+    status: 'active',
+    source: payload.source || null,
+    utm_source: payload.utm?.utm_source || null,
+    utm_medium: payload.utm?.utm_medium || null,
+    utm_campaign: payload.utm?.utm_campaign || null,
+    utm_term: payload.utm?.utm_term || null,
+    utm_content: payload.utm?.utm_content || null,
+    meta: { page: payload.page || null, consent: payload.consent || false }
+  };
+
+  try {
+    const { error } = await supabase.from('newsletter_subscribers').insert(record);
+
+    if (error) {
+      // Unique constraint violation → duplicate email
+      if (error.code === '23505') {
+        return {
+          statusCode: 200,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ok: true, status: 'exists', message: 'Email already subscribed' })
+        };
+      }
+      throw error;
     }
-
-    if (!process.env.RESEND_API_KEY) {
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ error: "Missing RESEND_API_KEY" })
-      };
-    }
-
-    let payload = {};
-
-    try {
-      payload = event.body ? JSON.parse(event.body) : {};
-    } catch (err) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Invalid JSON body" })
-      };
-    }
-
-    const email = (payload.email || "").trim().toLowerCase();
-
-    if (!email) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ error: "Email is required" })
-      };
-    }
-
-    const { Resend } = await import("resend");
-    const resend = new Resend(process.env.RESEND_API_KEY);
-
-    const response = await resend.emails.send({
-      from: "onboarding@resend.dev",
-      to: email,
-      subject: "Welcome to DropCharge 🚀",
-      html: "<p>Thanks for subscribing!</p>"
-    });
 
     return {
       statusCode: 200,
-      body: JSON.stringify({
-        success: true,
-        id: response.id
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: true, status: 'inserted', message: 'Subscribed successfully' })
     };
-
-  } catch (error) {
-    console.error("newsletter_signup error:", error);
-
+  } catch (err) {
+    console.error('newsletter_signup error:', err.message);
     return {
       statusCode: 500,
-      body: JSON.stringify({
-        error: "Internal Server Error",
-        message: error.message
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: false, error: 'Internal server error', details: err.message })
     };
   }
 }
+
+exports.handler = withCors(handler);

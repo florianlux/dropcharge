@@ -65,8 +65,12 @@ async function handleGet() {
       body: JSON.stringify({ spotlight })
     };
   } catch (err) {
-    console.log('spotlight get error', err.message);
-    return { statusCode: 500, body: 'Failed to load spotlight' };
+    console.error('spotlight get error:', err.message);
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' },
+      body: JSON.stringify({ ok: true, spotlight: null })
+    };
   }
 }
 

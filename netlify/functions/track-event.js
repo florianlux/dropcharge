@@ -48,7 +48,8 @@ async function handler(event) {
   }
 
   if (!hasSupabase || !supabase) {
-    return { statusCode: 500, body: JSON.stringify({ ok: false, error: 'supabase_not_configured' }) };
+    console.error('track-event: Supabase not configured, discarding event');
+    return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ok: true, message: 'event discarded (storage not configured)' }) };
   }
 
   const headers = event.headers || {};
@@ -92,11 +93,11 @@ async function handler(event) {
       body: JSON.stringify({ ok: true })
     };
   } catch (err) {
-    console.log('event insert error', err.message);
+    console.error('track-event insert error:', err.message);
     return {
-      statusCode: 500,
+      statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ok: false, error: err.message })
+      body: JSON.stringify({ ok: true, message: 'event discarded (insert failed)' })
     };
   }
 };
