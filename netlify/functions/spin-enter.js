@@ -65,9 +65,9 @@ async function handler(event) {
 
   if (hasSupabase && supabase) {
     try {
-      const { error } = await supabase.from('emails').insert({
+      const { error } = await supabase.from('newsletter_subscribers').insert({
         email,
-        confirmed: false,
+        status: 'active',
         source: 'spin_wheel',
         meta: { prize: prizeLabel },
         created_at: new Date().toISOString(),
