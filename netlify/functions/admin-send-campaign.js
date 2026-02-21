@@ -115,7 +115,7 @@ async function handler(event) {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
 
-  const authError = requireAdmin(event.headers || {});
+  const authError = await requireAdmin(event.headers || {});
   if (authError) return authError;
 
   let payload = {};

@@ -177,3 +177,84 @@ create table if not exists public.admin_audit_log (
 
 create index if not exists admin_login_attempts_ip_created_idx on public.admin_login_attempts (ip, created_at desc);
 create index if not exists admin_sessions_expires_idx on public.admin_sessions (expires_at);
+
+-- Admin users table for email allowlist
+create table if not exists public.admin_users (
+  id uuid primary key default gen_random_uuid(),
+  email text not null unique,
+  created_at timestamptz default now(),
+  last_login_at timestamptz
+);
+
+create unique index if not exists admin_users_email_unique on public.admin_users ((lower(email)));
+
+-- Helper function to check if a user is an admin
+create or replace function public.is_admin()
+returns boolean as $$
+begin
+  return exists (
+    select 1 from public.admin_users
+    where lower(email) = lower(auth.jwt()->>'email')
+  );
+end;
+$$ language plpgsql security definer;
+
+-- RLS Policies: Allow public read, only admins can write
+alter table public.clicks enable row level security;
+alter table public.emails enable row level security;
+alter table public.events enable row level security;
+alter table public.spotlights enable row level security;
+alter table public.settings enable row level security;
+alter table public.newsletter_subscribers enable row level security;
+alter table public.newsletter_campaigns enable row level security;
+alter table public.newsletter_sends enable row level security;
+alter table public.admin_users enable row level security;
+
+-- Public read policies (for service role and anon)
+create policy "Allow public read on clicks" on public.clicks for select using (true);
+create policy "Allow public read on emails" on public.emails for select using (true);
+create policy "Allow public read on events" on public.events for select using (true);
+create policy "Allow public read on spotlights" on public.spotlights for select using (true);
+create policy "Allow public read on settings" on public.settings for select using (true);
+create policy "Allow public read on newsletter_subscribers" on public.newsletter_subscribers for select using (true);
+create policy "Allow public read on newsletter_campaigns" on public.newsletter_campaigns for select using (true);
+create policy "Allow public read on newsletter_sends" on public.newsletter_sends for select using (true);
+
+-- Admin write policies
+create policy "Allow admin insert on clicks" on public.clicks for insert with check (is_admin());
+create policy "Allow admin update on clicks" on public.clicks for update using (is_admin());
+create policy "Allow admin delete on clicks" on public.clicks for delete using (is_admin());
+
+create policy "Allow admin insert on emails" on public.emails for insert with check (is_admin());
+create policy "Allow admin update on emails" on public.emails for update using (is_admin());
+create policy "Allow admin delete on emails" on public.emails for delete using (is_admin());
+
+create policy "Allow admin insert on events" on public.events for insert with check (is_admin());
+create policy "Allow admin update on events" on public.events for update using (is_admin());
+create policy "Allow admin delete on events" on public.events for delete using (is_admin());
+
+create policy "Allow admin insert on spotlights" on public.spotlights for insert with check (is_admin());
+create policy "Allow admin update on spotlights" on public.spotlights for update using (is_admin());
+create policy "Allow admin delete on spotlights" on public.spotlights for delete using (is_admin());
+
+create policy "Allow admin insert on settings" on public.settings for insert with check (is_admin());
+create policy "Allow admin update on settings" on public.settings for update using (is_admin());
+create policy "Allow admin delete on settings" on public.settings for delete using (is_admin());
+
+create policy "Allow admin insert on newsletter_subscribers" on public.newsletter_subscribers for insert with check (is_admin());
+create policy "Allow admin update on newsletter_subscribers" on public.newsletter_subscribers for update using (is_admin());
+create policy "Allow admin delete on newsletter_subscribers" on public.newsletter_subscribers for delete using (is_admin());
+
+create policy "Allow admin insert on newsletter_campaigns" on public.newsletter_campaigns for insert with check (is_admin());
+create policy "Allow admin update on newsletter_campaigns" on public.newsletter_campaigns for update using (is_admin());
+create policy "Allow admin delete on newsletter_campaigns" on public.newsletter_campaigns for delete using (is_admin());
+
+create policy "Allow admin insert on newsletter_sends" on public.newsletter_sends for insert with check (is_admin());
+create policy "Allow admin update on newsletter_sends" on public.newsletter_sends for update using (is_admin());
+create policy "Allow admin delete on newsletter_sends" on public.newsletter_sends for delete using (is_admin());
+
+-- Admin users: only admins can read/write
+create policy "Allow admin read on admin_users" on public.admin_users for select using (is_admin());
+create policy "Allow admin insert on admin_users" on public.admin_users for insert with check (is_admin());
+create policy "Allow admin update on admin_users" on public.admin_users for update using (is_admin());
+create policy "Allow admin delete on admin_users" on public.admin_users for delete using (is_admin());
