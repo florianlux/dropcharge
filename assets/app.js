@@ -317,7 +317,14 @@ emailForm?.addEventListener('submit', async (event) => {
   const email = formData.get('email');
   const submitBtn = emailForm.querySelector('button[type="submit"]');
   const utmParams = Object.fromEntries(new URLSearchParams(window.location.search));
-  if (submitBtn) submitBtn.disabled = true;
+  
+  // Add loading state
+  const originalBtnText = submitBtn?.textContent || 'Benachrichtige mich';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Lädt...';
+  }
+  
   try {
     const res = await fetch('/.netlify/functions/newsletter_signup', {
       method: 'POST',
@@ -331,14 +338,42 @@ emailForm?.addEventListener('submit', async (event) => {
       })
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed');
+    
+    // Handle non-ok responses
+    if (!data.ok) {
+      throw new Error(data?.error || 'Failed');
+    }
+    
+    // Show success message based on status
     const status = data.status || 'inserted';
-    const copy = status === 'exists' ? '✅ Du bist schon eingetragen.' : '✅ Danke! Check dein Postfach.';
+    let copy;
+    if (status === 'exists') {
+      copy = '✅ Du bist schon eingetragen.';
+    } else if (status === 'reactivated') {
+      copy = '✅ Willkommen zurück! Dein Abo ist wieder aktiv.';
+    } else {
+      copy = '✅ Danke! Check dein Postfach.';
+    }
+    
     emailForm.innerHTML = `<p class="success">${copy}</p>`;
     setTimeout(() => popup?.classList.remove('visible'), 2500);
+    
   } catch (err) {
-    alert(err.message === 'invalid_email' ? 'Bitte eine gültige E-Mail eingeben.' : 'Signup fehlgeschlagen. Bitte später erneut versuchen.');
-    if (submitBtn) submitBtn.disabled = false;
+    // Show appropriate error message
+    let errorMsg = 'Signup fehlgeschlagen. Bitte später erneut versuchen.';
+    if (err.message === 'invalid_email') {
+      errorMsg = 'Bitte eine gültige E-Mail eingeben.';
+    } else if (err.message === 'Email is required') {
+      errorMsg = 'Bitte E-Mail-Adresse eingeben.';
+    }
+    
+    alert(errorMsg);
+    
+    // Restore button state
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalBtnText;
+    }
   }
 });
 
