@@ -218,8 +218,7 @@ function showSchemaBanner(message) {
       document.body.prepend(banner);
     }
   }
-  const items = (message || '').replace(/column |relation |table /gi, '').trim();
-  banner.textContent = 'Schema mismatch \u2014 run migrations' + (items ? ': ' + items : '');
+  banner.textContent = 'Schema mismatch \u2014 run migrations' + (message ? ': ' + message : '');
 }
 
 async function request(path, options = {}) {
