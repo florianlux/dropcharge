@@ -209,7 +209,7 @@
 
         // Update meta badges
         const metaEl = document.getElementById('deal-meta');
-        metaEl.innerHTML = ''; // Clear existing content
+        metaEl.replaceChildren(); // Clear existing content
         
         if (deal.platform) {
           const platformBadge = document.createElement('div');

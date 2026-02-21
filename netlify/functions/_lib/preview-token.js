@@ -57,7 +57,8 @@ function validatePreviewToken(token, slug) {
     const payload = `${tokenSlug}:${expiresAtStr}`;
     const expectedHmac = crypto.createHmac('sha256', secret).update(payload).digest('hex');
     
-    return hmac === expectedHmac;
+    // Use constant-time comparison to prevent timing attacks
+    return crypto.timingSafeEqual(Buffer.from(hmac), Buffer.from(expectedHmac));
   } catch (err) {
     console.error('Preview token validation error:', err.message);
     return false;
