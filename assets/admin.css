@@ -7,6 +7,7 @@
   --accent-soft: rgba(124, 93, 255, 0.15);
   --danger: #ff6f6f;
   --success: #21d19f;
+  --shake-distance: 5px;
 }
 * {
   box-sizing: border-box;
@@ -711,6 +712,6 @@ textarea { resize: vertical; }
 
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  75% { transform: translateX(5px); }
+  25% { transform: translateX(calc(-1 * var(--shake-distance))); }
+  75% { transform: translateX(var(--shake-distance)); }
 }

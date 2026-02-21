@@ -3,6 +3,7 @@ const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const MAX_SLUG_LENGTH = 64;
 
 function toNumber(value) {
   if (typeof value === 'number') return value;
@@ -320,7 +321,7 @@ function slugify(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
-    .slice(0, 64) || null;
+    .slice(0, MAX_SLUG_LENGTH) || null;
 }
 
 function buildFullDeal(payload = {}) {

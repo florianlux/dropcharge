@@ -899,7 +899,8 @@ async function updateDealField(id, patch, optimistic = true) {
     // Find the deal first
     const deal = state.deals.find(d => d.id === id);
     if (!deal) {
-      console.error('Deal not found in state:', id);
+      console.error('Cannot update deal: Deal not found in state:', id);
+      handleRequestError('Update fehlgeschlagen', new Error('Deal nicht gefunden'));
       return;
     }
     
