@@ -1,6 +1,7 @@
 const { supabase, hasSupabase } = require('./_lib/supabase')
 const { requireAdmin } = require('./_lib/admin-token')
 const { withCors } = require('./_lib/cors');
+const { createSnapshot } = require('./_lib/snapshot-helper');
 
 const NETWORKS = {
   amazon: {
@@ -147,6 +148,8 @@ async function handler(event) {
       .select('id, title, slug')
       .single()
     if (error) throw error
+
+    await createSnapshot('deal_created');
 
     return {
       statusCode: 200,

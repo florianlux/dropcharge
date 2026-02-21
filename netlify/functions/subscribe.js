@@ -24,6 +24,7 @@ async function insertEmailRecord({ email, confirmed, source, meta }) {
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { fetchSettings, extractFlags } = require('./_lib/settings');
 const { withCors } = require('./_lib/cors');
+const { createSnapshot } = require('./_lib/snapshot-helper');
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -92,6 +93,8 @@ async function handler(event) {
     const meta = payload.meta && typeof payload.meta === 'object' && !Array.isArray(payload.meta) ? payload.meta : undefined;
 
     await insertEmailRecord({ email, confirmed, source, meta });
+
+    await createSnapshot('subscriber_added');
 
     return {
       statusCode: 200,

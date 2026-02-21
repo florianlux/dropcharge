@@ -1,6 +1,7 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
+const { createSnapshot } = require('./_lib/snapshot-helper');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -299,6 +300,7 @@ async function handleInlineUpdate(event) {
       .update(patch)
       .eq('id', payload.id);
     if (error) throw error;
+    await createSnapshot('deal_updated');
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
