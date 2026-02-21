@@ -8,6 +8,8 @@ if (!url) {
 }
 if (!serviceKey) {
   console.error('Supabase missing env: SUPABASE_SERVICE_ROLE_KEY');
+} else if (!process.env.SUPABASE_SERVICE_ROLE_KEY && process.env.SUPABASE_SERVICE_KEY) {
+  console.warn('Supabase: using SUPABASE_SERVICE_KEY fallback — set SUPABASE_SERVICE_ROLE_KEY instead');
 }
 
 const hasSupabase = Boolean(url && serviceKey);
