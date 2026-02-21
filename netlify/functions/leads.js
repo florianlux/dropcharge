@@ -41,7 +41,7 @@ async function handler(event) {
       .gte('created_at', since24h);
     if (clickErr) throw clickErr;
 
-    const conversion = clicks24h
+    const conversion = clicks24h > 0
       ? Number(((emails24h / clicks24h) * 100).toFixed(1))
       : 0;
 
