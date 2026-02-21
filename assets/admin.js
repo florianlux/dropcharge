@@ -738,13 +738,31 @@ function renderFactoryResult(payload) {
   }
   const goUrl = `${API_BASE}/go/${payload.slug}`;
   dom.factoryResult.innerHTML = `
-    <p><strong>${goUrl}</strong></p>
-    <p><small>${payload.affiliate_url || ''}</small></p>
-    <button type="button" class="btn mini ghost" data-factory-copy>Copy /go URL</button>
+    <div class="factory-success">
+      <h4>✓ Affiliate Link erstellt</h4>
+      <div class="result-item">
+        <label>Kurzlink (/go URL)</label>
+        <p><strong>${goUrl}</strong></p>
+        <div class="result-actions">
+          <button type="button" class="btn mini" data-factory-copy>Kopieren</button>
+          <a href="${goUrl}" target="_blank" class="btn mini ghost" data-factory-preview>Vorschau</a>
+        </div>
+      </div>
+      <div class="result-item">
+        <label>Ziel-URL (mit Tracking)</label>
+        <p><small>${payload.affiliate_url || ''}</small></p>
+        <button type="button" class="btn mini ghost" data-factory-copy-affiliate>Affiliate URL kopieren</button>
+      </div>
+    </div>
   `;
   dom.factoryResult.querySelector('[data-factory-copy]')?.addEventListener('click', () => {
     navigator.clipboard.writeText(goUrl)
       .then(() => showToast('Link kopiert'))
+      .catch(() => showToast('Clipboard blockiert', 'error'));
+  });
+  dom.factoryResult.querySelector('[data-factory-copy-affiliate]')?.addEventListener('click', () => {
+    navigator.clipboard.writeText(payload.affiliate_url)
+      .then(() => showToast('Affiliate URL kopiert'))
       .catch(() => showToast('Clipboard blockiert', 'error'));
   });
 }

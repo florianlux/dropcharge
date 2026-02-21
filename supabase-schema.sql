@@ -177,3 +177,9 @@ create table if not exists public.admin_audit_log (
 
 create index if not exists admin_login_attempts_ip_created_idx on public.admin_login_attempts (ip, created_at desc);
 create index if not exists admin_sessions_expires_idx on public.admin_sessions (expires_at);
+
+-- Add UTM columns to spotlights table if they don't exist
+alter table if exists public.spotlights
+  add column if not exists utm_source text,
+  add column if not exists utm_campaign text,
+  add column if not exists utm_medium text;
