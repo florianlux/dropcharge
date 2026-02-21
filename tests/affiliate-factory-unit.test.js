@@ -3,6 +3,9 @@
  * Run with: node tests/affiliate-factory-unit.test.js
  */
 
+// Constants
+const MAX_SLUG_LENGTH = 72;
+
 // Helper functions extracted from affiliate-factory.js for testing
 function slugify(value) {
   return (value || '')
@@ -10,7 +13,7 @@ function slugify(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
-    .slice(0, 72) || null
+    .slice(0, MAX_SLUG_LENGTH) || null
 }
 
 function coerceUrl(raw = '') {
@@ -189,10 +192,10 @@ test('slugify handles multiple consecutive spaces', () => {
   assertEqual(result, 'test-product');
 });
 
-test('slugify truncates to 72 characters', () => {
+test(`slugify truncates to ${MAX_SLUG_LENGTH} characters`, () => {
   const longString = 'a'.repeat(100);
   const result = slugify(longString);
-  assertEqual(result.length, 72);
+  assertEqual(result.length, MAX_SLUG_LENGTH);
 });
 
 test('slugify returns null for empty string', () => {

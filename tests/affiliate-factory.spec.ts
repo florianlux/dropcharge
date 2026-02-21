@@ -4,7 +4,7 @@ const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 
 test.skip(!ADMIN_TOKEN, 'Set ADMIN_TOKEN env variable to run admin E2E tests.');
 
-test.describe.serial('Affiliate Link Factory', () => {
+test.describe('Affiliate Link Factory', () => {
   test.beforeEach(async ({ context, page }) => {
     await context.addInitScript((token) => {
       localStorage.setItem('admin_token', token as string);

@@ -2,6 +2,8 @@ const { supabase, hasSupabase } = require('./_lib/supabase')
 const { requireAdmin } = require('./_lib/admin-token')
 const { withCors } = require('./_lib/cors');
 
+const MAX_SLUG_LENGTH = 72;
+
 const NETWORKS = {
   amazon: {
     label: 'Amazon',
@@ -24,7 +26,7 @@ function slugify(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
-    .slice(0, 72) || null
+    .slice(0, MAX_SLUG_LENGTH) || null
 }
 
 function coerceUrl(raw = '') {

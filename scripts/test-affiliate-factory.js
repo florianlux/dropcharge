@@ -7,6 +7,9 @@
  * functionality of the Affiliate Link Factory.
  */
 
+// Constants
+const MAX_SLUG_LENGTH = 72;
+
 // Copy the core functions from affiliate-factory.js
 function coerceUrl(raw = '') {
   try {
@@ -27,7 +30,7 @@ function slugify(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
-    .slice(0, 72) || null
+    .slice(0, MAX_SLUG_LENGTH) || null
 }
 
 function buildAffiliateUrl(productUrl, networkKey, trackerId, utmParams = {}) {
