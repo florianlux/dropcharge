@@ -257,6 +257,18 @@ test.describe('Affiliate Link Factory', () => {
 });
 
 test.describe('Affiliate Link Factory - URL Validation Unit Tests', () => {
+  test.beforeEach(async ({ context, page }) => {
+    const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
+    if (ADMIN_TOKEN) {
+      await context.addInitScript((token) => {
+        localStorage.setItem('admin_token', token as string);
+      }, ADMIN_TOKEN);
+    }
+    await page.goto('/admin.html');
+    await page.locator('button[data-tab="deals"]').click();
+    await page.locator('#factory-form').waitFor();
+  });
+
   const invalidUrls = [
     'not-a-url',
     'ftp://example.com',
@@ -279,9 +291,6 @@ test.describe('Affiliate Link Factory - URL Validation Unit Tests', () => {
 
   for (const url of invalidUrls) {
     test(`should reject invalid URL: "${url}"`, async ({ page }) => {
-      await page.goto('/admin.html');
-      await page.locator('button[data-tab="deals"]').click();
-      await page.locator('#factory-form').waitFor();
       
       await page.locator('input[name="title"]').fill('Test Product');
       await page.locator('input[name="product_url"]').fill(url);
@@ -310,10 +319,6 @@ test.describe('Affiliate Link Factory - URL Validation Unit Tests', () => {
 
   for (const url of validUrls) {
     test(`should accept valid URL: "${url}"`, async ({ page }) => {
-      await page.goto('/admin.html');
-      await page.locator('button[data-tab="deals"]').click();
-      await page.locator('#factory-form').waitFor();
-      
       const timestamp = Date.now();
       await page.locator('input[name="title"]').fill(`Valid URL Test ${timestamp}`);
       await page.locator('input[name="product_url"]').fill(url);
