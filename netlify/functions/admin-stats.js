@@ -19,7 +19,7 @@ const WINDOW_MS = {
 function toNumber(value) {
   if (typeof value === 'number') return value;
   if (typeof value === 'string') {
-    const normalized = value.replace('.', '').replace(',', '.');
+    const normalized = value.replace(/\./g, '').replace(',', '.');
     const parsed = parseFloat(normalized);
     return Number.isFinite(parsed) ? parsed : 0;
   }

@@ -377,7 +377,7 @@ function renderAnalytics(data) {
   
   if (dom.analyticsClicks) dom.analyticsClicks.textContent = clicks?.toLocaleString() || '0';
   if (dom.analyticsConversions) dom.analyticsConversions.textContent = conversions?.toLocaleString() || '0';
-  if (dom.analyticsCtr) dom.analyticsCtr.textContent = `${ctr?.toFixed ? ctr.toFixed(2) : ctr || 0}%`;
+  if (dom.analyticsCtr) dom.analyticsCtr.textContent = `${(ctr ?? 0).toFixed(2)}%`;
   if (dom.analyticsRevenue) dom.analyticsRevenue.textContent = formatCurrency(revenue || 0);
   
   if (dom.analyticsLastUpdate) {
