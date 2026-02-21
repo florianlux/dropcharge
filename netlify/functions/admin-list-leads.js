@@ -17,16 +17,26 @@ exports.handler = withCors(async (event) => {
   const offset = Math.max(Number(params.offset) || 0, 0);
 
   try {
-    let query = supabase
-      .from('newsletter_subscribers')
-      .select('id,email,status,created_at,last_sent_at,unsubscribed_at', { count: 'exact' })
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
+    // Try full column set first; fall back to base columns if schema mismatch
+    const columns = 'id,email,status,created_at,last_sent_at,unsubscribed_at';
+    const baseColumns = 'id,email,status,created_at';
 
-    if (status) query = query.eq('status', status);
-    if (search) query = query.ilike('email', `%${search}%`);
+    async function runQuery(cols) {
+      let query = supabase
+        .from('newsletter_subscribers')
+        .select(cols, { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+      if (status) query = query.eq('status', status);
+      if (search) query = query.ilike('email', `%${search}%`);
+      return query;
+    }
 
-    const { data, error, count } = await query;
+    let { data, error, count } = await runQuery(columns);
+    if (error && isSchemaError(error)) {
+      console.log('admin-list-leads: falling back to base columns');
+      ({ data, error, count } = await runQuery(baseColumns));
+    }
     if (error) throw error;
 
     return {

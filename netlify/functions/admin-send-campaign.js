@@ -2,9 +2,10 @@ const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
 
-const EMAIL_API_KEY = process.env.EMAIL_API_KEY;
+const EMAIL_API_KEY = process.env.RESEND_API_KEY || process.env.EMAIL_API_KEY;
 const EMAIL_FROM = process.env.EMAIL_FROM;
-const BASE_URL = (process.env.BASE_URL || 'https://dropcharge.netlify.app').replace(/\/$/, '');
+const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || undefined;
+const BASE_URL = (process.env.APP_BASE_URL || process.env.BASE_URL || 'https://dropcharge.netlify.app').replace(/\/$/, '');
 const BATCH_SIZE = Number(process.env.CAMPAIGN_BATCH_SIZE || 50);
 const BATCH_DELAY_MS = Number(process.env.CAMPAIGN_BATCH_DELAY || 750);
 const RATE_LIMIT_MS = 5 * 60 * 1000; // 5 minutes
@@ -69,7 +70,8 @@ async function sendEmail({ to, subject, html }) {
     from: EMAIL_FROM,
     to,
     subject,
-    html
+    html,
+    ...(EMAIL_REPLY_TO ? { reply_to: EMAIL_REPLY_TO } : {})
   };
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
@@ -143,7 +145,18 @@ async function handler(event) {
   }
 
   if (!EMAIL_API_KEY || !EMAIL_FROM) {
-    return { statusCode: 500, body: JSON.stringify({ ok: false, error: 'email_env_missing' }) };
+    const missing = [];
+    if (!EMAIL_API_KEY) missing.push('RESEND_API_KEY');
+    if (!EMAIL_FROM) missing.push('EMAIL_FROM');
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ok: false,
+        error: 'email_env_missing',
+        message: `Missing required env: ${missing.join(', ')}. Set these in Netlify → Site settings → Environment variables.`
+      })
+    };
   }
 
   const now = Date.now();

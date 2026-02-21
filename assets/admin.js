@@ -238,7 +238,13 @@ function initTracking() {
       const fd = new FormData(form);
       const slug = (fd.get('slug') || '').trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
       if (!slug) { showToast('Enter a valid slug.', 'error'); return; }
-      const url = `${window.location.origin}/go/${slug}`;
+      const params = new URLSearchParams();
+      ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content'].forEach(key => {
+        const val = (fd.get(key) || '').trim();
+        if (val) params.set(key, val);
+      });
+      const qs = params.toString();
+      const url = `${window.location.origin}/go/${slug}${qs ? '?' + qs : ''}`;
       if (urlDisplay) urlDisplay.textContent = url;
       if (resultBox) resultBox.style.display = 'block';
       logEvent('tracking_link_generated', { slug });
@@ -261,23 +267,41 @@ function initTracking() {
 // ── Analytics ──────────────────────────────────────────
 async function loadAnalytics() {
   const rows = $('#analytics-rows');
-  if (!rows) return;
-  rows.innerHTML = '<p class="empty">Loading…</p>';
-  try {
-    const data = await apiGet('admin-analytics');
-    const topLinks = data.top_links || [];
-    if (topLinks.length === 0) {
-      rows.innerHTML = '<p class="empty">No click data available.</p>';
-      return;
+  if (rows) {
+    rows.innerHTML = '<p class="empty">Loading…</p>';
+    try {
+      const data = await apiGet('admin-analytics');
+      const topLinks = data.top_links || [];
+      if (topLinks.length === 0) {
+        rows.innerHTML = '<p class="empty">No click data available.</p>';
+      } else {
+        rows.innerHTML = topLinks.map(link =>
+          `<div class="table-row">
+            <span>${escapeHtml(link.slug)}</span>
+            <span><strong>${link.count}</strong></span>
+          </div>`
+        ).join('');
+      }
+      // Populate latest events if present
+      const eventsRows = $('#events-rows');
+      if (eventsRows) {
+        const latestEvents = data.latest_events || [];
+        if (latestEvents.length === 0) {
+          eventsRows.innerHTML = '<p class="empty">No recent events.</p>';
+        } else {
+          eventsRows.innerHTML = latestEvents.map(ev => {
+            const time = ev.created_at ? new Date(ev.created_at).toLocaleString() : '–';
+            return `<div class="table-row">
+              <span>${escapeHtml(ev.type || ev.name || 'unknown')}</span>
+              <span>${escapeHtml(ev.slug || '–')}</span>
+              <span>${time}</span>
+            </div>`;
+          }).join('');
+        }
+      }
+    } catch {
+      rows.innerHTML = '<p class="empty">Failed to load analytics.</p>';
     }
-    rows.innerHTML = topLinks.map(link =>
-      `<div class="table-row">
-        <span>${escapeHtml(link.slug)}</span>
-        <span><strong>${link.count}</strong></span>
-      </div>`
-    ).join('');
-  } catch {
-    rows.innerHTML = '<p class="empty">Failed to load analytics.</p>';
   }
 }
 
