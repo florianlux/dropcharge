@@ -856,7 +856,13 @@ async function dealAction(id, action) {
       row.innerHTML = originalState.html;
       row.classList.remove('optimistic');
       row.classList.add('error');
-      setTimeout(() => row.classList.remove('error'), 500);
+      
+      // Remove error class after animation completes
+      const handleAnimationEnd = () => {
+        row.classList.remove('error');
+        row.removeEventListener('animationend', handleAnimationEnd);
+      };
+      row.addEventListener('animationend', handleAnimationEnd);
     }
     
     handleRequestError('Deal Aktion', err);
@@ -927,7 +933,12 @@ async function updateDealField(id, patch, optimistic = true) {
         state.deals[dealIndex] = originalState.deal;
       }
       
-      setTimeout(() => row.classList.remove('error'), 500);
+      // Remove error class after animation completes
+      const handleAnimationEnd = () => {
+        row.classList.remove('error');
+        row.removeEventListener('animationend', handleAnimationEnd);
+      };
+      row.addEventListener('animationend', handleAnimationEnd);
     }
     
     handleRequestError('Inline Update', err);
