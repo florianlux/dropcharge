@@ -741,17 +741,17 @@ function renderFactoryResult(payload) {
     <div class="factory-success">
       <h4>✓ Affiliate Link erstellt</h4>
       <div class="result-item">
-        <label>Short Link (/go URL)</label>
+        <label>Kurzlink (/go URL)</label>
         <p><strong>${goUrl}</strong></p>
         <div class="result-actions">
-          <button type="button" class="btn mini" data-factory-copy>Copy</button>
-          <a href="${goUrl}" target="_blank" class="btn mini ghost" data-factory-preview>Preview</a>
+          <button type="button" class="btn mini" data-factory-copy>Kopieren</button>
+          <a href="${goUrl}" target="_blank" class="btn mini ghost" data-factory-preview>Vorschau</a>
         </div>
       </div>
       <div class="result-item">
-        <label>Ziel URL (mit Tracking)</label>
+        <label>Ziel-URL (mit Tracking)</label>
         <p><small>${payload.affiliate_url || ''}</small></p>
-        <button type="button" class="btn mini ghost" data-factory-copy-affiliate>Copy Affiliate URL</button>
+        <button type="button" class="btn mini ghost" data-factory-copy-affiliate>Affiliate URL kopieren</button>
       </div>
     </div>
   `;
