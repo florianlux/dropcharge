@@ -1,13 +1,14 @@
 const { createClient } = require('@supabase/supabase-js');
 
-const url = process.env.SUPABASE_URL;
-const serviceKey = process.env.SUPABASE_SERVICE_KEY;
+// Support both standard and Next.js-style environment variable naming
+const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceKey = process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
 
 if (!url) {
-  console.error('Supabase missing env: SUPABASE_URL');
+  console.error('Supabase missing env: SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL');
 }
 if (!serviceKey) {
-  console.error('Supabase missing env: SUPABASE_SERVICE_KEY');
+  console.error('Supabase missing env: SUPABASE_SERVICE_KEY or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY');
 }
 
 const hasSupabase = Boolean(url && serviceKey);

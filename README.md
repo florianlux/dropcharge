@@ -11,13 +11,33 @@ High-conversion gaming-credit dropsite: TikTok-ready UI, Netlify Functions, Supa
 ## Supabase Setup
 1. Create a new Supabase project (or use existing project at `https://qoinlxpumoakfmkfrwqb.supabase.co`).
 2. Run [`supabase-schema.sql`](./supabase-schema.sql) to create tables.
-3. Grab **Project URL** + **service_role key** → set as env vars:
+3. Grab **Project URL** + keys from your Supabase dashboard → set as env vars:
    - For **local development**: Copy `.env.example` to `.env` and fill in your values
    - For **production**: Set in Netlify dashboard (Site settings → Environment)
-4. Required environment variables:
-   - `SUPABASE_URL` (e.g., `https://qoinlxpumoakfmkfrwqb.supabase.co`)
-   - `SUPABASE_SERVICE_KEY` (service_role key from Supabase)
-5. Optional envs:
+
+4. **Environment Variables** (choose one naming convention):
+
+   **Standard naming (recommended for Netlify):**
+   - `SUPABASE_URL=https://qoinlxpumoakfmkfrwqb.supabase.co`
+   - `SUPABASE_SERVICE_KEY=sb_secret_VOTFopyG5pqE_RgYbUkYuQ_sfUDFdum` (service_role key for server-side)
+
+   **Next.js-style naming (also supported):**
+   - `NEXT_PUBLIC_SUPABASE_URL=https://qoinlxpumoakfmkfrwqb.supabase.co`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=sb_publishable_WLf3k1wUdS8oCm8Jwame8A_foZ2djIF` (anon/publishable key)
+
+   **Direct Database Access (optional):**
+   - `DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.qoinlxpumoakfmkfrwqb.supabase.co:5432/postgres`
+   - Use for running migrations, SQL scripts, or connecting database management tools
+   - Get the database password from Supabase dashboard → Settings → Database
+
+   > **Key Types:**
+   > - **Service Key** (`sb_secret_*`): Full database permissions, use server-side only (Netlify Functions)
+   > - **Publishable Key** (`sb_publishable_*`): Restricted by RLS policies, safe for client-side use
+   > - **Database URL**: Direct PostgreSQL connection for migrations and admin tools
+   > 
+   > The system supports both naming conventions and will fallback to `NEXT_PUBLIC_*` variables if standard ones aren't set.
+
+5. Optional environment variables:
    - `ADMIN_PASSWORD_HASH` (bcrypt hash via `node scripts/hash-password.js "pass"`)
    - `ENABLE_DOUBLE_OPT_IN=1` (keeps emails in pending state)
    - `TIKTOK_PIXEL_ID` (or override in HTML bundle)
@@ -42,10 +62,19 @@ npx netlify dev
 ## Production Deploy
 1. Push repo or use `netlify deploy --prod`.
 2. Set environment variables in Netlify dashboard (Site settings → Environment):
+   
+   **Option 1 - Standard naming:**
    - `SUPABASE_URL=https://qoinlxpumoakfmkfrwqb.supabase.co`
    - `SUPABASE_SERVICE_KEY=<your-service-role-key>`
+   
+   **Option 2 - Next.js-style naming:**
+   - `NEXT_PUBLIC_SUPABASE_URL=https://qoinlxpumoakfmkfrwqb.supabase.co`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=sb_publishable_WLf3k1wUdS8oCm8Jwame8A_foZ2djIF`
+   
+   **Other required/optional variables:**
    - `ADMIN_PASSWORD_HASH=<bcrypt-hash>`
    - Optional: `ENABLE_DOUBLE_OPT_IN`, `TIKTOK_PIXEL_ID`, `ADMIN_ALLOWED_ORIGINS`
+
 3. Point domain DNS (CNAME to `<site>.netlify.app` or Netlify nameservers).
 4. After deploy: visit `/admin/login`, enter plaintext password (hash stored in env), verify dashboard stats (clicks/emails/events show from Supabase).
 
