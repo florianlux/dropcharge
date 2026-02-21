@@ -712,6 +712,52 @@ function renderCampaignLog(entries = []) {
     .join('');
 }
 
+async function loadCampaignLog({ silent = false } = {}) {
+  try {
+    const data = await request(API.campaigns);
+    renderCampaignLog(data?.campaigns || []);
+  } catch (err) {
+    console.error('campaign log load failed', err.message);
+    if (!silent) handleRequestError('Kampagnen laden', err);
+  }
+}
+
+async function submitCampaign(event) {
+  event.preventDefault();
+  const form = dom.campaignForm;
+  if (!form) return;
+  const payload = {
+    subject: form.elements.subject?.value || '',
+    html: form.elements.html?.value || '',
+    segment: form.elements.segment?.value || 'all'
+  };
+  try {
+    await request(API.campaignCreate, { method: 'POST', body: JSON.stringify(payload) });
+    showToast('Kampagne erstellt');
+    loadCampaignLog();
+  } catch (err) {
+    console.error('campaign submit failed', err.message);
+    handleRequestError('Kampagne erstellen', err);
+  }
+}
+
+async function sendCampaignTest() {
+  const form = dom.campaignForm;
+  if (!form) return;
+  const payload = {
+    subject: form.elements.subject?.value || '',
+    html: form.elements.html?.value || '',
+    test: true
+  };
+  try {
+    await request(API.campaignSend, { method: 'POST', body: JSON.stringify(payload) });
+    showToast('Test-E-Mail gesendet');
+  } catch (err) {
+    console.error('campaign test send failed', err.message);
+    handleRequestError('Test-E-Mail senden', err);
+  }
+}
+
 function renderOptimizerLog(entries = []) {
   if (!dom.optimizerLog) return;
   if (!entries.length) {
@@ -1123,11 +1169,15 @@ function attachEvents() {
   dom.toggleLiveMode?.addEventListener('click', toggleLiveMode);
   dom.optimizerRun?.addEventListener('click', runOptimizer);
   dom.optimizerRefresh?.addEventListener('click', refreshOptimizerLog);
-  dom.campaignForm?.addEventListener('submit', submitCampaign);
-  dom.campaignTest?.addEventListener('click', sendCampaignTest);
-  dom.campaignLogRefresh?.addEventListener('click', () => loadCampaignLog());
-  dom.campaignPreviewRefresh?.addEventListener('click', () => renderCampaignPreview(dom.campaignForm?.elements.html?.value));
-  dom.campaignReset?.addEventListener('click', () => dom.campaignForm?.reset());
+  if (dom.campaignForm) {
+    dom.campaignForm.addEventListener('submit', submitCampaign);
+    dom.campaignTest?.addEventListener('click', sendCampaignTest);
+    dom.campaignLogRefresh?.addEventListener('click', () => loadCampaignLog());
+    dom.campaignPreviewRefresh?.addEventListener('click', () => renderCampaignPreview(dom.campaignForm?.elements.html?.value));
+    dom.campaignReset?.addEventListener('click', () => dom.campaignForm.reset());
+  } else {
+    console.warn('Campaign form not found – campaign wiring skipped.');
+  }
   dom.subscriberStatus?.addEventListener('change', () => {
     state.subscriberFilters.status = dom.subscriberStatus.value;
     loadSubscribers();
