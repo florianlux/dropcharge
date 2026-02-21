@@ -100,6 +100,15 @@
         </div>
         <form id="campaign-form" class="card-form">
           <label class="form-field">
+            <span>Segment / Group</span>
+            <select name="segment" id="campaign-segment">
+              <option value="">All Active</option>
+              <option value="spin_wheel">Spin Wheel</option>
+              <option value="popup">Popup</option>
+              <option value="newsletter_signup">Newsletter Signup</option>
+            </select>
+          </label>
+          <label class="form-field">
             <span>Subject</span>
             <input type="text" name="subject" placeholder="Weekly Drop Alert" required />
           </label>
@@ -113,7 +122,7 @@
               <input type="email" name="testEmail" placeholder="test@example.com" />
             </label>
             <button type="button" class="btn ghost" id="campaign-test">Send Test</button>
-            <button type="submit" class="btn primary">Send to All Active</button>
+            <button type="submit" class="btn primary" id="campaign-send">Send to All Active</button>
           </div>
         </form>
       </section>

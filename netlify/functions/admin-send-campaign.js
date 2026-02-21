@@ -3,7 +3,7 @@ const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
 
 const EMAIL_API_KEY = process.env.RESEND_API_KEY || process.env.EMAIL_API_KEY;
-const EMAIL_FROM = process.env.EMAIL_FROM;
+const EMAIL_FROM = process.env.EMAIL_FROM || process.env.NEWSLETTER_FROM;
 const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || undefined;
 const BASE_URL = (process.env.APP_BASE_URL || process.env.BASE_URL || 'https://dropcharge.netlify.app').replace(/\/$/, '');
 const BATCH_SIZE = Number(process.env.CAMPAIGN_BATCH_SIZE || 50);
