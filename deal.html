@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Deal Preview – DropCharge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/styles.css" />
+  <style>
+    .preview-banner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: #ff6b00;
+      color: white;
+      padding: 0.75rem;
+      text-align: center;
+      font-weight: 600;
+      z-index: 1000;
+      display: none;
+    }
+    .preview-banner.active {
+      display: block;
+    }
+    .deal-preview-page {
+      min-height: 100vh;
+      padding: 2rem 1rem;
+      padding-top: 4rem;
+    }
+    .deal-card {
+      max-width: 800px;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 1rem;
+      padding: 2rem;
+    }
+    .deal-header {
+      margin-bottom: 2rem;
+    }
+    .deal-header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .deal-subtitle {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 1.1rem;
+      margin-bottom: 1rem;
+    }
+    .deal-meta {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+    .deal-badge {
+      background: rgba(255, 255, 255, 0.1);
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      font-size: 0.9rem;
+    }
+    .deal-description {
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+    .deal-price {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #00ff88;
+      margin-bottom: 2rem;
+    }
+    .deal-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+    .deal-cover {
+      width: 100%;
+      max-width: 400px;
+      margin: 0 auto 2rem;
+      border-radius: 0.5rem;
+      overflow: hidden;
+    }
+    .deal-cover img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .error-message {
+      max-width: 600px;
+      margin: 0 auto;
+      text-align: center;
+      padding: 3rem 1rem;
+    }
+    .error-message h1 {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+    }
+    .loading-spinner {
+      text-align: center;
+      padding: 3rem 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-bg"></div>
+  
+  <div class="preview-banner" id="preview-banner">
+    🔍 PREVIEW MODE – Dieser Deal ist nicht öffentlich sichtbar
+  </div>
+
+  <div class="deal-preview-page">
+    <div id="loading-state" class="loading-spinner">
+      <p>Loading deal...</p>
+    </div>
+
+    <div id="error-state" class="error-message" style="display: none;">
+      <h1>404</h1>
+      <p>Deal nicht gefunden oder nicht verfügbar.</p>
+      <a class="btn primary" href="/">← Zurück zur Startseite</a>
+    </div>
+
+    <div id="deal-content" class="deal-card" style="display: none;">
+      <div class="deal-cover" id="deal-cover" style="display: none;">
+        <img src="" alt="Deal Cover" id="deal-cover-img" />
+      </div>
+
+      <div class="deal-header">
+        <h1 id="deal-title">—</h1>
+        <div class="deal-subtitle" id="deal-subtitle"></div>
+        <div class="deal-meta" id="deal-meta"></div>
+      </div>
+
+      <div class="deal-price" id="deal-price"></div>
+
+      <div class="deal-description" id="deal-description"></div>
+
+      <div class="deal-actions">
+        <a class="btn primary" id="deal-cta" href="#">Zum Deal</a>
+        <a class="btn ghost" href="/">← Zurück zur Startseite</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const API_BASE = document.documentElement.dataset.apiBase || window.location.origin;
+      
+      function getSlugFromPath() {
+        const parts = window.location.pathname.split('/').filter(Boolean);
+        return parts[parts.length - 1] || '';
+      }
+
+      function getPreviewToken() {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('preview_token');
+      }
+
+      /**
+       * Fetches deal data from the API
+       * Note: Preview tokens are passed via query parameter but sent in headers.
+       * Preview URLs should be treated as sensitive and expire after 5 minutes.
+       */
+      async function fetchDeal(slug, previewToken) {
+        const headers = {};
+        if (previewToken) {
+          // Pass preview token in header for security
+          headers['x-preview-token'] = previewToken;
+        }
+
+        const response = await fetch(`${API_BASE}/api/deal/${slug}`, { headers });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        return response.json();
+      }
+
+      function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      function renderDeal(data) {
+        const { deal, preview } = data;
+
+        // Show preview banner if in preview mode
+        if (preview) {
+          document.getElementById('preview-banner').classList.add('active');
+          document.body.style.paddingTop = '3rem';
+        }
+
+        // Update title
+        document.getElementById('deal-title').textContent = deal.title || '—';
+        document.title = `${deal.title || 'Deal'} – DropCharge`;
+
+        // Update subtitle
+        const subtitleEl = document.getElementById('deal-subtitle');
+        if (deal.subtitle) {
+          subtitleEl.textContent = deal.subtitle;
+        } else {
+          subtitleEl.style.display = 'none';
+        }
+
+        // Update meta badges
+        const metaEl = document.getElementById('deal-meta');
+        metaEl.replaceChildren(); // Clear existing content
+        
+        if (deal.platform) {
+          const platformBadge = document.createElement('div');
+          platformBadge.className = 'deal-badge';
+          platformBadge.textContent = `🎮 ${deal.platform}`;
+          metaEl.appendChild(platformBadge);
+        }
+        
+        if (deal.vendor) {
+          const vendorBadge = document.createElement('div');
+          vendorBadge.className = 'deal-badge';
+          vendorBadge.textContent = `🏪 ${deal.vendor}`;
+          metaEl.appendChild(vendorBadge);
+        }
+        
+        if (deal.active) {
+          const activeBadge = document.createElement('div');
+          activeBadge.className = 'deal-badge';
+          activeBadge.style.background = 'rgba(0, 255, 136, 0.2)';
+          activeBadge.textContent = '✓ Aktiv';
+          metaEl.appendChild(activeBadge);
+        } else {
+          const inactiveBadge = document.createElement('div');
+          inactiveBadge.className = 'deal-badge';
+          inactiveBadge.style.background = 'rgba(255, 107, 0, 0.2)';
+          inactiveBadge.textContent = '⚠ Inaktiv';
+          metaEl.appendChild(inactiveBadge);
+        }
+
+        // Update price
+        const priceEl = document.getElementById('deal-price');
+        if (deal.price) {
+          priceEl.textContent = deal.price;
+        } else {
+          priceEl.style.display = 'none';
+        }
+
+        // Update description
+        const descEl = document.getElementById('deal-description');
+        if (deal.description) {
+          descEl.textContent = deal.description;
+        } else {
+          descEl.style.display = 'none';
+        }
+
+        // Update cover image
+        if (deal.cover_url) {
+          document.getElementById('deal-cover').style.display = 'block';
+          document.getElementById('deal-cover-img').src = deal.cover_url;
+          document.getElementById('deal-cover-img').alt = deal.title || 'Deal Cover';
+        }
+
+        // Update CTA button
+        const ctaEl = document.getElementById('deal-cta');
+        if (deal.affiliate_url) {
+          ctaEl.href = deal.affiliate_url;
+          ctaEl.textContent = deal.code_label || 'Zum Deal';
+        } else if (deal.slug) {
+          ctaEl.href = `/go/${deal.slug}`;
+          ctaEl.textContent = deal.code_label || 'Zum Deal';
+        } else {
+          ctaEl.style.display = 'none';
+        }
+
+        // Show deal content
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('deal-content').style.display = 'block';
+      }
+
+      function showError() {
+        document.getElementById('loading-state').style.display = 'none';
+        document.getElementById('error-state').style.display = 'block';
+      }
+
+      async function init() {
+        const slug = getSlugFromPath();
+        if (!slug) {
+          showError();
+          return;
+        }
+
+        const previewToken = getPreviewToken();
+
+        try {
+          const data = await fetchDeal(slug, previewToken);
+          renderDeal(data);
+        } catch (err) {
+          console.error('Failed to load deal:', err);
+          showError();
+        }
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+    })();
+  </script>
+</body>
+</html>

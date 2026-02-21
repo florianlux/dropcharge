@@ -18,6 +18,24 @@
   force = true
 
 [[redirects]]
+  from = "/api/deal/:slug"
+  to = "/.netlify/functions/deal/:slug"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/preview-token"
+  to = "/.netlify/functions/preview-token"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/deal/:slug"
+  to = "/deal.html"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/admin/login"
   to = "/admin-login.html"
   status = 302

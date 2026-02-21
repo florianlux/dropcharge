@@ -24,7 +24,8 @@ const API = {
   campaignCreate: `${API_BASE}/.netlify/functions/admin-campaign-create`,
   campaignCancel: `${API_BASE}/.netlify/functions/admin-campaign-cancel`,
   campaignTick: `${API_BASE}/.netlify/functions/admin-campaign-tick`,
-  newsletterSignup: '/.netlify/functions/newsletter_signup'
+  newsletterSignup: '/.netlify/functions/newsletter_signup',
+  previewToken: `${API_BASE}/.netlify/functions/preview-token`
 };
 
 const TOKEN_STORAGE_KEY = 'admin_token';
@@ -579,6 +580,7 @@ function renderDeals() {
       <span>${formatCurrency(metrics.revenue24 || 0)}</span>
       <span class="table-actions">
         <button class="btn mini ghost" data-action="edit">Edit</button>
+        <button class="btn mini ghost" data-action="preview">Preview</button>
         <button class="btn mini" data-action="live">Set Live</button>
         <button class="btn mini ghost" data-action="toggle">${deal.active ? 'Deactivate' : 'Activate'}</button>
         <button class="btn mini ghost" data-action="delete">Delete</button>
@@ -807,6 +809,10 @@ async function dealAction(id, action) {
     updateSpotlightPreview(deal);
     return;
   }
+  if (action === 'preview') {
+    await openDealPreview(deal);
+    return;
+  }
   const payload = { id: deal.id };
   if (action === 'live') {
     payload.active = true;
@@ -827,6 +833,39 @@ async function dealAction(id, action) {
   } catch (err) {
     console.error('deal action failed', err.message);
     handleRequestError('Deal Aktion', err);
+  }
+}
+
+async function openDealPreview(deal) {
+  if (!deal.slug) {
+    showToast('Deal has no slug');
+    return;
+  }
+
+  try {
+    // For inactive deals, get a preview token
+    if (!deal.active) {
+      const response = await request(API.previewToken, {
+        method: 'POST',
+        body: JSON.stringify({ slug: deal.slug })
+      });
+      
+      if (response.ok && response.token) {
+        const previewUrl = `${API_BASE}/deal/${deal.slug}?preview_token=${encodeURIComponent(response.token)}`;
+        window.open(previewUrl, '_blank');
+        showToast('Preview opened (expires in 5 min)');
+      } else {
+        throw new Error('Failed to generate preview token');
+      }
+    } else {
+      // For active deals, open directly without token
+      const previewUrl = `${API_BASE}/deal/${deal.slug}`;
+      window.open(previewUrl, '_blank');
+      showToast('Preview opened');
+    }
+  } catch (err) {
+    console.error('preview failed', err.message);
+    handleRequestError('Preview öffnen', err);
   }
 }
 
