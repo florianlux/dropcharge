@@ -26,9 +26,11 @@ High-conversion gaming-credit dropsite: TikTok-ready UI, Netlify Functions, Supa
    - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=sb_publishable_WLf3k1wUdS8oCm8Jwame8A_foZ2djIF` (anon/publishable key)
 
    **Direct Database Access (optional):**
-   - `DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.qoinlxpumoakfmkfrwqb.supabase.co:5432/postgres`
+   - `SUPABASE_DATABASE_PASSWORD=<your-database-password>` (store password separately)
+   - `DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.qoinlxpumoakfmkfrwqb.supabase.co:5432/postgres` (or use full connection string)
    - Use for running migrations, SQL scripts, or connecting database management tools
    - Get the database password from Supabase dashboard → Settings → Database
+   - You can either set the password separately or embed it directly in DATABASE_URL
 
    > **Key Types:**
    > - **Service Key** (`sb_secret_*`): Full database permissions, use server-side only (Netlify Functions)
@@ -73,6 +75,8 @@ npx netlify dev
    
    **Other required/optional variables:**
    - `ADMIN_PASSWORD_HASH=<bcrypt-hash>`
+   - Optional: `SUPABASE_DATABASE_PASSWORD=<db-password>` (for direct database access)
+   - Optional: `DATABASE_URL=postgresql://...` (or construct from SUPABASE_DATABASE_PASSWORD)
    - Optional: `ENABLE_DOUBLE_OPT_IN`, `TIKTOK_PIXEL_ID`, `ADMIN_ALLOWED_ORIGINS`
 
 3. Point domain DNS (CNAME to `<site>.netlify.app` or Netlify nameservers).
