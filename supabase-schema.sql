@@ -185,5 +185,6 @@ create table if not exists public.system_snapshots (
   reason text
 );
 
+create unique index if not exists system_snapshots_number_unique on public.system_snapshots (snapshot_number);
 create index if not exists system_snapshots_number_idx on public.system_snapshots (snapshot_number desc);
 create index if not exists system_snapshots_created_idx on public.system_snapshots (created_at desc);
