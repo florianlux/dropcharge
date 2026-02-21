@@ -5,7 +5,8 @@ Dieses Verzeichnis enthält SQL-Migrationen für das DropCharge Supabase-Projekt
 ## Dateien
 
 - **`deals-schema.sql`** - Hauptschema für Deals und Analytics Events
-- **`newsletter.sql`** - Newsletter/Email-Verwaltung (bereits vorhanden)
+- **`examples.sql`** - Praktische Beispiele für Daten-Insert und Queries
+- **`newsletter.sql`** - Newsletter/Email-Verwaltung (separat, bereits im Repository)
 
 ## Deals Schema - Überblick
 
@@ -59,7 +60,7 @@ Event-Tracking für alle Deal-Interaktionen. Optimiert für hohe Schreiblast.
 #### Indexe:
 
 - **`deal_events_deal_type_idx`** - Primary composite index (deal_id + type + ts) für die meisten Analytics Queries. Deckt auch deal_id-only Queries ab.
-- **`deal_events_ts_idx`** - Optional für pure zeitbasierte Queries ohne deal_id/type Filter
+- **`deal_events_ts_idx`** - Optional für pure zeitbasierte Queries ohne deal_id/type Filter. Behalten wenn >20% der Queries nur nach Zeit filtern (z.B. "alle Events der letzten 24h" für Dashboard-Überblick). Sonst löschen für bessere Insert-Performance.
 - **`deal_events_type_idx`** - Filter nach Event-Type (z.B. alle Conversions)
 
 **Note:** Der ursprünglich geplante `deal_events_deal_id_idx` wurde entfernt, da PostgreSQL den `deal_events_deal_type_idx` via Index-Prefix-Matching auch für `deal_id`-only Queries nutzen kann.

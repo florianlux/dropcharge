@@ -91,6 +91,7 @@ values (
 );
 
 -- Click Event tracken (wenn User auf Affiliate-Link klickt)
+-- Note: In Production würde user_agent_hash vom tatsächlichen Request stammen, nicht hardcoded
 insert into public.deal_events (deal_id, type, utm_source, utm_medium, referrer, user_agent_hash)
 values (
   (select id from public.deals where slug = 'playstation-store-guthaben-20'),
@@ -184,27 +185,25 @@ order by hour;
 -- ============================================================================
 -- 5. DEAL MANAGEMENT
 -- ============================================================================
+-- Note: Das updated_at Feld wird automatisch durch den Trigger gesetzt.
+-- Es muss NICHT manuell in UPDATE Statements gesetzt werden.
 
 -- Deal deaktivieren (statt löschen - behält Analytics)
--- Note: updated_at wird automatisch durch Trigger gesetzt
 update public.deals
 set active = false
 where slug = 'steam-guthaben-50';
 
 -- Preis aktualisieren
--- Note: updated_at wird automatisch durch Trigger gesetzt
 update public.deals
 set price = 15.99
 where slug = 'playstation-store-guthaben-20';
 
 -- Tag hinzufügen
--- Note: updated_at wird automatisch durch Trigger gesetzt
 update public.deals
 set tags = array_append(tags, 'Hot Deal')
 where slug = 'xbox-game-pass-ultimate-3m';
 
 -- Tags komplett ersetzen
--- Note: updated_at wird automatisch durch Trigger gesetzt
 update public.deals
 set tags = array['PlayStation', 'PSN', 'Top Deal', 'Limited']
 where slug = 'playstation-store-guthaben-20';

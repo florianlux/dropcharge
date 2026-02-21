@@ -36,7 +36,7 @@
 ✅ slug UNIQUE Index
 ✅ deal_id + type + ts Composite Index (Primary analytics index)
 ✅ type + ts Index (Type-filtered queries)
-✅ ts Index (Optional - pure time-based queries)
+✅ ts Index (Optional - behalten wenn >20% der Queries nur nach Zeit filtern)
 ✅ tags GIN Index (Array-Suchen)
 ✅ active + created_at Index
 ```
