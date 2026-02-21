@@ -569,3 +569,55 @@ textarea { resize: vertical; }
   display: flex;
   gap: 0.5rem;
 }
+
+/* Snapshot Counter */
+.sidebar-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.sidebar-head-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.snapshot-counter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(124, 93, 255, 0.08);
+  border: 1px solid rgba(124, 93, 255, 0.2);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  color: #a991ff;
+  white-space: nowrap;
+  box-shadow: 0 0 12px rgba(124, 93, 255, 0.15);
+  transition: all 0.2s ease;
+}
+
+.snapshot-counter:hover {
+  background: rgba(124, 93, 255, 0.12);
+  border-color: rgba(124, 93, 255, 0.3);
+  box-shadow: 0 0 18px rgba(124, 93, 255, 0.25);
+}
+
+.snapshot-loading {
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+.snapshot-number {
+  font-weight: 600;
+  color: #c4b1ff;
+  margin-right: 0.4rem;
+}
+
+.snapshot-timestamp {
+  color: var(--muted);
+  font-size: 0.7rem;
+}

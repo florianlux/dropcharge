@@ -24,7 +24,8 @@ const API = {
   campaignCreate: `${API_BASE}/.netlify/functions/admin-campaign-create`,
   campaignCancel: `${API_BASE}/.netlify/functions/admin-campaign-cancel`,
   campaignTick: `${API_BASE}/.netlify/functions/admin-campaign-tick`,
-  newsletterSignup: '/.netlify/functions/newsletter_signup'
+  newsletterSignup: '/.netlify/functions/newsletter_signup',
+  snapshot: `${API_BASE}/.netlify/functions/admin-snapshot`
 };
 
 const TOKEN_STORAGE_KEY = 'admin_token';
@@ -32,6 +33,7 @@ const LIVE_MODE_STORAGE_KEY = 'admin_live_mode';
 const STATS_INTERVAL = 15000;
 const HEALTH_INTERVAL = 20000;
 const LIVE_INTERVAL = 4000;
+const SNAPSHOT_INTERVAL = 30000;
 
 const state = {
   live: {
@@ -57,7 +59,8 @@ const state = {
   quickLive: true,
   emailRows: [],
   dealFilters: { platform: 'all', active: 'all', range: '7' },
-  dealSort: { field: 'priority', direction: 'desc' }
+  dealSort: { field: 'priority', direction: 'desc' },
+  snapshot: { number: 0, timestamp: null, interval: null }
 };
 
 const dom = {
@@ -142,6 +145,7 @@ const dom = {
   publicConfig: document.getElementById('public-config'),
   toggleLiveMode: document.getElementById('toggle-live'),
   apiBaseDisplay: document.getElementById('api-base-display'),
+  snapshotCounter: document.getElementById('snapshot-counter'),
   toast: null
 };
 
@@ -760,6 +764,7 @@ async function submitFactory(event) {
     dom.factoryForm.reset();
     renderFactoryResult(data);
     fetchDeals();
+    fetchSnapshot({ silent: true });
   } catch (err) {
     console.error('factory failed', err.message);
     handleRequestError('Factory Fehler', err);
@@ -793,6 +798,7 @@ async function submitDeal(event) {
     state.currentDealId = null;
     fetchDeals();
     fetchSpotlight();
+    fetchSnapshot({ silent: true });
   } catch (err) {
     console.error('spotlight save failed', err.message);
     handleRequestError('Deal speichern', err);
@@ -824,6 +830,7 @@ async function dealAction(id, action) {
     showToast('Deal aktualisiert');
     fetchDeals();
     fetchSpotlight();
+    fetchSnapshot({ silent: true });
   } catch (err) {
     console.error('deal action failed', err.message);
     handleRequestError('Deal Aktion', err);
@@ -857,6 +864,7 @@ async function updateDealField(id, patch) {
     await request(API.deals, { method: 'PUT', body: JSON.stringify({ id, ...patch }) });
     showToast('Deal aktualisiert');
     fetchDeals();
+    fetchSnapshot({ silent: true });
   } catch (err) {
     console.error('inline update failed', err.message);
     handleRequestError('Inline Update', err);
@@ -1121,6 +1129,74 @@ function attachEvents() {
   dom.settingsRefresh?.addEventListener('click', fetchSettings);
 }
 
+async function fetchSnapshot({ silent = false } = {}) {
+  if (!dom.snapshotCounter) return;
+  
+  try {
+    const response = await request(API.snapshot);
+    if (!response || !response.ok) {
+      if (!silent) console.error('Failed to fetch snapshot');
+      renderSnapshot({ loading: false, error: true });
+      return;
+    }
+    
+    state.snapshot.number = response.data?.snapshot_number || 0;
+    state.snapshot.timestamp = response.data?.created_at || null;
+    renderSnapshot({ loading: false });
+  } catch (err) {
+    if (!silent) console.error('Snapshot fetch error:', err);
+    renderSnapshot({ loading: false, error: true });
+  }
+}
+
+function formatSnapshotTimestamp(isoString) {
+  if (!isoString) return 'Unknown';
+  try {
+    const date = new Date(isoString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    // Show relative time for recent snapshots
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    
+    // Format as date for older snapshots
+    const day = date.getDate();
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const month = monthNames[date.getMonth()];
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const mins = String(date.getMinutes()).padStart(2, '0');
+    
+    return `${day} ${month} ${year}, ${hours}:${mins}`;
+  } catch (err) {
+    return 'Unknown';
+  }
+}
+
+function renderSnapshot({ loading = false, error = false } = {}) {
+  if (!dom.snapshotCounter) return;
+  
+  if (loading) {
+    dom.snapshotCounter.innerHTML = '<span class="snapshot-loading">Loading...</span>';
+    return;
+  }
+  
+  if (error) {
+    dom.snapshotCounter.innerHTML = '<span class="snapshot-loading">Unavailable</span>';
+    return;
+  }
+  
+  const number = state.snapshot.number || 0;
+  const timestamp = formatSnapshotTimestamp(state.snapshot.timestamp);
+  
+  dom.snapshotCounter.innerHTML = `
+    <span class="snapshot-number">S-${number}</span>
+    <span class="snapshot-timestamp">${timestamp}</span>
+  `;
+}
+
 function startIntervals() {
   loadStats({ silent: true });
   loadHealth();
@@ -1133,6 +1209,7 @@ function startIntervals() {
   fetchSettings({ silent: true });
   fetchPublicConfig({ silent: true });
   loadSubscribers({ silent: true });
+  fetchSnapshot({ silent: true });
 
   setInterval(() => loadStats({ silent: true }), STATS_INTERVAL);
   setInterval(loadHealth, HEALTH_INTERVAL);
@@ -1140,6 +1217,7 @@ function startIntervals() {
   setInterval(() => loadUtm('7d', { silent: true }), 45000);
   setInterval(() => loadDevices({ silent: true }), 45000);
   state.live.interval = setInterval(() => loadLiveEvents({ silent: true }), LIVE_INTERVAL);
+  state.snapshot.interval = setInterval(() => fetchSnapshot({ silent: true }), SNAPSHOT_INTERVAL);
 }
 
 function init() {
