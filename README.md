@@ -13,7 +13,7 @@ High-conversion gaming-credit dropsite: TikTok-ready UI, Netlify Functions, Supa
 2. Run [`supabase-schema.sql`](./supabase-schema.sql) to create tables.
 3. Grab **Project URL** + **service_role key** → set as Netlify env vars:
    - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
 4. Optional envs:
    - `ADMIN_PASSWORD_HASH` (bcrypt hash via `node scripts/hash-password.js "pass"`)
    - `ENABLE_DOUBLE_OPT_IN=1` (keeps emails in pending state)
@@ -65,6 +65,39 @@ npx netlify dev
 - `scripts/hash-password.js` → generate bcrypt hash for admin password.
 - `assets/app.js` handles sticky CTA, click counters, popup, TikTok tracking.
 - For local testing without Supabase env, functions will error (set envs or mock Supabase).
+
+## Newsletter Smoke Test
+
+After deploying, verify the newsletter signup end-to-end:
+
+**A) Test endpoint directly:**
+```bash
+curl -i -X POST https://dropcharge.io/.netlify/functions/newsletter_signup \
+  -H "Content-Type: application/json" \
+  -d '{"email":"smoketest@example.com","source":"curl-test"}'
+```
+Expected: `HTTP 200` with `{"ok":true,"status":"inserted","message":"Subscribed"}`
+
+**B) Test duplicate handling:**
+```bash
+curl -i -X POST https://dropcharge.io/.netlify/functions/newsletter_signup \
+  -H "Content-Type: application/json" \
+  -d '{"email":"smoketest@example.com","source":"curl-test"}'
+```
+Expected: `HTTP 200` with `{"ok":true,"status":"exists","message":"Email already subscribed"}`
+
+**C) Test CORS preflight:**
+```bash
+curl -i -X OPTIONS https://dropcharge.io/.netlify/functions/newsletter_signup
+```
+Expected: `HTTP 200` with `Access-Control-Allow-Methods` header.
+
+**D) Verify in Supabase:**
+```sql
+SELECT email, status, source, created_at
+FROM newsletter_subscribers
+WHERE email = 'smoketest@example.com';
+```
 
 ## TODO Ideas
 - Add Supabase Row Level Security / service key rotation.

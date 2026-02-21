@@ -16,8 +16,8 @@ Defined in `supabase/newsletter.sql`:
 
 ## Required ENV (Netlify)
 - `SUPABASE_URL`
-- `SUPABASE_SERVICE_KEY` (service role)
-- `RESEND_API_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (service role)
+- `RESEND_API_KEY` (optional — welcome email only, signup works without it)
 - `EMAIL_FROM` (e.g. `DropCharge <news@dropcharge.io>`)
 - `PUBLIC_BASE_URL` (e.g. `https://dropcharge.io`)
 - `ADMIN_TOKEN` (existing admin auth header)
