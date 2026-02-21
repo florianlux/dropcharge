@@ -6,6 +6,21 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'POST,OPTIONS',
 };
 
+// Cache Supabase client (warm Lambda reuse)
+let supabase;
+function getSupabase() {
+  if (!supabase) {
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      throw new Error('Missing Supabase configuration');
+    }
+    supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+    );
+  }
+  return supabase;
+}
+
 function jsonResponse(statusCode, body) {
   return {
     statusCode,
@@ -13,6 +28,8 @@ function jsonResponse(statusCode, body) {
     body: JSON.stringify(body),
   };
 }
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 exports.handler = async function handler(event) {
   if (event.httpMethod === 'OPTIONS') {
@@ -26,27 +43,18 @@ exports.handler = async function handler(event) {
   let payload = {};
   try {
     payload = event.body ? JSON.parse(event.body) : {};
-  } catch (err) {
+  } catch {
     return jsonResponse(400, { ok: false, error: 'Invalid JSON body' });
   }
 
   const email = (payload.email || '').trim().toLowerCase();
-  if (!email) {
-    return jsonResponse(400, { ok: false, error: 'Email is required' });
+  if (!email || !EMAIL_REGEX.test(email)) {
+    return jsonResponse(400, { ok: false, error: 'Valid email is required' });
   }
 
   try {
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error('Missing required Supabase configuration');
-      return jsonResponse(500, { ok: false, error: 'Server configuration error' });
-    }
-
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
-
-    const { error } = await supabase
+    const db = getSupabase();
+    const { error } = await db
       .from('newsletter_subscribers')
       .insert({ email, status: 'active' });
 
@@ -54,25 +62,24 @@ exports.handler = async function handler(event) {
       if (error.code === '23505') {
         return jsonResponse(200, { ok: true, success: true, status: 'exists' });
       }
-      console.error('supabase insert error:', error);
-      return jsonResponse(500, { ok: false, error: error.message });
+      console.error('Supabase insert error:', error);
+      return jsonResponse(500, { ok: false, error: 'Database error' });
     }
 
-    // Optional: send welcome email via Resend
-    try {
-      if (process.env.RESEND_API_KEY) {
+    // Optional: Welcome-E-Mail via Resend
+    if (process.env.RESEND_API_KEY) {
+      try {
         const { Resend } = require('resend');
         const resend = new Resend(process.env.RESEND_API_KEY);
         await resend.emails.send({
-          from: 'onboarding@resend.dev',
+          from: process.env.FROM_EMAIL || 'noreply@dropcharge.io',
           to: email,
           subject: 'Welcome to DropCharge 🚀',
           html: '<p>Thanks for subscribing!</p>',
         });
+      } catch (resendErr) {
+        console.warn('Resend failed (non-critical):', resendErr.message);
       }
-    } catch (resendErr) {
-      // Resend failure must never break signup
-      console.log('Resend email failed (non-critical):', resendErr.message);
     }
 
     return jsonResponse(200, { ok: true, success: true, status: 'inserted' });
