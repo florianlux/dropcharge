@@ -52,7 +52,7 @@ async function handler(event) {
     return { 
       statusCode: 200, 
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ok: true, warning: 'event_tracking_disabled' }) 
+      body: JSON.stringify({ ok: false, warning: 'event_tracking_disabled' }) 
     };
   }
 
