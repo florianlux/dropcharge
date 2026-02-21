@@ -319,6 +319,19 @@ textarea { resize: vertical; }
 .status-unsubscribed { color: var(--admin-danger); font-weight: 600; }
 .status-bounced { color: #d97706; font-weight: 600; }
 
+/* Form rows (side-by-side fields) */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+}
+
+/* Events table */
+.table-head.events-head,
+#events-rows .table-row {
+  grid-template-columns: 1fr 1fr 140px;
+}
+
 /* Responsive */
 @media (max-width: 960px) {
   .admin-shell { grid-template-columns: 1fr; }

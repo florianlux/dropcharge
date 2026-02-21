@@ -88,6 +88,54 @@ curl http://localhost:8888/.netlify/functions/newsletter_signup
 - `assets/app.js` handles sticky CTA, click counters, popup, TikTok tracking.
 - For local testing without Supabase env, functions will error (set envs or mock Supabase).
 
+## Admin Setup
+
+The admin dashboard (`/admin.html`) provides subscriber management, campaign sending, tracking links, and analytics.
+
+### Required Environment Variables
+
+Set these in **Netlify → Site settings → Environment variables** (scope: _All scopes_ or at least _Functions_):
+
+| Variable | Required | Description |
+|---|---|---|
+| `ADMIN_TOKEN` | **Yes** | Secret token for admin API access. The client sends this via `x-admin-token` header. |
+| `SUPABASE_URL` | **Yes** | Your Supabase project URL (e.g. `https://xyz.supabase.co`). |
+| `SUPABASE_SERVICE_ROLE_KEY` | **Yes** | Supabase service-role key (not the anon key). |
+| `RESEND_API_KEY` | **Yes** (for email) | Resend API key for sending campaigns and welcome emails. |
+| `EMAIL_FROM` | **Yes** (for email) | Sender address (e.g. `DropCharge <noreply@dropcharge.de>`). Must be verified in Resend. |
+| `APP_BASE_URL` | Optional | Base URL for unsubscribe links etc. Defaults to `https://dropcharge.netlify.app`. |
+| `EMAIL_REPLY_TO` | Optional | Reply-to address for campaign emails. |
+
+### Admin Login
+
+1. Navigate to `/admin-login.html` (or `/admin/login`).
+2. Enter your `ADMIN_TOKEN` value. It is stored in `localStorage` as `admin_token`.
+3. All API requests include the header `x-admin-token: <your-token>`.
+
+### Database Migrations
+
+Run the SQL files in `supabase/migrations/` in order against your Supabase project:
+
+1. `001_safe_schema_sync.sql` – adds `source`, `last_sent_at` columns, settings table
+2. `002_campaigns_and_columns.sql` – adds `newsletter_campaigns` table, `unsubscribed_at` column, ensures click/event columns
+
+### Testing (curl)
+
+```bash
+# List leads
+curl -H "x-admin-token: YOUR_TOKEN" \
+  https://YOUR-SITE.netlify.app/.netlify/functions/admin-list-leads?status=active
+
+# Send test email
+curl -X POST -H "x-admin-token: YOUR_TOKEN" -H "Content-Type: application/json" \
+  -d '{"subject":"Test","html":"<h1>Hello</h1>","testEmail":"you@example.com"}' \
+  https://YOUR-SITE.netlify.app/.netlify/functions/admin-send-campaign
+
+# Analytics
+curl -H "x-admin-token: YOUR_TOKEN" \
+  https://YOUR-SITE.netlify.app/.netlify/functions/admin-analytics
+```
+
 ## TODO Ideas
 - Add Supabase Row Level Security / service key rotation.
 - Add Webhook/email notifications on large drops.

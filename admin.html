@@ -126,6 +126,26 @@
             <span>Slug</span>
             <input type="text" name="slug" placeholder="e.g. psn-summer-deal" required />
           </label>
+          <div class="form-row">
+            <label class="form-field">
+              <span>UTM Source</span>
+              <input type="text" name="utm_source" placeholder="e.g. tiktok" />
+            </label>
+            <label class="form-field">
+              <span>UTM Medium</span>
+              <input type="text" name="utm_medium" placeholder="e.g. social" />
+            </label>
+          </div>
+          <div class="form-row">
+            <label class="form-field">
+              <span>UTM Campaign</span>
+              <input type="text" name="utm_campaign" placeholder="e.g. summer-sale" />
+            </label>
+            <label class="form-field">
+              <span>UTM Content</span>
+              <input type="text" name="utm_content" placeholder="e.g. banner-top" />
+            </label>
+          </div>
           <button type="submit" class="btn primary">Generate Link</button>
         </form>
         <div id="tracking-result" class="result-box" style="display:none;">
@@ -149,6 +169,19 @@
             </div>
             <div class="table-body" id="analytics-rows">
               <p class="empty">Loading analytics…</p>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Latest Events</h3>
+          <div class="data-table">
+            <div class="table-head events-head">
+              <span>Type</span>
+              <span>Slug</span>
+              <span>Time</span>
+            </div>
+            <div class="table-body" id="events-rows">
+              <p class="empty">Loading events…</p>
             </div>
           </div>
         </div>

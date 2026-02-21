@@ -52,6 +52,17 @@ exports.handler = withCors(async (event) => {
       .sort((a, b) => b.count - a.count)
       .slice(0, 10);
 
+    // Latest 20 events
+    let latestEvents = [];
+    try {
+      const { data: evtRows, error: latestErr } = await supabase
+        .from('events')
+        .select('type,name,slug,created_at')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (!latestErr && evtRows) latestEvents = evtRows;
+    } catch { /* ignore – events table may have different columns */ }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
@@ -59,7 +70,8 @@ exports.handler = withCors(async (event) => {
         ok: true,
         clicks_24h: clicks24h ?? 0,
         events_24h: events24h ?? 0,
-        top_links: topLinks
+        top_links: topLinks,
+        latest_events: latestEvents
       })
     };
   } catch (err) {
