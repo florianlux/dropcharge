@@ -1,5 +1,6 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
+const { withCors } = require('./_lib/cors');
 
 function toCsv(rows) {
   const header = ['email', 'status', 'source', 'page', 'created_at', 'confirmed_at', 'unsubscribed_at'];
@@ -11,7 +12,7 @@ function toCsv(rows) {
   return lines.join('\n');
 }
 
-exports.handler = async function handler(event) {
+exports.handler = withCors(async function handler(event) {
   const authError = requireAdmin(event.headers || {});
   if (authError) return authError;
 
@@ -47,4 +48,4 @@ exports.handler = async function handler(event) {
     console.log('admin export leads error', err.message);
     return { statusCode: 500, body: 'export_failed' };
   }
-};
+});

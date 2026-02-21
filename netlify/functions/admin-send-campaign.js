@@ -22,18 +22,23 @@ function normalizeHtml(html = '') {
 async function fetchSubscribers(segment) {
   if (!hasSupabase || !supabase) throw new Error('supabase_not_configured');
   let query = supabase
-    .from('emails')
-    .select('email')
-    .eq('confirmed', true);
+    .from('newsletter_leads')
+    .select('email, unsubscribe_token')
+    .in('status', ['pending', 'confirmed']);
   if (segment) {
     query = query.eq('source', segment);
   }
   const { data, error } = await query;
   if (error) throw error;
-  const cleaned = (data || [])
-    .map(row => (row.email || '').trim().toLowerCase())
-    .filter(Boolean);
-  return Array.from(new Set(cleaned));
+  const seen = new Set();
+  return (data || [])
+    .filter(row => {
+      const e = (row.email || '').trim().toLowerCase();
+      if (!e || seen.has(e)) return false;
+      seen.add(e);
+      return true;
+    })
+    .map(row => ({ email: row.email.trim().toLowerCase(), token: row.unsubscribe_token }));
 }
 
 async function getLastCampaign() {
@@ -92,8 +97,12 @@ async function sendCampaign({ recipients, subject, html, context }) {
   const batches = chunk(recipients, BATCH_SIZE);
   for (let i = 0; i < batches.length; i += 1) {
     const batch = batches[i];
-    await Promise.all(batch.map(async (email) => {
-      const unsubscribe = `${BASE_URL}/unsubscribe?email=${encodeURIComponent(email)}`;
+    await Promise.all(batch.map(async (recipient) => {
+      const email = typeof recipient === 'string' ? recipient : recipient.email;
+      const token = typeof recipient === 'string' ? null : recipient.token;
+      const unsubscribe = token
+        ? `${BASE_URL}/unsubscribe?token=${token}`
+        : `${BASE_URL}/unsubscribe?email=${encodeURIComponent(email)}`;
       const htmlWithUnsub = html.replace(/__UNSUB__/g, unsubscribe);
       try {
         await sendEmail({ to: email, subject, html: htmlWithUnsub });

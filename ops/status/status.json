@@ -1,7 +1,8 @@
 {
-  "state": "in_progress",
-  "updatedAt": "2026-02-20T21:30:20.393192Z",
+  "state": "complete",
+  "updatedAt": "2026-02-21T10:45:00.000Z",
   "notes": [
-    "Newsletter schema + functions committed"
+    "Newsletter schema + functions committed",
+    "All newsletter solutions deployed: signup with Supabase upsert, unsubscribe redirect, campaign sender uses newsletter_leads, CORS on export, docs"
   ]
 }
