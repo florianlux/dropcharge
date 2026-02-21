@@ -403,6 +403,7 @@
           <div class="admin-head">
             <h3>Alle Deals</h3>
             <div class="head-actions">
+              <button class="btn mini" id="deals-create">+ Deal erstellen</button>
               <button class="btn mini ghost" id="deals-refresh">Refresh</button>
             </div>
           </div>
@@ -525,6 +526,59 @@
       </section>
     </main>
   </div>
+
+  <!-- Create Deal Modal -->
+  <div class="modal-overlay" id="create-deal-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Deal erstellen</h3>
+        <button class="modal-close" id="close-create-modal" aria-label="Schließen">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="create-deal-form" class="stack">
+          <div class="form-row">
+            <label>Titel*<input name="title" required /></label>
+            <label>Subtitle<input name="subtitle" /></label>
+          </div>
+          <label>Beschreibung<textarea name="description" rows="3"></textarea></label>
+          <div class="form-row">
+            <label>Slug<input name="slug" placeholder="auto-generiert" /></label>
+            <label>Plattform<input name="platform" placeholder="PSN, Xbox, Nintendo" /></label>
+            <label>Vendor<input name="vendor" placeholder="Amazon, G2A" /></label>
+          </div>
+          <div class="form-row">
+            <label>Preis (Text)<input name="price" placeholder="29,99 €" /></label>
+            <label>Preis (Cent)<input name="price_cents" type="number" min="0" placeholder="2999" /></label>
+          </div>
+          <div class="form-row">
+            <label>Affiliate URL<input name="affiliate_url" type="url" placeholder="https://" /></label>
+            <label>Priority<input name="priority" type="number" min="0" value="100" /></label>
+          </div>
+          <div class="form-row">
+            <label>Code Label<input name="code_label" placeholder="Zum Deal" /></label>
+            <label>Code URL<input name="code_url" type="url" placeholder="https://" /></label>
+          </div>
+          <div class="form-row">
+            <label>Cover URL<input name="cover_url" type="url" placeholder="https://" /></label>
+            <label>Amazon URL<input name="amazon_url" type="url" placeholder="https://" /></label>
+          </div>
+          <div class="form-row">
+            <label>Start<input name="starts_at" type="datetime-local" /></label>
+            <label>Ende<input name="ends_at" type="datetime-local" /></label>
+          </div>
+          <label class="checkbox">
+            <input type="checkbox" name="active" checked />
+            Sofort aktiv schalten
+          </label>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn ghost" id="cancel-create-deal">Abbrechen</button>
+        <button type="submit" form="create-deal-form" class="btn primary" id="submit-create-deal">Deal erstellen</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="./assets/admin.js"></script>
 </body>
 </html>
