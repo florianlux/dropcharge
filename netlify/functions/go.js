@@ -3,6 +3,7 @@ const geoip = require('geoip-lite');
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { fetchSettings, extractFlags } = require('./_lib/settings');
 const { withCors } = require('./_lib/cors');
+const { withLogging } = require('./_lib/logger');
 
 const germanStates = {
   BW: 'Baden-Württemberg',
@@ -65,17 +66,17 @@ const offers = {
   'nintendo-50': { url: 'https://www.g2a.com/n/nintendo15_lux', platform: 'Nintendo', amount: '50€' }
 };
 
-async function getFlags() {
+async function getFlags(logger) {
   try {
     const map = await fetchSettings(['flags', 'banner_message']);
     return extractFlags(map);
   } catch (err) {
-    console.log('settings fetch failed', err.message);
+    logger.warn('Settings fetch failed', { error: err.message });
     return extractFlags();
   }
 }
 
-async function loadDynamicOffer(slug) {
+async function loadDynamicOffer(slug, logger) {
   if (!hasSupabase || !supabase) return null;
   try {
     const { data, error } = await supabase
@@ -92,22 +93,25 @@ async function loadDynamicOffer(slug) {
       amount: data.price || data.title || data.slug
     };
   } catch (err) {
-    console.log('dynamic go lookup failed', err.message);
+    logger.warn('Dynamic offer lookup failed', { slug, error: err.message });
     return null;
   }
 }
 
-async function handler(event) {
+async function handler(event, context, logger) {
   const slug = event.path.replace('/go/', '').replace(/^\//, '');
-  let offer = await loadDynamicOffer(slug);
+  logger.info('Processing affiliate redirect', { slug });
+  
+  let offer = await loadDynamicOffer(slug, logger);
   if (!offer) {
     offer = offers[slug];
   }
   if (!offer) {
+    logger.warn('Unknown link requested', { slug });
     return { statusCode: 404, body: 'Unknown link' };
   }
 
-  const flags = await getFlags();
+  const flags = await getFlags(logger);
   if (flags.disable_affiliate_redirect) {
     const message = flags.banner_message || 'Drops kommen bald wieder. Stay tuned!';
     return {
@@ -148,12 +152,16 @@ async function handler(event) {
     };
     const { error } = await supabase.from('clicks').insert(insertPayload);
     if (error) {
-      console.log('Supabase click insert error', error.message);
+      logger.error('Click insert failed', error, { slug, platform: offer.platform });
+    } else {
+      logger.info('Click logged', { slug, platform: offer.platform, country, device: deviceHint });
     }
   } else {
-    console.log('Supabase not configured – skipping click log');
+    logger.warn('Supabase not configured, skipping click log');
   }
 
+  logger.success(302, 'Redirecting to affiliate', { slug, destination: offer.url });
+  
   return {
     statusCode: 302,
     headers: { Location: offer.url },
@@ -161,4 +169,4 @@ async function handler(event) {
   };
 };
 
-exports.handler = withCors(handler);
+exports.handler = withCors(withLogging('go', handler));

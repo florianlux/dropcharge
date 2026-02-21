@@ -18,6 +18,12 @@
   force = true
 
 [[redirects]]
+  from = "/admin/health"
+  to = "/.netlify/functions/health"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/admin/login"
   to = "/admin-login.html"
   status = 302

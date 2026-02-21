@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { withCors } = require('./_lib/cors');
+const { withLogging } = require('./_lib/logger');
 
 function readLocal() {
   const dir = path.join(__dirname, '..', '..', 'data');
@@ -31,8 +32,9 @@ function buildResponse(slug, entries) {
   };
 }
 
-async function handler(event) {
+async function handler(event, context, logger) {
   const slug = (event.queryStringParameters?.slug || 'psn-20').trim();
+  logger.info('Fetching activity', { slug });
 
   if (hasSupabase && supabase) {
     try {
@@ -43,14 +45,16 @@ async function handler(event) {
         .order('created_at', { ascending: false })
         .limit(300);
       if (error) throw error;
+      logger.success(200, 'Activity fetched from Supabase', { slug, count: data.length });
       return buildResponse(slug, data);
     } catch (err) {
-      console.log('api-activity supabase error', err.message);
+      logger.error('Supabase query failed', err, { slug });
     }
   }
 
+  logger.info('Falling back to local data', { slug });
   const entries = readLocal().filter(entry => entry.slug === slug).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   return buildResponse(slug, entries);
 };
 
-exports.handler = withCors(handler);
+exports.handler = withCors(withLogging('api-activity', handler));
