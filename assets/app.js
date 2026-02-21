@@ -331,7 +331,8 @@ emailForm?.addEventListener('submit', async (event) => {
       })
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok || !data.ok) throw new Error(data?.error || 'Failed');
+    console.log('[newsletter] response status:', res.status, 'body:', JSON.stringify(data));
+    if (!res.ok || !data.ok) throw new Error(data?.debug?.error_message || data?.error || 'Failed');
     const status = data.status || 'inserted';
     const copy = status === 'exists' ? '✅ Du bist schon eingetragen.' : '✅ Danke! Check dein Postfach.';
     emailForm.innerHTML = `<p class="success">${copy}</p>`;

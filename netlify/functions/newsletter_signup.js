@@ -1,16 +1,20 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { withCors } = require('./_lib/cors');
 
+console.log("newsletter v2 live");
+
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 async function handler(event) {
+  console.log('[newsletter] httpMethod:', event.httpMethod);
+
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ok: false, error: 'method_not_allowed' })
+      body: JSON.stringify({ ok: false, status: 'error', debug: { error_message: 'method_not_allowed', supabase_error_code: null } })
     };
   }
 
@@ -21,9 +25,11 @@ async function handler(event) {
     return {
       statusCode: 400,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ok: false, error: 'invalid_json' })
+      body: JSON.stringify({ ok: false, status: 'error', debug: { error_message: 'invalid_json', supabase_error_code: null } })
     };
   }
+
+  console.log('[newsletter] parsed body:', JSON.stringify(payload));
 
   const email = (payload.email || '').trim().toLowerCase();
 
@@ -31,15 +37,16 @@ async function handler(event) {
     return {
       statusCode: 400,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ok: false, error: 'invalid_email' })
+      body: JSON.stringify({ ok: false, status: 'error', debug: { error_message: 'invalid_email', supabase_error_code: null } })
     };
   }
 
   if (!hasSupabase || !supabase) {
+    console.error('[newsletter] Supabase not configured');
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ok: false, error: 'supabase_not_configured' })
+      body: JSON.stringify({ ok: false, status: 'error', debug: { error_message: 'supabase_not_configured', supabase_error_code: null } })
     };
   }
 
@@ -50,9 +57,11 @@ async function handler(event) {
     source: typeof payload.source === 'string' ? payload.source.slice(0, 64) : undefined
   };
 
-  const { error: insertErr } = await supabase
+  const { data: insertData, error: insertErr } = await supabase
     .from('newsletter_subscribers')
     .insert(row);
+
+  console.log('[newsletter] insert result:', JSON.stringify({ data: insertData, error: insertErr }));
 
   if (insertErr) {
     const msg = (insertErr.message || '').toLowerCase();
@@ -62,15 +71,15 @@ async function handler(event) {
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ok: true, success: true, status: 'exists', email_sent: false })
+        body: JSON.stringify({ ok: true, success: true, status: 'exists', email_sent: false, debug: { error_message: null, supabase_error_code: '23505' } })
       };
     }
 
-    console.error('newsletter_signup insert error:', insertErr.message);
+    console.error('[newsletter] insert error:', insertErr.message, insertErr.stack || '');
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ok: false, error: insertErr.message })
+      body: JSON.stringify({ ok: false, status: 'error', debug: { error_message: insertErr.message, supabase_error_code: insertErr.code || null } })
     };
   }
 
@@ -88,14 +97,14 @@ async function handler(event) {
       });
       emailSent = true;
     } catch (err) {
-      console.error('Resend email failed (non-fatal):', err.message);
+      console.error('[newsletter] Resend email failed (non-fatal):', err.message);
     }
   }
 
   return {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ok: true, success: true, status: 'inserted', email_sent: emailSent })
+    body: JSON.stringify({ ok: true, success: true, status: 'inserted', email_sent: emailSent, debug: { error_message: null, supabase_error_code: null } })
   };
 }
 
