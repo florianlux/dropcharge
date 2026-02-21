@@ -2,6 +2,12 @@
   publish = "."
   command = ""
 
+[dev]
+  framework = "#static"
+  command = ""
+  targetPort = 8888
+  autoLaunch = false
+
 [functions]
   directory = "netlify/functions"
 
