@@ -58,6 +58,39 @@
           <h2>Overview</h2>
           <p>Realtime KPIs & Health</p>
         </div>
+        <article class="admin-card full">
+          <div class="admin-head">
+            <h3>Analytics Dashboard</h3>
+            <div class="head-actions">
+              <label class="select">
+                <span>Zeitraum</span>
+                <select id="analytics-window">
+                  <option value="24h">24h</option>
+                  <option value="7d">7 Tage</option>
+                </select>
+              </label>
+              <span class="badge" id="analytics-last-update">—</span>
+            </div>
+          </div>
+          <div class="analytics-grid" id="analytics-chips">
+            <div class="analytics-stat">
+              <span>Clicks</span>
+              <strong id="analytics-clicks">—</strong>
+            </div>
+            <div class="analytics-stat">
+              <span>Conversions</span>
+              <strong id="analytics-conversions">—</strong>
+            </div>
+            <div class="analytics-stat">
+              <span>CTR</span>
+              <strong id="analytics-ctr">—</strong>
+            </div>
+            <div class="analytics-stat">
+              <span>Revenue</span>
+              <strong id="analytics-revenue">—</strong>
+            </div>
+          </div>
+        </article>
         <div class="grid responsive">
           <article class="admin-card">
             <h3>Plattform-Klicks (24h)</h3>
