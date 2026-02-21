@@ -1,7 +1,4 @@
-const API_BASE = (window.ADMIN_API_BASE
-  || document.documentElement.getAttribute('data-api-base')
-  || (window.location.origin.includes('dropchargeadmin') ? 'https://dropcharge.netlify.app' : window.location.origin)
-).replace(/\/$/, '');
+const API_BASE = window.location.origin.replace(/\/$/, '');
 
 const API = {
   stats: `${API_BASE}/.netlify/functions/stats`,
