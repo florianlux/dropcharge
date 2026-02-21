@@ -79,7 +79,7 @@ async function handler(event) {
       statusCode: 200,
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': isActive ? 'public, max-age=60' : 'private, no-cache'
+        'Cache-Control': isActive ? 'public, max-age=60' : 'private, no-store'
       },
       body: JSON.stringify({
         deal: data,

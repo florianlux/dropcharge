@@ -16,7 +16,11 @@ const crypto = require('crypto');
  * Format: base64(slug:timestamp:hmac)
  */
 function generatePreviewToken(slug) {
-  const secret = process.env.PREVIEW_SECRET || 'fallback-secret';
+  const secret = process.env.PREVIEW_SECRET;
+  if (!secret) {
+    throw new Error('PREVIEW_SECRET environment variable is not set');
+  }
+  
   const timestamp = Date.now();
   const expiryMs = 5 * 60 * 1000; // 5 minutes
   const expiresAt = timestamp + expiryMs;
@@ -36,7 +40,12 @@ function validatePreviewToken(token, slug) {
   if (!token) return false;
   
   try {
-    const secret = process.env.PREVIEW_SECRET || 'fallback-secret';
+    const secret = process.env.PREVIEW_SECRET;
+    if (!secret) {
+      console.error('PREVIEW_SECRET environment variable is not set');
+      return false;
+    }
+    
     const decoded = Buffer.from(token, 'base64').toString('utf8');
     const [tokenSlug, expiresAtStr, hmac] = decoded.split(':');
     

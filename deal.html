@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" data-api-base="https://dropcharge.netlify.app">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -159,9 +159,15 @@
         return params.get('preview_token');
       }
 
+      /**
+       * Fetches deal data from the API
+       * Note: Preview tokens are passed via query parameter but sent in headers.
+       * Preview URLs should be treated as sensitive and expire after 5 minutes.
+       */
       async function fetchDeal(slug, previewToken) {
         const headers = {};
         if (previewToken) {
+          // Pass preview token in header for security
           headers['x-preview-token'] = previewToken;
         }
 
@@ -203,15 +209,35 @@
 
         // Update meta badges
         const metaEl = document.getElementById('deal-meta');
-        const metaParts = [];
-        if (deal.platform) metaParts.push(`<div class="deal-badge">🎮 ${escapeHtml(deal.platform)}</div>`);
-        if (deal.vendor) metaParts.push(`<div class="deal-badge">🏪 ${escapeHtml(deal.vendor)}</div>`);
-        if (deal.active) {
-          metaParts.push('<div class="deal-badge" style="background: rgba(0, 255, 136, 0.2);">✓ Aktiv</div>');
-        } else {
-          metaParts.push('<div class="deal-badge" style="background: rgba(255, 107, 0, 0.2);">⚠ Inaktiv</div>');
+        metaEl.innerHTML = ''; // Clear existing content
+        
+        if (deal.platform) {
+          const platformBadge = document.createElement('div');
+          platformBadge.className = 'deal-badge';
+          platformBadge.textContent = `🎮 ${deal.platform}`;
+          metaEl.appendChild(platformBadge);
         }
-        metaEl.innerHTML = metaParts.join('');
+        
+        if (deal.vendor) {
+          const vendorBadge = document.createElement('div');
+          vendorBadge.className = 'deal-badge';
+          vendorBadge.textContent = `🏪 ${deal.vendor}`;
+          metaEl.appendChild(vendorBadge);
+        }
+        
+        if (deal.active) {
+          const activeBadge = document.createElement('div');
+          activeBadge.className = 'deal-badge';
+          activeBadge.style.background = 'rgba(0, 255, 136, 0.2)';
+          activeBadge.textContent = '✓ Aktiv';
+          metaEl.appendChild(activeBadge);
+        } else {
+          const inactiveBadge = document.createElement('div');
+          inactiveBadge.className = 'deal-badge';
+          inactiveBadge.style.background = 'rgba(255, 107, 0, 0.2)';
+          inactiveBadge.textContent = '⚠ Inaktiv';
+          metaEl.appendChild(inactiveBadge);
+        }
 
         // Update price
         const priceEl = document.getElementById('deal-price');
