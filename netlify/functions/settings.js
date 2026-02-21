@@ -1,5 +1,6 @@
 const { requireAdmin } = require('./_lib/admin-token');
 const { fetchSettings, upsertSettings } = require('./_lib/settings');
+const { isSchemaError, schemaMismatchResponse } = require('./_lib/supabase');
 const { withCors } = require('./_lib/cors');
 
 async function handleGet() {
@@ -51,6 +52,7 @@ async function handler(event) {
     }
     return { statusCode: 405, body: 'Method Not Allowed' };
   } catch (err) {
+    if (isSchemaError(err)) return schemaMismatchResponse(err);
     console.log('settings handler error', err.message);
     return {
       statusCode: 500,

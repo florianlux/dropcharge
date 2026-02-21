@@ -26,10 +26,39 @@ async function verifyConnection() {
   }
 }
 
+const SCHEMA_MISMATCH_PATTERNS = [
+  /column (\S+) does not exist/i,
+  /relation "([^"]+)" does not exist/i,
+  /table[^"]*"([^"]+)"[^"]*not found/i,
+  /undefined column/i,
+  /could not find.*column/i
+];
+
+function isSchemaError(error) {
+  const msg = (error && (error.message || error.details || error.hint || '')) || '';
+  return SCHEMA_MISMATCH_PATTERNS.some(pattern => pattern.test(msg));
+}
+
+function schemaMismatchResponse(err) {
+  const msg = (err && (err.message || err.details || '')) || 'unknown schema error';
+  console.error('[schema_mismatch]', msg, err);
+  return {
+    statusCode: 500,
+    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    body: JSON.stringify({
+      ok: false,
+      error: 'schema_mismatch',
+      message: msg
+    })
+  };
+}
+
 module.exports = {
   supabase,
   hasSupabase,
   supabaseUrlPresent: Boolean(url),
   supabaseServiceKeyPresent: Boolean(serviceKey),
   verifyConnection,
+  isSchemaError,
+  schemaMismatchResponse,
 };

@@ -1,4 +1,4 @@
-const { supabase, hasSupabase } = require('./_lib/supabase');
+const { supabase, hasSupabase, isSchemaError, schemaMismatchResponse } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
 
@@ -121,6 +121,7 @@ async function handler(event) {
       })
     };
   } catch (err) {
+    if (isSchemaError(err)) return schemaMismatchResponse(err);
     console.log('funnel fetch error', err.message);
     return {
       statusCode: 500,

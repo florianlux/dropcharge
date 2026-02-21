@@ -1,4 +1,4 @@
-const { supabase, hasSupabase } = require('./_lib/supabase');
+const { supabase, hasSupabase, isSchemaError, schemaMismatchResponse } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
 
@@ -65,6 +65,7 @@ async function handleGet() {
       body: JSON.stringify({ spotlight })
     };
   } catch (err) {
+    if (isSchemaError(err)) return schemaMismatchResponse(err);
     console.log('spotlight get error', err.message);
     return { statusCode: 500, body: 'Failed to load spotlight' };
   }
@@ -95,6 +96,7 @@ async function handleAdminMutation(event) {
 
     const { error } = await supabase.from('spotlights').insert(record);
     if (error) {
+      if (isSchemaError(error)) return schemaMismatchResponse(error);
       console.log('spotlight insert error', error.message);
       return { statusCode: 500, body: 'Failed to save spotlight' };
     }
@@ -113,6 +115,7 @@ async function handleAdminMutation(event) {
       .update(record)
       .eq('id', payload.id);
     if (error) {
+      if (isSchemaError(error)) return schemaMismatchResponse(error);
       console.log('spotlight update error', error.message);
       return { statusCode: 500, body: 'Failed to update spotlight' };
     }
@@ -126,6 +129,7 @@ async function handleAdminMutation(event) {
     }
     const { error } = await supabase.from('spotlights').delete().eq('id', id);
     if (error) {
+      if (isSchemaError(error)) return schemaMismatchResponse(error);
       console.log('spotlight delete error', error.message);
       return { statusCode: 500, body: 'Failed to delete spotlight' };
     }

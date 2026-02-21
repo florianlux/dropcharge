@@ -205,6 +205,22 @@ function buildHeaders(extra = {}) {
   return headers;
 }
 
+function showSchemaBanner(message) {
+  let banner = document.getElementById('schema-mismatch-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'schema-mismatch-banner';
+    banner.style.cssText = 'background:#b91c1c;color:#fff;padding:0.75rem 1.2rem;text-align:center;font-size:0.95rem;position:sticky;top:0;z-index:9999;';
+    const main = document.querySelector('.admin-main');
+    if (main) {
+      main.prepend(banner);
+    } else {
+      document.body.prepend(banner);
+    }
+  }
+  banner.textContent = 'Schema mismatch \u2014 run migrations' + (message ? ': ' + message : '');
+}
+
 async function request(path, options = {}) {
   const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
   const config = { ...options };
@@ -219,6 +235,11 @@ async function request(path, options = {}) {
     }
     if (!res.ok) {
       const text = await res.text();
+      let parsed = null;
+      try { parsed = JSON.parse(text); } catch {}
+      if (parsed && parsed.error === 'schema_mismatch') {
+        showSchemaBanner(parsed.message || '');
+      }
       const message = text || res.statusText || 'request_failed';
       console.error('[API]', url, res.status, message);
       const error = new Error(`HTTP ${res.status}: ${message}`);
