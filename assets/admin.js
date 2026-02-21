@@ -110,6 +110,13 @@ const dom = {
   dealFilterRange: document.getElementById('deal-filter-range'),
   dealSortField: document.getElementById('deal-sort-field'),
   dealFilterApply: document.getElementById('deals-filter-apply'),
+  dealsCreate: document.getElementById('deals-create'),
+  dealsRefresh: document.getElementById('deals-refresh'),
+  createDealModal: document.getElementById('create-deal-modal'),
+  createDealForm: document.getElementById('create-deal-form'),
+  closeCreateModal: document.getElementById('close-create-modal'),
+  cancelCreateDeal: document.getElementById('cancel-create-deal'),
+  submitCreateDeal: document.getElementById('submit-create-deal'),
   factoryForm: document.getElementById('factory-form'),
   factoryResult: document.getElementById('factory-result'),
   optimizerRun: document.getElementById('optimizer-run'),
@@ -802,30 +809,62 @@ async function submitDeal(event) {
 async function dealAction(id, action) {
   const deal = state.deals.find(item => item.id === id);
   if (!deal) return;
+  
   if (action === 'edit') {
     populateDealForm(deal);
     updateSpotlightPreview(deal);
     return;
   }
-  const payload = { id: deal.id };
-  if (action === 'live') {
-    payload.active = true;
-    payload.priority = 999;
+  
+  const row = document.querySelector(`.table-row[data-id="${id}"]`);
+  let originalState = null;
+  
+  if (row) {
+    originalState = { html: row.innerHTML, deal: { ...deal } };
+    row.classList.add('optimistic');
   }
-  if (action === 'toggle') {
-    payload.active = !deal.active;
-  }
+  
   try {
     if (action === 'delete') {
-      await request(API.spotlight, { method: 'DELETE', body: JSON.stringify({ id: deal.id }) });
-    } else {
-      await request(API.spotlight, { method: 'PUT', body: JSON.stringify(payload) });
+      // Soft delete via PATCH
+      await request(`${API.deals}/${id}`, { 
+        method: 'DELETE'
+      });
+      showToast('Deal deaktiviert');
+    } else if (action === 'live') {
+      await request(`${API.deals}/${id}`, { 
+        method: 'PATCH', 
+        body: JSON.stringify({ active: true, priority: 999 }) 
+      });
+      showToast('Deal live geschaltet');
+    } else if (action === 'toggle') {
+      await request(`${API.deals}/${id}`, { 
+        method: 'PATCH', 
+        body: JSON.stringify({ active: !deal.active }) 
+      });
+      showToast('Status aktualisiert');
     }
-    showToast('Deal aktualisiert');
+    
+    if (row) row.classList.remove('optimistic');
     fetchDeals();
     fetchSpotlight();
   } catch (err) {
     console.error('deal action failed', err.message);
+    
+    // Rollback on error
+    if (row && originalState) {
+      row.innerHTML = originalState.html;
+      row.classList.remove('optimistic');
+      row.classList.add('error');
+      
+      // Remove error class after animation completes
+      const handleAnimationEnd = () => {
+        row.classList.remove('error');
+        row.removeEventListener('animationend', handleAnimationEnd);
+      };
+      row.addEventListener('animationend', handleAnimationEnd);
+    }
+    
     handleRequestError('Deal Aktion', err);
   }
 }
@@ -852,14 +891,120 @@ function handleDealInlineChange(event) {
   updateDealField(id, { [field]: value });
 }
 
-async function updateDealField(id, patch) {
+async function updateDealField(id, patch, optimistic = true) {
+  const row = document.querySelector(`.table-row[data-id="${id}"]`);
+  let originalState = null;
+  
+  if (optimistic && row) {
+    // Find the deal first
+    const deal = state.deals.find(d => d.id === id);
+    if (!deal) {
+      console.error('Cannot update deal: Deal not found in state:', id);
+      handleRequestError('Update fehlgeschlagen', new Error('Deal nicht gefunden'));
+      return;
+    }
+    
+    // Save original state for rollback
+    originalState = {
+      html: row.innerHTML,
+      deal: { ...deal }
+    };
+    
+    // Apply optimistic UI
+    row.classList.add('optimistic');
+    
+    // Update state optimistically
+    const dealIndex = state.deals.findIndex(d => d.id === id);
+    if (dealIndex !== -1) {
+      state.deals[dealIndex] = { ...state.deals[dealIndex], ...patch };
+    }
+  }
+  
   try {
-    await request(API.deals, { method: 'PUT', body: JSON.stringify({ id, ...patch }) });
+    await request(`${API.deals}/${id}`, { method: 'PATCH', body: JSON.stringify(patch) });
+    if (row) row.classList.remove('optimistic');
     showToast('Deal aktualisiert');
+    // Refresh to get latest server state
     fetchDeals();
   } catch (err) {
     console.error('inline update failed', err.message);
+    
+    // Rollback on error
+    if (optimistic && row && originalState) {
+      row.innerHTML = originalState.html;
+      row.classList.remove('optimistic');
+      row.classList.add('error');
+      
+      // Restore original state
+      const dealIndex = state.deals.findIndex(d => d.id === id);
+      if (dealIndex !== -1 && originalState.deal) {
+        state.deals[dealIndex] = originalState.deal;
+      }
+      
+      // Remove error class after animation completes
+      const handleAnimationEnd = () => {
+        row.classList.remove('error');
+        row.removeEventListener('animationend', handleAnimationEnd);
+      };
+      row.addEventListener('animationend', handleAnimationEnd);
+    }
+    
     handleRequestError('Inline Update', err);
+  }
+}
+
+// Modal functions
+function openCreateDealModal() {
+  dom.createDealModal?.classList.add('active');
+  dom.createDealForm?.reset();
+}
+
+function closeCreateDealModal() {
+  dom.createDealModal?.classList.remove('active');
+  dom.createDealForm?.reset();
+}
+
+async function handleCreateDeal(event) {
+  event.preventDefault();
+  
+  const submitBtn = dom.submitCreateDeal;
+  if (!submitBtn) return;
+  
+  // Disable button and show loading state
+  submitBtn.disabled = true;
+  submitBtn.classList.add('loading');
+  
+  try {
+    const formData = new FormData(dom.createDealForm);
+    const payload = Object.fromEntries(formData.entries());
+    
+    // Convert types
+    payload.active = formData.get('active') === 'on';
+    if (payload.price_cents) payload.price_cents = Number(payload.price_cents);
+    if (payload.priority) payload.priority = Number(payload.priority);
+    
+    // Remove empty strings
+    Object.keys(payload).forEach(key => {
+      if (payload[key] === '') payload[key] = null;
+    });
+    
+    const response = await request(API.deals, { 
+      method: 'POST', 
+      body: JSON.stringify(payload) 
+    });
+    
+    showToast('Deal erfolgreich erstellt');
+    closeCreateDealModal();
+    
+    // Refresh deals table
+    await fetchDeals();
+  } catch (err) {
+    console.error('create deal failed', err.message);
+    handleRequestError('Deal erstellen', err);
+  } finally {
+    // Re-enable button
+    submitBtn.disabled = false;
+    submitBtn.classList.remove('loading');
   }
 }
 
@@ -1083,6 +1228,14 @@ function attachEvents() {
   });
   dom.dealsTable?.addEventListener('change', handleDealInlineChange);
   dom.dealFilterApply?.addEventListener('click', applyDealFilters);
+  dom.dealsCreate?.addEventListener('click', openCreateDealModal);
+  dom.dealsRefresh?.addEventListener('click', () => fetchDeals());
+  dom.closeCreateModal?.addEventListener('click', closeCreateDealModal);
+  dom.cancelCreateDeal?.addEventListener('click', closeCreateDealModal);
+  dom.createDealForm?.addEventListener('submit', handleCreateDeal);
+  dom.createDealModal?.addEventListener('click', (event) => {
+    if (event.target === dom.createDealModal) closeCreateDealModal();
+  });
   dom.dealSortField?.addEventListener('change', () => {
     state.dealSort.field = dom.dealSortField.value;
     fetchDeals();

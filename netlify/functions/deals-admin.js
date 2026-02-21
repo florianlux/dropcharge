@@ -3,6 +3,7 @@ const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const MAX_SLUG_LENGTH = 64;
 
 function toNumber(value) {
   if (typeof value === 'number') return value;
@@ -314,10 +315,237 @@ async function handleInlineUpdate(event) {
   }
 }
 
+/**
+ * Converts a string into a URL-safe slug.
+ * @param {string} value - The input string to slugify
+ * @returns {string|null} A lowercase, hyphenated slug (max 64 chars) or null if empty
+ */
+function slugify(value) {
+  return (value || '')
+    .toString()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+    .slice(0, MAX_SLUG_LENGTH) || null;
+}
+
+/**
+ * Builds a complete deal object from payload, normalizing and validating fields.
+ * @param {Object} payload - The raw deal data from the request
+ * @returns {Object} Normalized deal object ready for database insertion
+ */
+function buildFullDeal(payload = {}) {
+  return {
+    title: (payload.title || '').trim(),
+    subtitle: payload.subtitle || null,
+    description: payload.description || null,
+    platform: payload.platform || null,
+    vendor: payload.vendor || null,
+    slug: payload.slug || slugify(payload.title),
+    price: payload.price || null,
+    price_cents: typeof payload.price_cents === 'number' ? payload.price_cents : null,
+    affiliate_url: payload.affiliate_url || null,
+    code_label: payload.code_label || null,
+    code_url: payload.code_url || null,
+    cover_url: payload.cover_url || null,
+    amazon_url: payload.amazon_url || null,
+    g2g_url: payload.g2g_url || null,
+    release_date: payload.release_date || null,
+    active: typeof payload.active === 'boolean' ? payload.active : true,
+    starts_at: payload.starts_at || null,
+    ends_at: payload.ends_at || null,
+    priority: typeof payload.priority === 'number' ? payload.priority : 0
+  };
+}
+
+async function handleCreate(event) {
+  const authError = requireAdmin(event.headers || {});
+  if (authError) return authError;
+
+  if (!hasSupabase || !supabase) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ ok: false, error: 'supabase_not_configured' })
+    };
+  }
+
+  let payload = {};
+  try {
+    payload = JSON.parse(event.body || '{}');
+  } catch (err) {
+    return {
+      statusCode: 400,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: false, error: 'invalid_json' })
+    };
+  }
+
+  if (!payload.title || !payload.title.trim()) {
+    return {
+      statusCode: 400,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: false, error: 'title_required' })
+    };
+  }
+
+  const record = buildFullDeal(payload);
+  record.created_at = new Date().toISOString();
+  record.updated_at = record.created_at;
+
+  try {
+    const { data, error } = await supabase
+      .from('spotlights')
+      .insert(record)
+      .select()
+      .single();
+    if (error) throw error;
+    return {
+      statusCode: 201,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      body: JSON.stringify({ ok: true, deal: data })
+    };
+  } catch (err) {
+    console.log('deal create error', err.message);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      body: JSON.stringify({ ok: false, error: err.message || 'create_failed' })
+    };
+  }
+}
+
+async function handleUpdate(event) {
+  const authError = requireAdmin(event.headers || {});
+  if (authError) return authError;
+
+  if (!hasSupabase || !supabase) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ ok: false, error: 'supabase_not_configured' })
+    };
+  }
+
+  const pathParts = event.path.split('/');
+  const id = pathParts[pathParts.length - 1];
+
+  if (!id || id === 'deals-admin') {
+    return {
+      statusCode: 400,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: false, error: 'id_required' })
+    };
+  }
+
+  let payload = {};
+  try {
+    payload = JSON.parse(event.body || '{}');
+  } catch (err) {
+    return {
+      statusCode: 400,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: false, error: 'invalid_json' })
+    };
+  }
+
+  const patch = buildInlinePatch(payload);
+  if (!Object.keys(patch).length) {
+    return {
+      statusCode: 400,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: false, error: 'nothing_to_update' })
+    };
+  }
+  patch.updated_at = new Date().toISOString();
+
+  try {
+    const { data, error } = await supabase
+      .from('spotlights')
+      .update(patch)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      body: JSON.stringify({ ok: true, deal: data })
+    };
+  } catch (err) {
+    console.log('deal update error', err.message);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      body: JSON.stringify({ ok: false, error: 'update_failed' })
+    };
+  }
+}
+
+async function handleDelete(event) {
+  const authError = requireAdmin(event.headers || {});
+  if (authError) return authError;
+
+  if (!hasSupabase || !supabase) {
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ ok: false, error: 'supabase_not_configured' })
+    };
+  }
+
+  const pathParts = event.path.split('/');
+  const id = pathParts[pathParts.length - 1];
+
+  if (!id || id === 'deals-admin') {
+    return {
+      statusCode: 400,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: false, error: 'id_required' })
+    };
+  }
+
+  try {
+    const { error } = await supabase
+      .from('spotlights')
+      .update({ active: false, updated_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) throw error;
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      body: JSON.stringify({ ok: true })
+    };
+  } catch (err) {
+    console.log('deal soft delete error', err.message);
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+      body: JSON.stringify({ ok: false, error: 'delete_failed' })
+    };
+  }
+}
+
 async function handler(event) {
   const method = event.httpMethod || 'GET';
+  const path = event.path || '';
+  
+  // GET /admin/deals - list deals
   if (method === 'GET') return handleList(event);
+  
+  // POST /admin/deals - create deal
+  if (method === 'POST') return handleCreate(event);
+  
+  // PATCH /admin/deals/:id - update deal
+  if (method === 'PATCH' && path.match(/\/deals-admin\/[^/]+$/)) {
+    return handleUpdate(event);
+  }
+  
+  // DELETE /admin/deals/:id - soft delete deal
+  if (method === 'DELETE' && path.match(/\/deals-admin\/[^/]+$/)) {
+    return handleDelete(event);
+  }
+  
+  // PUT (legacy) - for backwards compatibility with inline updates
   if (method === 'PUT') return handleInlineUpdate(event);
+  
   return { statusCode: 405, body: 'Method Not Allowed' };
 };
 
