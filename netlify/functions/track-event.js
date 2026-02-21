@@ -48,7 +48,12 @@ async function handler(event) {
   }
 
   if (!hasSupabase || !supabase) {
-    return { statusCode: 500, body: JSON.stringify({ ok: false, error: 'supabase_not_configured' }) };
+    console.warn('track-event: Supabase not configured, skipping event tracking');
+    return { 
+      statusCode: 200, 
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: false, warning: 'event_tracking_disabled' }) 
+    };
   }
 
   const headers = event.headers || {};
