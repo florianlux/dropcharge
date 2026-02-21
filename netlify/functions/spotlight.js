@@ -1,6 +1,7 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
+const { createSnapshot } = require('./_lib/snapshot-helper');
 
 function slugify(value) {
   return (value || '')
@@ -98,6 +99,7 @@ async function handleAdminMutation(event) {
       console.log('spotlight insert error', error.message);
       return { statusCode: 500, body: 'Failed to save spotlight' };
     }
+    await createSnapshot('deal_created');
     return { statusCode: 200, body: JSON.stringify({ success: true }) };
   }
 
@@ -116,6 +118,7 @@ async function handleAdminMutation(event) {
       console.log('spotlight update error', error.message);
       return { statusCode: 500, body: 'Failed to update spotlight' };
     }
+    await createSnapshot('deal_updated');
     return { statusCode: 200, body: JSON.stringify({ success: true }) };
   }
 
@@ -129,6 +132,7 @@ async function handleAdminMutation(event) {
       console.log('spotlight delete error', error.message);
       return { statusCode: 500, body: 'Failed to delete spotlight' };
     }
+    await createSnapshot('deal_deleted');
     return { statusCode: 200, body: JSON.stringify({ success: true }) };
   }
 

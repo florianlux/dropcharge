@@ -177,3 +177,13 @@ create table if not exists public.admin_audit_log (
 
 create index if not exists admin_login_attempts_ip_created_idx on public.admin_login_attempts (ip, created_at desc);
 create index if not exists admin_sessions_expires_idx on public.admin_sessions (expires_at);
+
+create table if not exists public.system_snapshots (
+  id uuid primary key default gen_random_uuid(),
+  snapshot_number integer not null,
+  created_at timestamptz default now(),
+  reason text
+);
+
+create index if not exists system_snapshots_number_idx on public.system_snapshots (snapshot_number desc);
+create index if not exists system_snapshots_created_idx on public.system_snapshots (created_at desc);

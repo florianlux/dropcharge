@@ -1,4 +1,5 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
+const { createSnapshot } = require('./_lib/snapshot-helper');
 
 function htmlResponse(body) {
   return {
@@ -27,6 +28,7 @@ exports.handler = async function handler(event) {
     if (!data || !data.length) {
       return htmlResponse('<h1>Nicht gefunden</h1><p>Dieser Link ist ungültig oder wurde bereits verwendet.</p>');
     }
+    await createSnapshot('subscriber_deactivated');
     return htmlResponse('<h1>Du bist abgemeldet ✅</h1><p>Du erhältst keine weiteren DropCharge E-Mails.</p>');
   } catch (err) {
     console.log('unsubscribe error', err.message);
