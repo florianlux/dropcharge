@@ -22,9 +22,9 @@ function normalizeHtml(html = '') {
 async function fetchSubscribers(segment) {
   if (!hasSupabase || !supabase) throw new Error('supabase_not_configured');
   let query = supabase
-    .from('emails')
+    .from('newsletter_subscribers')
     .select('email')
-    .eq('confirmed', true);
+    .eq('status', 'active');
   if (segment) {
     query = query.eq('source', segment);
   }

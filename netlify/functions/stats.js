@@ -35,23 +35,18 @@ async function handler(event) {
     let emailRows = [];
     let emailErr;
     ({ data: emailRows = [], error: emailErr } = await supabase
-      .from('emails')
-      .select('id, email, confirmed, created_at, source')
+      .from('newsletter_subscribers')
+      .select('id, email, status, created_at, source')
       .gte('created_at', since24h)
       .order('created_at', { ascending: false })
       .limit(200));
-    if (emailErr && (emailErr.message || '').toLowerCase().includes('confirmed')) {
-      ({ data: emailRows = [], error: emailErr } = await supabase
-        .from('emails')
-        .select('id, email, created_at, source')
-        .gte('created_at', since24h)
-        .order('created_at', { ascending: false })
-        .limit(200));
+    if (emailErr) {
+      console.error('[stats] Error fetching newsletter_subscribers:', emailErr.message);
+      throw emailErr;
     }
-    if (emailErr) throw emailErr;
     emailRows = (emailRows || []).map(row => ({
       ...row,
-      confirmed: Boolean(row.confirmed)
+      confirmed: row.status === 'active'
     }));
 
     const clicks24h = clickRows.filter(row => row.created_at >= since24h);

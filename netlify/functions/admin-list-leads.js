@@ -17,9 +17,11 @@ exports.handler = withCors(async (event) => {
   const offset = Math.max(Number(params.offset) || 0, 0);
 
   try {
+    console.log('[admin-list-leads] Fetching subscribers with filters:', { status, search, limit, offset });
+    
     let query = supabase
-      .from('newsletter_leads')
-      .select('id,email,status,source,page,created_at,last_sent_at,confirmed_at,unsubscribed_at', { count: 'exact' })
+      .from('newsletter_subscribers')
+      .select('id,email,status,source,created_at,last_sent_at,unsubscribed_at,utm_source,utm_medium,utm_campaign', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -27,15 +29,19 @@ exports.handler = withCors(async (event) => {
     if (search) query = query.ilike('email', `%${search}%`);
 
     const { data, error, count } = await query;
-    if (error) throw error;
+    if (error) {
+      console.error('[admin-list-leads] Query error:', error.message);
+      throw error;
+    }
 
+    console.log('[admin-list-leads] Found', count, 'subscribers');
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
       body: JSON.stringify({ ok: true, items: data || [], total: count ?? 0 })
     };
   } catch (err) {
-    console.log('admin list leads error', err.message);
+    console.error('[admin-list-leads] Error:', err.message);
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
