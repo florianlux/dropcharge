@@ -61,7 +61,7 @@ async function handler(event) {
         const { Resend } = require('resend');
         const resend = new Resend(process.env.RESEND_API_KEY);
         await resend.emails.send({
-          from: 'onboarding@resend.dev',
+          from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
           to: email,
           subject: 'Welcome to DropCharge 🚀',
           html: '<p>Thanks for subscribing!</p>'
