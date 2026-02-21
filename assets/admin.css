@@ -368,6 +368,37 @@ textarea { resize: vertical; }
 }
 .factory-result strong { font-size: 1rem; }
 .factory-result a { color: #5ad7ff; }
+.factory-success {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.factory-success h4 {
+  margin: 0;
+  color: var(--success);
+  font-size: 1rem;
+}
+.result-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.result-item label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  font-weight: 500;
+}
+.result-item p {
+  margin: 0;
+  word-break: break-all;
+}
+.result-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
 .deal-filters {
   display: flex;
   flex-wrap: wrap;

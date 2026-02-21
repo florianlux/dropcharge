@@ -52,7 +52,7 @@ async function ensureUniqueSlug(slug) {
   throw new Error('slug_conflict')
 }
 
-function buildAffiliateUrl(productUrl, networkKey, trackerId) {
+function buildAffiliateUrl(productUrl, networkKey, trackerId, utmParams = {}) {
   const network = NETWORKS[networkKey] || NETWORKS.custom
   const parsed = coerceUrl(productUrl)
   if (!parsed) return null
@@ -62,6 +62,10 @@ function buildAffiliateUrl(productUrl, networkKey, trackerId) {
       trackerId || network.defaultTracker
     )
   }
+  // Add UTM parameters if provided
+  if (utmParams.utm_source) parsed.searchParams.set('utm_source', utmParams.utm_source)
+  if (utmParams.utm_campaign) parsed.searchParams.set('utm_campaign', utmParams.utm_campaign)
+  if (utmParams.utm_medium) parsed.searchParams.set('utm_medium', utmParams.utm_medium)
   return parsed.toString()
 }
 
@@ -84,6 +88,9 @@ function sanitizeRecord(payload, affiliateUrl) {
     amazon_url: payload.network === 'amazon' ? payload.product_url : null,
     g2g_url: payload.network === 'g2a' ? payload.product_url : null,
     release_date: payload.release_date || null,
+    utm_source: payload.utm_source || null,
+    utm_campaign: payload.utm_campaign || null,
+    utm_medium: payload.utm_medium || null,
     active: typeof payload.auto_live === 'boolean' ? payload.auto_live : true,
     starts_at: payload.starts_at || now,
     ends_at: payload.ends_at || null,
@@ -122,7 +129,12 @@ async function handler(event) {
   }
 
   const networkKey = (payload.network || 'custom').toLowerCase()
-  const affiliateUrl = buildAffiliateUrl(productUrl.toString(), networkKey, payload.tracker_id)
+  const utmParams = {
+    utm_source: payload.utm_source,
+    utm_campaign: payload.utm_campaign,
+    utm_medium: payload.utm_medium
+  }
+  const affiliateUrl = buildAffiliateUrl(productUrl.toString(), networkKey, payload.tracker_id, utmParams)
   if (!affiliateUrl) {
     return { statusCode: 400, body: 'Unable to build affiliate URL' }
   }
