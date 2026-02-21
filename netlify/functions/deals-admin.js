@@ -1,4 +1,4 @@
-const { supabase, hasSupabase } = require('./_lib/supabase');
+const { supabase, hasSupabase, isSchemaError, schemaMismatchResponse } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
 
@@ -244,6 +244,7 @@ async function handleList(event) {
       body: JSON.stringify({ ok: true, deals: sortedDeals, summary })
     };
   } catch (err) {
+    if (isSchemaError(err)) return schemaMismatchResponse(err);
     console.log('deals list error', err.message);
     return {
       statusCode: 500,
@@ -305,6 +306,7 @@ async function handleInlineUpdate(event) {
       body: JSON.stringify({ ok: true })
     };
   } catch (err) {
+    if (isSchemaError(err)) return schemaMismatchResponse(err);
     console.log('deal inline update error', err.message);
     return {
       statusCode: 500,
