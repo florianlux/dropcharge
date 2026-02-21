@@ -1,3 +1,15 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+if (!window.SUPABASE_URL || !window.SUPABASE_ANON_KEY) {
+  console.error('Supabase configuration missing. Please set SUPABASE_URL and SUPABASE_ANON_KEY environment variables.');
+  alert('Konfigurationsfehler: Supabase ist nicht konfiguriert. Bitte Administrator kontaktieren.');
+}
+
+const supabase = createClient(
+  window.SUPABASE_URL || 'https://placeholder.supabase.co',
+  window.SUPABASE_ANON_KEY || 'placeholder-key'
+);
+
 const API_BASE = (window.ADMIN_API_BASE
   || document.documentElement.getAttribute('data-api-base')
   || (window.location.origin.includes('dropchargeadmin') ? 'https://dropcharge.netlify.app' : window.location.origin)
@@ -32,6 +44,9 @@ const LIVE_MODE_STORAGE_KEY = 'admin_live_mode';
 const STATS_INTERVAL = 15000;
 const HEALTH_INTERVAL = 20000;
 const LIVE_INTERVAL = 4000;
+
+let currentSession = null;
+let currentAccessToken = null;
 
 const state = {
   live: {
@@ -145,9 +160,41 @@ const dom = {
   toast: null
 };
 
-(function ensureTokenPresent() {
-  if (!localStorage.getItem(TOKEN_STORAGE_KEY)) {
-    window.location.href = '/admin-login.html';
+(async function ensureAuthPresent() {
+  try {
+    // Check for auth session
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (error || !session) {
+      // Try legacy token fallback
+      if (!localStorage.getItem(TOKEN_STORAGE_KEY)) {
+        window.location.href = '/admin-login.html';
+        return;
+      }
+      // Has legacy token, continue with that
+      return;
+    }
+    
+    // Store session and token
+    currentSession = session;
+    currentAccessToken = session.access_token;
+    
+    // Listen for auth changes
+    supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
+        window.location.href = '/admin-login.html';
+      } else {
+        currentSession = session;
+        currentAccessToken = session.access_token;
+      }
+    });
+  } catch (err) {
+    console.error('Auth check failed:', err);
+    // Fallback to legacy token
+    if (!localStorage.getItem(TOKEN_STORAGE_KEY)) {
+      window.location.href = '/admin-login.html';
+    }
   }
 })();
 
@@ -199,8 +246,16 @@ function formatCurrency(value) {
 
 function buildHeaders(extra = {}) {
   const headers = { ...extra };
-  const token = localStorage.getItem(TOKEN_STORAGE_KEY);
-  if (token) headers['x-admin-token'] = token;
+  
+  // Prefer JWT auth if available
+  if (currentAccessToken) {
+    headers['Authorization'] = `Bearer ${currentAccessToken}`;
+  } else {
+    // Fallback to legacy token
+    const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+    if (token) headers['x-admin-token'] = token;
+  }
+  
   return headers;
 }
 
@@ -212,7 +267,17 @@ async function request(path, options = {}) {
   try {
     const res = await fetch(url, config);
     if (res.status === 401) {
+      // Clear both JWT and legacy token
+      const hadSession = currentSession !== null;
+      currentSession = null;
+      currentAccessToken = null;
       localStorage.removeItem(TOKEN_STORAGE_KEY);
+      
+      // Sign out from Supabase if we had a session
+      if (hadSession) {
+        await supabase.auth.signOut();
+      }
+      
       window.location.href = '/admin-login.html';
       return null;
     }
@@ -1048,6 +1113,28 @@ function applyGlobalSearch() {
 }
 
 function attachEvents() {
+  // Logout button
+  const logoutBtn = document.getElementById('admin-clear-token');
+  logoutBtn?.addEventListener('click', async () => {
+    try {
+      // Sign out from Supabase if using JWT
+      if (currentSession) {
+        await supabase.auth.signOut();
+      }
+      
+      // Clear legacy token
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      currentSession = null;
+      currentAccessToken = null;
+      
+      window.location.href = '/admin-login.html';
+    } catch (err) {
+      console.error('Logout failed:', err);
+      // Force redirect anyway
+      window.location.href = '/admin-login.html';
+    }
+  });
+  
   dom.livePause?.addEventListener('click', () => {
     state.live.paused = !state.live.paused;
     dom.livePause.textContent = state.live.paused ? 'Resume' : 'Pause';

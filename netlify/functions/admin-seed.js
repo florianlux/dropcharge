@@ -31,7 +31,7 @@ function clamp(number, min, max) {
 }
 
 async function handler(event) {
-  const authError = requireAdmin(event.headers || {});
+  const authError = await requireAdmin(event.headers || {});
   if (authError) return authError;
 
   if (!hasSupabase || !supabase) {

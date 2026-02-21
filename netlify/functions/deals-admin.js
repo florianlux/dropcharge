@@ -195,7 +195,7 @@ function sortDeals(deals, sortField, direction) {
 }
 
 async function handleList(event) {
-  const authError = requireAdmin(event.headers || {});
+  const authError = await requireAdmin(event.headers || {});
   if (authError) return authError;
 
   if (!hasSupabase || !supabase) {
@@ -254,7 +254,7 @@ async function handleList(event) {
 }
 
 async function handleInlineUpdate(event) {
-  const authError = requireAdmin(event.headers || {});
+  const authError = await requireAdmin(event.headers || {});
   if (authError) return authError;
 
   if (!hasSupabase || !supabase) {

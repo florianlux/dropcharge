@@ -94,7 +94,7 @@ async function handler(event) {
   const isScheduled = Boolean(headers['x-netlify-scheduled-function-name']);
 
   if (!isScheduled) {
-    const authError = requireAdmin(headers);
+    const authError = await requireAdmin(headers);
     if (authError) return authError;
   }
 

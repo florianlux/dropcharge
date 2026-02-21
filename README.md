@@ -11,11 +11,17 @@ High-conversion gaming-credit dropsite: TikTok-ready UI, Netlify Functions, Supa
 ## Supabase Setup
 1. Create a new Supabase project.
 2. Run [`supabase-schema.sql`](./supabase-schema.sql) to create tables.
-3. Grab **Project URL** + **service_role key** → set as Netlify env vars:
+3. Grab **Project URL** + **service_role key** + **anon key** → set as Netlify env vars:
    - `SUPABASE_URL`
    - `SUPABASE_SERVICE_KEY`
-4. Optional envs:
-   - `ADMIN_PASSWORD_HASH` (bcrypt hash via `node scripts/hash-password.js "pass"`)
+   - `SUPABASE_ANON_KEY` (public key, safe to expose)
+4. Enable Email Auth in Supabase Dashboard (Authentication → Providers → Email)
+5. Add admin emails to the `admin_users` table:
+   ```sql
+   INSERT INTO public.admin_users (email) VALUES ('your-email@example.com');
+   ```
+6. Optional envs:
+   - `ADMIN_TOKEN` (legacy - for backward compatibility, can be removed after migration)
    - `ENABLE_DOUBLE_OPT_IN=1` (keeps emails in pending state)
    - `TIKTOK_PIXEL_ID` (or override in HTML bundle)
 
@@ -71,3 +77,17 @@ npx netlify dev
 - Add Webhook/email notifications on large drops.
 - Build CSV export button in admin.
 - Add reCAPTCHA for email capture if bots show up.
+
+## Authentication & Security
+
+The admin dashboard now uses **Supabase Auth** with magic link email authentication:
+
+1. Visit `/admin-login.html` and enter your admin email
+2. Receive a magic link via email
+3. Click the link to authenticate
+4. Access the admin dashboard with JWT-based authentication
+
+Admin access is controlled via the `admin_users` table. Only emails in this table can authenticate as admins.
+
+For detailed setup instructions, see [docs/SUPABASE_AUTH_SETUP.md](./docs/SUPABASE_AUTH_SETUP.md).
+

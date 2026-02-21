@@ -1,3 +1,5 @@
+const { verifyAdminJWT } = require('./supabase-auth');
+
 function getHeader(headers = {}, name) {
   if (!headers) return null;
   const target = name.toLowerCase();
@@ -9,15 +11,20 @@ function getHeader(headers = {}, name) {
   return null;
 }
 
-const authEnabled = Boolean(process.env.ADMIN_TOKEN);
+const authEnabled = Boolean(process.env.ADMIN_TOKEN) || Boolean(process.env.SUPABASE_URL);
 
 function isAdminAuthorized(headers) {
-  if (!authEnabled) {
-    return true;
+  // Legacy token auth (for backward compatibility)
+  if (process.env.ADMIN_TOKEN) {
+    const expected = process.env.ADMIN_TOKEN || '';
+    const provided = (getHeader(headers, 'x-admin-token') || '').trim();
+    if (provided === expected) {
+      return true;
+    }
   }
-  const expected = process.env.ADMIN_TOKEN || '';
-  const provided = (getHeader(headers, 'x-admin-token') || '').trim();
-  return provided === expected;
+  
+  // If no legacy token or didn't match, we'll check JWT in requireAdmin
+  return false;
 }
 
 function unauthorizedResponse() {
@@ -28,11 +35,20 @@ function unauthorizedResponse() {
   };
 }
 
-function requireAdmin(headers) {
-  if (!isAdminAuthorized(headers)) {
-    return unauthorizedResponse();
+async function requireAdmin(headers) {
+  // First check legacy token auth for backward compatibility
+  if (isAdminAuthorized(headers)) {
+    return null;
   }
-  return null;
+  
+  // Try JWT auth
+  const jwtResult = await verifyAdminJWT(headers);
+  if (jwtResult.ok) {
+    return null;
+  }
+  
+  // Both methods failed
+  return unauthorizedResponse();
 }
 
 module.exports = {
