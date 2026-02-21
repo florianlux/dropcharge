@@ -18,6 +18,7 @@ const API = {
   publicConfig: `${API_BASE}/.netlify/functions/public-config`,
   factory: `${API_BASE}/.netlify/functions/affiliate-factory`,
   leads: `${API_BASE}/.netlify/functions/admin-list-leads`,
+  leadsOverview: `${API_BASE}/.netlify/functions/leads`,
   leadsExport: `${API_BASE}/.netlify/functions/admin-export-leads`,
   campaigns: `${API_BASE}/.netlify/functions/admin-campaigns`,
   campaignSend: `${API_BASE}/.netlify/functions/admin-campaign-send`,
@@ -258,8 +259,6 @@ async function loadStats({ silent = false } = {}) {
       });
     }
     if (dom.clicksMeta) dom.clicksMeta.textContent = `${metrics.clicks24h || 0} Klicks / ${metrics.clicks30m || 0} in 30 Min`;
-    if (dom.emailCount) dom.emailCount.textContent = metrics.emails24h || 0;
-    if (dom.emailConv) dom.emailConv.textContent = `${metrics.conversion24h?.toFixed ? metrics.conversion24h.toFixed(1) : (metrics.conversion24h || 0)}%`;
     if (dom.amountStats) {
       const list = metrics.topAmounts || [];
       dom.amountStats.innerHTML = '';
@@ -274,9 +273,6 @@ async function loadStats({ silent = false } = {}) {
         });
       }
     }
-    state.emailRows = metrics.emailRows || [];
-    if (dom.emailTable) renderEmailTable(state.emailRows);
-    if (dom.leadStats) renderLeadStats(state.emailRows);
   } catch (err) {
     console.error('stats load failed', err.message);
     if (!silent) handleRequestError('Stats', err);
@@ -291,7 +287,7 @@ function renderEmailTable(rows) {
     row.innerHTML = `
       <span>${entry.email}</span>
       <span>${new Date(entry.created_at).toLocaleString()}</span>
-      <span>${entry.confirmed ? 'Confirmed' : 'Pending'}</span>
+      <span>${entry.status || (entry.confirmed ? 'Confirmed' : 'Pending')}</span>
     `;
     dom.emailTable.appendChild(row);
   });
@@ -308,6 +304,22 @@ function renderLeadStats(rows) {
     li.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
     dom.leadStats.appendChild(li);
   });
+}
+
+async function loadLeadsOverview({ silent = false } = {}) {
+  try {
+    const data = await request(API.leadsOverview);
+    if (!data?.ok) throw new Error('leads_failed');
+    const kpis = data.kpis24h || {};
+    if (dom.emailCount) dom.emailCount.textContent = kpis.emails || 0;
+    if (dom.emailConv) dom.emailConv.textContent = `${kpis.conversion ?? 0}%`;
+    state.emailRows = data.items || [];
+    if (dom.emailTable) renderEmailTable(state.emailRows);
+    if (dom.leadStats) renderLeadStats(state.emailRows);
+  } catch (err) {
+    console.error('leads overview load failed', err.message);
+    if (!silent) handleRequestError('Leads', err);
+  }
 }
 
 function copyEmailList() {
@@ -999,6 +1011,7 @@ async function runRefreshAll() {
   try {
     await Promise.all([
       loadStats({ silent: true }),
+      loadLeadsOverview({ silent: true }),
       loadLiveEvents({ silent: true }),
       loadFunnels({ silent: true }),
       loadUtm('7d', { silent: true }),
@@ -1115,7 +1128,7 @@ function attachEvents() {
   });
   dom.searchTrigger?.addEventListener('click', applyGlobalSearch);
   dom.emailRefresh?.addEventListener('click', loadStats);
-  dom.emailsRefresh?.addEventListener('click', loadStats);
+  dom.emailsRefresh?.addEventListener('click', loadLeadsOverview);
   dom.emailExport?.addEventListener('click', exportEmailsCsv);
   dom.emailsCopy?.addEventListener('click', copyEmailList);
   dom.settingsRefresh?.addEventListener('click', fetchSettings);
@@ -1123,6 +1136,7 @@ function attachEvents() {
 
 function startIntervals() {
   loadStats({ silent: true });
+  loadLeadsOverview({ silent: true });
   loadHealth();
   loadLiveEvents({ silent: true });
   loadFunnels({ silent: true });
@@ -1135,6 +1149,7 @@ function startIntervals() {
   loadSubscribers({ silent: true });
 
   setInterval(() => loadStats({ silent: true }), STATS_INTERVAL);
+  setInterval(() => loadLeadsOverview({ silent: true }), STATS_INTERVAL);
   setInterval(loadHealth, HEALTH_INTERVAL);
   setInterval(() => loadFunnels({ silent: true }), 60000);
   setInterval(() => loadUtm('7d', { silent: true }), 45000);
