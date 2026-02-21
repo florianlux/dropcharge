@@ -5,6 +5,7 @@ const API_BASE = (window.ADMIN_API_BASE
 
 const API = {
   stats: `${API_BASE}/.netlify/functions/stats`,
+  adminStats: `${API_BASE}/.netlify/functions/admin-stats`,
   health: `${API_BASE}/.netlify/functions/admin-health`,
   events: `${API_BASE}/.netlify/functions/events`,
   funnel: `${API_BASE}/.netlify/functions/funnel`,
@@ -32,6 +33,7 @@ const LIVE_MODE_STORAGE_KEY = 'admin_live_mode';
 const STATS_INTERVAL = 15000;
 const HEALTH_INTERVAL = 20000;
 const LIVE_INTERVAL = 4000;
+const ANALYTICS_INTERVAL = 45000; // 45s for analytics chips
 
 const state = {
   live: {
@@ -40,6 +42,10 @@ const state = {
     session: '',
     interval: null,
     events: []
+  },
+  analytics: {
+    window: '24h',
+    interval: null
   },
   funnels: {},
   funnelSummary: null,
@@ -63,6 +69,12 @@ const state = {
 const dom = {
   tabs: document.querySelectorAll('.nav-link'),
   panels: document.querySelectorAll('.tab-panel'),
+  analyticsWindow: document.getElementById('analytics-window'),
+  analyticsClicks: document.getElementById('analytics-clicks'),
+  analyticsConversions: document.getElementById('analytics-conversions'),
+  analyticsCtr: document.getElementById('analytics-ctr'),
+  analyticsRevenue: document.getElementById('analytics-revenue'),
+  analyticsLastUpdate: document.getElementById('analytics-last-update'),
   platformStats: document.getElementById('platform-stats'),
   clicksMeta: document.getElementById('clicks-meta'),
   emailCount: document.getElementById('email-count'),
@@ -343,6 +355,34 @@ async function loadHealth() {
     dom.healthError.textContent = data.ok ? '' : (data.error || 'Unbekannter Fehler');
   } catch (err) {
     console.error('health load failed', err.message);
+  }
+}
+
+async function loadAnalytics({ silent = false } = {}) {
+  try {
+    const window = state.analytics.window || '24h';
+    const params = new URLSearchParams({ window });
+    const data = await request(`${API.adminStats}?${params.toString()}`);
+    if (!data?.ok) throw new Error('analytics_failed');
+    renderAnalytics(data);
+  } catch (err) {
+    console.error('analytics load failed', err.message);
+    if (!silent) handleRequestError('Analytics', err);
+  }
+}
+
+function renderAnalytics(data) {
+  if (!data?.metrics) return;
+  const { clicks, conversions, ctr, revenue } = data.metrics;
+  
+  if (dom.analyticsClicks) dom.analyticsClicks.textContent = clicks?.toLocaleString() || '0';
+  if (dom.analyticsConversions) dom.analyticsConversions.textContent = conversions?.toLocaleString() || '0';
+  if (dom.analyticsCtr) dom.analyticsCtr.textContent = `${(ctr ?? 0).toFixed(2)}%`;
+  if (dom.analyticsRevenue) dom.analyticsRevenue.textContent = formatCurrency(revenue || 0);
+  
+  if (dom.analyticsLastUpdate) {
+    const timestamp = new Date(data.generatedAt || Date.now());
+    dom.analyticsLastUpdate.textContent = timestamp.toLocaleTimeString();
   }
 }
 
@@ -1119,11 +1159,16 @@ function attachEvents() {
   dom.emailExport?.addEventListener('click', exportEmailsCsv);
   dom.emailsCopy?.addEventListener('click', copyEmailList);
   dom.settingsRefresh?.addEventListener('click', fetchSettings);
+  dom.analyticsWindow?.addEventListener('change', (e) => {
+    state.analytics.window = e.target.value;
+    loadAnalytics();
+  });
 }
 
 function startIntervals() {
   loadStats({ silent: true });
   loadHealth();
+  loadAnalytics({ silent: true });
   loadLiveEvents({ silent: true });
   loadFunnels({ silent: true });
   loadUtm('7d', { silent: true });
@@ -1136,6 +1181,7 @@ function startIntervals() {
 
   setInterval(() => loadStats({ silent: true }), STATS_INTERVAL);
   setInterval(loadHealth, HEALTH_INTERVAL);
+  setInterval(() => loadAnalytics({ silent: true }), ANALYTICS_INTERVAL);
   setInterval(() => loadFunnels({ silent: true }), 60000);
   setInterval(() => loadUtm('7d', { silent: true }), 45000);
   setInterval(() => loadDevices({ silent: true }), 45000);
