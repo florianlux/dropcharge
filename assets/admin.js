@@ -199,17 +199,30 @@ async function exportSubscribers() {
 function initCampaigns() {
   const form = $('#campaign-form');
   const testBtn = $('#campaign-test');
+  const segmentSelect = $('#campaign-segment');
+  const sendBtn = $('#campaign-send');
+
+  if (segmentSelect && sendBtn) {
+    segmentSelect.addEventListener('change', () => {
+      const label = segmentSelect.options[segmentSelect.selectedIndex].text;
+      sendBtn.textContent = `Send to ${label}`;
+    });
+  }
+
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(form);
       const subject = fd.get('subject');
       const html = fd.get('html');
+      const segment = fd.get('segment') || undefined;
       if (!subject || !html) { showToast('Subject and HTML required.', 'error'); return; }
+      const segmentLabel = segmentSelect ? segmentSelect.options[segmentSelect.selectedIndex].text : 'All Active';
+      if (!confirm(`Send campaign to "${segmentLabel}"?`)) return;
       try {
-        const result = await apiPost('admin-send-campaign', { subject, html });
+        const result = await apiPost('admin-send-campaign', { subject, html, segment });
         showToast(`Campaign sent! ${result.sent || 0} delivered.`);
-        logEvent('campaign_sent', { subject });
+        logEvent('campaign_sent', { subject, segment });
       } catch { /* toast shown */ }
     });
   }
@@ -220,10 +233,11 @@ function initCampaigns() {
       const subject = fd.get('subject');
       const html = fd.get('html');
       const testEmail = fd.get('testEmail');
+      const segment = fd.get('segment') || undefined;
       if (!subject || !html) { showToast('Subject and HTML required.', 'error'); return; }
       if (!testEmail) { showToast('Enter a test email address.', 'error'); return; }
       try {
-        await apiPost('admin-send-campaign', { subject, html, testEmail });
+        await apiPost('admin-send-campaign', { subject, html, testEmail, segment });
         showToast(`Test email sent to ${testEmail}.`);
       } catch { /* toast shown */ }
     });
