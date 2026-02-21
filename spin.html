@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DropCharge – Spin &amp; Win</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./assets/spin.css" />
+</head>
+<body>
+  <div class="spin-page">
+    <header class="spin-header">
+      <a href="/" class="spin-logo">DropCharge</a>
+    </header>
+
+    <main class="spin-main">
+      <section class="spin-intro">
+        <h1>Spin &amp; Win</h1>
+        <p class="spin-subtitle">Enter your email for a chance to win an exclusive discount on gaming codes.</p>
+      </section>
+
+      <div class="spin-wheel-wrapper">
+        <canvas id="spinCanvas" width="300" height="300"></canvas>
+        <div class="spin-pointer" aria-hidden="true">&#9660;</div>
+      </div>
+
+      <form id="spinForm" class="spin-form" novalidate>
+        <label for="spinEmail" class="sr-only">Email address</label>
+        <input
+          id="spinEmail"
+          type="email"
+          name="email"
+          placeholder="you@example.com"
+          required
+          autocomplete="email"
+        />
+        <label class="spin-consent">
+          <input type="checkbox" id="spinConsent" required />
+          <span>I agree to receive promotional emails from DropCharge.</span>
+        </label>
+        <button type="submit" id="spinBtn" class="spin-btn">Spin the Wheel</button>
+        <p id="spinError" class="spin-error" hidden></p>
+      </form>
+
+      <section id="spinResult" class="spin-result" hidden>
+        <h2 id="prizeText"></h2>
+        <p class="spin-claim">Confirm your email to claim your prize.</p>
+      </section>
+    </main>
+
+    <footer class="spin-footer">
+      <p>&copy; 2026 DropCharge. All rights reserved.</p>
+    </footer>
+  </div>
+
+  <script src="./assets/spin.js"></script>
+</body>
+</html>
