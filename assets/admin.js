@@ -896,10 +896,17 @@ async function updateDealField(id, patch, optimistic = true) {
   let originalState = null;
   
   if (optimistic && row) {
+    // Find the deal first
+    const deal = state.deals.find(d => d.id === id);
+    if (!deal) {
+      console.error('Deal not found in state:', id);
+      return;
+    }
+    
     // Save original state for rollback
     originalState = {
       html: row.innerHTML,
-      deal: state.deals.find(d => d.id === id)
+      deal: { ...deal }
     };
     
     // Apply optimistic UI

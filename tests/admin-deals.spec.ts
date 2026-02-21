@@ -91,13 +91,13 @@ test.describe.serial('Admin Deals Manager', () => {
     // Wait for deals table to have at least one row
     await page.locator('#deals-table .table-row').first().waitFor({ timeout: 5000 });
     
-    const firstRow = page.locator('#deals-table .table-row').first();
-    const rowCount = await firstRow.count();
+    const rowCount = await page.locator('#deals-table .table-row').count();
     
     if (rowCount === 0) {
       test.skip(true, 'No deals available for inline edit test');
     }
     
+    const firstRow = page.locator('#deals-table .table-row').first();
     const titleInput = firstRow.locator('[data-field="title"]');
     const originalValue = await titleInput.inputValue();
     const newValue = `Updated ${Date.now()}`;
@@ -122,13 +122,13 @@ test.describe.serial('Admin Deals Manager', () => {
     // Wait for deals table to have at least one row
     await page.locator('#deals-table .table-row').first().waitFor({ timeout: 5000 });
     
-    const firstRow = page.locator('#deals-table .table-row').first();
-    const rowCount = await firstRow.count();
+    const rowCount = await page.locator('#deals-table .table-row').count();
     
     if (rowCount === 0) {
       test.skip(true, 'No deals available for toggle test');
     }
     
+    const firstRow = page.locator('#deals-table .table-row').first();
     const toggleButton = firstRow.locator('[data-action="toggle"]');
     
     // Wait for PATCH request
@@ -150,13 +150,13 @@ test.describe.serial('Admin Deals Manager', () => {
     // Wait for deals table to have at least one row
     await page.locator('#deals-table .table-row').first().waitFor({ timeout: 5000 });
     
-    const firstRow = page.locator('#deals-table .table-row').first();
-    const rowCount = await firstRow.count();
+    const rowCount = await page.locator('#deals-table .table-row').count();
     
     if (rowCount === 0) {
       test.skip(true, 'No deals available for delete test');
     }
     
+    const firstRow = page.locator('#deals-table .table-row').first();
     const deleteButton = firstRow.locator('[data-action="delete"]');
     
     // Wait for DELETE request
@@ -202,13 +202,13 @@ test.describe.serial('Admin Deals Manager', () => {
     // Wait for deals table to have at least one row
     await page.locator('#deals-table .table-row').first().waitFor({ timeout: 5000 });
     
-    const firstRow = page.locator('#deals-table .table-row').first();
-    const rowCount = await firstRow.count();
+    const rowCount = await page.locator('#deals-table .table-row').count();
     
     if (rowCount === 0) {
       test.skip(true, 'No deals available for optimistic UI test');
     }
     
+    const firstRow = page.locator('#deals-table .table-row').first();
     const toggleButton = firstRow.locator('[data-action="toggle"]');
     
     // Click and immediately check for optimistic class
