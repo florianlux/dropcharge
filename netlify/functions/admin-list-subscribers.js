@@ -19,7 +19,7 @@ exports.handler = withCors(async (event) => {
   try {
     let query = supabase
       .from('newsletter_subscribers')
-      .select('id,email,status,created_at', { count: 'exact' })
+      .select('id,email,status,created_at,source,meta', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 

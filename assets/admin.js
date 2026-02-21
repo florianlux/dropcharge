@@ -148,9 +148,13 @@ async function loadSubscribers() {
         : s.status === 'unsubscribed' ? 'status-unsubscribed'
         : s.status === 'bounced' ? 'status-bounced' : '';
       const created = s.created_at ? new Date(s.created_at).toLocaleDateString() : '–';
+      const source = s.source || '–';
+      const prize = (s.meta && s.meta.prize) ? s.meta.prize : '–';
       return `<div class="table-row">
         <span>${escapeHtml(s.email)}</span>
         <span class="${statusClass}">${escapeHtml(s.status || 'unknown')}</span>
+        <span>${escapeHtml(source)}</span>
+        <span>${escapeHtml(prize)}</span>
         <span>${created}</span>
       </div>`;
     }).join('');
@@ -181,9 +185,9 @@ async function exportSubscribers() {
       showToast('No subscribers to export.', 'error');
       return;
     }
-    const header = 'email,status,created_at';
+    const header = 'email,status,source,prize,created_at';
     const csvRows = data.items.map(s =>
-      `${csvEscape(s.email)},${csvEscape(s.status)},${csvEscape(s.created_at)}`
+      `${csvEscape(s.email)},${csvEscape(s.status)},${csvEscape(s.source || '')},${csvEscape(s.meta && s.meta.prize ? s.meta.prize : '')},${csvEscape(s.created_at)}`
     );
     const csv = [header, ...csvRows].join('\n');
     downloadCsv(csv, 'subscribers.csv');
