@@ -24,7 +24,7 @@ function unauthorizedResponse() {
   return {
     statusCode: 401,
     headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-    body: JSON.stringify({ error: 'unauthorized' })
+    body: JSON.stringify({ ok: false, error: 'unauthorized' })
   };
 }
 

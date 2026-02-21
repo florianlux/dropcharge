@@ -55,6 +55,7 @@
         error.classList.add('visible');
         return;
       }
+      window.ADMIN_TOKEN = token;
       localStorage.setItem(STORAGE_KEY, token);
       window.location.href = '/admin.html';
     });

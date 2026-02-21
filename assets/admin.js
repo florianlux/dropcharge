@@ -147,9 +147,12 @@ const dom = {
 };
 
 (function ensureTokenPresent() {
-  if (!localStorage.getItem(TOKEN_STORAGE_KEY)) {
+  const stored = localStorage.getItem(TOKEN_STORAGE_KEY);
+  if (!stored) {
     window.location.href = '/admin-login.html';
+    return;
   }
+  window.ADMIN_TOKEN = stored;
 })();
 
 function initToast() {
@@ -200,7 +203,7 @@ function formatCurrency(value) {
 
 function buildHeaders(extra = {}) {
   const headers = { ...extra };
-  const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+  const token = window.ADMIN_TOKEN || localStorage.getItem(TOKEN_STORAGE_KEY) || '';
   if (token) headers['x-admin-token'] = token;
   return headers;
 }
@@ -308,7 +311,19 @@ function renderLeadStats(rows) {
 
 async function loadLeadsOverview({ silent = false } = {}) {
   try {
-    const data = await request(API.leadsOverview);
+    const res = await fetch(API.leadsOverview, { headers: buildHeaders() });
+    if (res.status === 401) {
+      if (dom.emailTable) {
+        dom.emailTable.querySelectorAll('.table-row').forEach(row => row.remove());
+        const msg = document.createElement('p');
+        msg.className = 'empty';
+        msg.textContent = 'Admin authentication failed \u2013 invalid or missing token';
+        dom.emailTable.appendChild(msg);
+      }
+      return;
+    }
+    if (!res.ok) throw new Error('leads_failed');
+    const data = await res.json();
     if (!data?.ok) throw new Error('leads_failed');
     const kpis = data.kpis24h || {};
     if (dom.emailCount) dom.emailCount.textContent = kpis.emails || 0;
