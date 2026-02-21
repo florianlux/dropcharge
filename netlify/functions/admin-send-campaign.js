@@ -98,6 +98,7 @@ async function sendCampaign({ recipients, subject, html, context }) {
   for (let i = 0; i < batches.length; i += 1) {
     const batch = batches[i];
     await Promise.all(batch.map(async (recipient) => {
+      // recipient is a string for test emails, object { email, token } for bulk sends
       const email = typeof recipient === 'string' ? recipient : recipient.email;
       const token = typeof recipient === 'string' ? null : recipient.token;
       const unsubscribe = token

@@ -36,7 +36,7 @@ async function handler(event) {
           source: payload.source || null,
           page: payload.page || null,
           user_agent: (event.headers || {})['user-agent'] || null,
-          metadata: payload.utm ? { utm: payload.utm, consent: payload.consent } : {}
+          metadata: { ...(payload.utm ? { utm: payload.utm } : {}), ...(payload.consent != null ? { consent: payload.consent } : {}) }
         },
         { onConflict: 'email', ignoreDuplicates: false }
       )
@@ -45,8 +45,8 @@ async function handler(event) {
 
     if (upsertError) throw upsertError;
 
-    // Determine if this is a new signup or existing
-    const isNew = !lead.created_at || (Date.now() - new Date(lead.created_at).getTime()) < 5000;
+    // Heuristic: if the row was created within the last 10s, treat as new signup
+    const isNew = !lead.created_at || (Date.now() - new Date(lead.created_at).getTime()) < 10000;
     const status = isNew ? 'inserted' : 'exists';
 
     // Log event
