@@ -69,6 +69,7 @@ async function handler(event) {
         email,
         status: 'active',
         source: 'spin_wheel',
+        prize: prizeLabel,
         meta: { prize: prizeLabel },
         created_at: new Date().toISOString(),
       });
