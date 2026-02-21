@@ -120,8 +120,7 @@ exports.handler = async function handler(event) {
           .from('newsletter_subscribers')
           .update({ 
             status: 'active',
-            unsubscribed_at: null,
-            created_at: new Date().toISOString()
+            unsubscribed_at: null
           })
           .eq('id', existingSubscriber.id);
 
