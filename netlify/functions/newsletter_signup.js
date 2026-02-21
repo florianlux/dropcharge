@@ -2,6 +2,7 @@ const { supabase, hasSupabase } = require('./_lib/supabase');
 const { withCors } = require('./_lib/cors');
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PG_UNIQUE_VIOLATION = '23505';
 
 async function handler(event) {
   if (event.httpMethod !== 'POST') {
@@ -59,7 +60,7 @@ async function handler(event) {
 
     if (error) {
       // Unique constraint violation → duplicate email
-      if (error.code === '23505') {
+      if (error.code === PG_UNIQUE_VIOLATION) {
         return {
           statusCode: 200,
           headers: { 'Content-Type': 'application/json' },
