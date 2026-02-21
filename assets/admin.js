@@ -366,8 +366,9 @@ async function importEmailsCsv() {
         const parts = line.split(',').map(p => p.trim().replace(/^"|"$/g, ''));
         const email = parts[0];
         
-        // Basic email validation
-        if (email && email.includes('@') && email.includes('.')) {
+        // Improved email validation using regex
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (email && emailRegex.test(email)) {
           emails.push(email);
         }
       }
@@ -376,7 +377,9 @@ async function importEmailsCsv() {
         throw new Error('Keine gültigen E-Mails gefunden');
       }
       
-      // Send to backend for import
+      // Note: Currently uses the newsletter signup endpoint for imports
+      // TODO: For production, consider implementing a dedicated bulk import endpoint
+      // that handles batch operations more efficiently and includes rate limiting
       const response = await request(API.newsletterSignup, {
         method: 'POST',
         body: JSON.stringify({ 

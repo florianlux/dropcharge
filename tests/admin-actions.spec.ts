@@ -81,7 +81,7 @@ test.describe.serial('Admin quick actions', () => {
   test('Deals refresh button triggers fetchDeals', async ({ page }) => {
     // Navigate to deals tab
     await page.locator('[data-tab="deals"]').click();
-    await page.waitForTimeout(500);
+    await page.locator('.panel-head h2:text("Deals & Spotlights")').waitFor();
     
     // Click deals refresh and wait for response
     const responsePromise = page.waitForResponse((response) =>
@@ -95,7 +95,7 @@ test.describe.serial('Admin quick actions', () => {
   test('Experiment add button shows placeholder message', async ({ page }) => {
     // Navigate to A/B tests tab
     await page.locator('[data-tab="ab"]').click();
-    await page.waitForTimeout(500);
+    await page.locator('.panel-head h2:text("A/B Tests")').waitFor();
     
     // Click experiment add button
     await page.locator('#experiment-add').click();
@@ -107,7 +107,7 @@ test.describe.serial('Admin quick actions', () => {
   test('Email import button opens file picker', async ({ page }) => {
     // Navigate to email tab
     await page.locator('[data-tab="email"]').click();
-    await page.waitForTimeout(500);
+    await page.locator('.panel-head h2:text("Email & Leads")').waitFor();
     
     // Click import button - file picker will open but we can't interact with it in tests
     // Just verify the button exists and is clickable
