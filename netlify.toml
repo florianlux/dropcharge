@@ -2,6 +2,12 @@
   publish = "."
   command = ""
 
+[dev]
+  framework = "#static"
+  command = ""
+  targetPort = 8888
+  autoLaunch = false
+
 [functions]
   directory = "netlify/functions"
 
@@ -14,6 +20,12 @@
 [[redirects]]
   from = "/api/activity"
   to = "/.netlify/functions/api-activity"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/admin/health"
+  to = "/.netlify/functions/health"
   status = 200
   force = true
 

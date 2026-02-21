@@ -1,5 +1,6 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { withCors } = require('./_lib/cors');
+const { withLogging } = require('./_lib/logger');
 const labelMap = {
   'psn-10': 'PSN 10€',
   'psn-20': 'PSN 20€',
@@ -22,7 +23,7 @@ function formatResponse(count, topSlug) {
   };
 }
 
-async function handler() {
+async function handler(event, context, logger) {
   const now = new Date();
   const thirtyMinutesAgo = new Date(now.getTime() - 30 * 60 * 1000).toISOString();
   const startOfDay = new Date(now);
@@ -31,6 +32,7 @@ async function handler() {
 
   if (hasSupabase && supabase) {
     try {
+      logger.info('Fetching activity from Supabase', { startIso, thirtyMinutesAgo });
       const { data: recent = [], error } = await supabase
         .from('clicks')
         .select('slug, created_at')
@@ -47,18 +49,22 @@ async function handler() {
         if (entry.slug) counts[entry.slug] = (counts[entry.slug] || 0) + 1;
       });
       const topSlug = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+      
+      logger.success(200, 'Activity data retrieved', { clicksLast30m: last30, topSlug, totalToday: recent.length });
+      
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clicksLast30m: last30, topDeal: topSlug ? { slug: topSlug, label: labelMap[topSlug] || topSlug } : null })
       };
     } catch (err) {
-      console.log('activity supabase error', err.message);
+      logger.error('Activity fetch failed', err);
       return { statusCode: 500, body: JSON.stringify({ error: 'Failed to load activity' }) };
     }
   }
 
+  logger.error('Supabase not configured');
   return { statusCode: 500, body: 'Storage not configured' };
 };
 
-exports.handler = withCors(handler);
+exports.handler = withCors(withLogging('activity', handler));
