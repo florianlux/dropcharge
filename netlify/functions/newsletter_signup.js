@@ -1,4 +1,4 @@
-const { supabase, hasSupabase, supabaseUrlPresent, supabaseServiceKeyPresent } = require('./_lib/supabase');
+const supabaseLib = require('./_lib/supabase');
 const { withCors } = require('./_lib/cors');
 
 function isValidEmail(email) {
@@ -9,6 +9,8 @@ async function handler(event) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ ok: false, error: 'Method not allowed' }) };
   }
+
+  const { supabase, hasSupabase, supabaseUrlPresent, supabaseServiceKeyPresent } = supabaseLib;
 
   if (!hasSupabase || !supabase) {
     console.error('Server not configured', { SUPABASE_URL: supabaseUrlPresent, SUPABASE_SERVICE_ROLE_KEY: supabaseServiceKeyPresent });
