@@ -2,11 +2,18 @@
 
 High-conversion gaming-credit dropsite: TikTok-ready UI, Netlify Functions, Supabase persistence.
 
+## 🚀 Quick Start
+
+See **[CHECKLIST.md](./CHECKLIST.md)** for a quick deployment guide (German/English).
+
+For detailed documentation, see **[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)**.
+
 ## Stack Overview
 - **Frontend:** `index.html` + `assets/` (Space Grotesk, glass UI, sticky CTA, TikTok pixel helper)
-- **Serverless:** Netlify Functions in `netlify/functions/`
+- **Serverless:** Netlify Functions in `netlify/functions/` with structured logging
 - **Storage:** Supabase Postgres (tables `clicks`, `emails`, `events`)
 - **Admin:** `admin.html` dashboard (password protected, sessions + rate limit)
+- **Monitoring:** `/admin/health` endpoint for uptime checks
 
 ## Supabase Setup
 1. Create a new Supabase project.
@@ -14,16 +21,25 @@ High-conversion gaming-credit dropsite: TikTok-ready UI, Netlify Functions, Supa
 3. Grab **Project URL** + **service_role key** → set as Netlify env vars:
    - `SUPABASE_URL`
    - `SUPABASE_SERVICE_KEY`
-4. Optional envs:
+4. Required env:
    - `ADMIN_PASSWORD_HASH` (bcrypt hash via `node scripts/hash-password.js "pass"`)
+5. Optional envs:
    - `ENABLE_DOUBLE_OPT_IN=1` (keeps emails in pending state)
    - `TIKTOK_PIXEL_ID` (or override in HTML bundle)
+   - `RESEND_API_KEY` (for newsletter emails)
+
+See [.env.example](./.env.example) for all environment variables.
 
 ## Netlify Deployment
 ```bash
-# install deps, run dev
-cd price-compare-site
+# install deps
 npm install
+
+# create .env from example
+cp .env.example .env
+# edit .env with your Supabase credentials
+
+# run local dev server
 npx netlify dev
 ```
 - **netlify.toml** already defines redirects + security headers.
@@ -71,3 +87,9 @@ npx netlify dev
 - Add Webhook/email notifications on large drops.
 - Build CSV export button in admin.
 - Add reCAPTCHA for email capture if bots show up.
+
+## Monitoring & Debugging
+- **Health Endpoint:** `/admin/health` - Check system status and Supabase connectivity
+- **Structured Logging:** All functions log JSON with request IDs, status codes, and error stacks
+- **Request Tracing:** Use `requestId` to trace requests across logs
+- See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) for monitoring setup and troubleshooting
