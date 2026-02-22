@@ -21,3 +21,11 @@ CREATE TABLE IF NOT EXISTS spotlight_pages (
 -- Index for fast slug lookups
 CREATE INDEX IF NOT EXISTS idx_spotlight_pages_slug ON spotlight_pages (slug);
 CREATE INDEX IF NOT EXISTS idx_spotlight_pages_active ON spotlight_pages (is_active);
+
+-- RPC function used by spotlight-click to atomically increment clicks
+CREATE OR REPLACE FUNCTION increment_spotlight_clicks(page_slug text)
+RETURNS void AS $$
+BEGIN
+  UPDATE spotlight_pages SET clicks = clicks + 1 WHERE slug = page_slug;
+END;
+$$ LANGUAGE plpgsql;

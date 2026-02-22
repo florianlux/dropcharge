@@ -135,9 +135,9 @@
 
         let html = '<div class="sp-hero">';
 
-        // Background hero image
+        // Background hero image — set via DOM to avoid CSS injection
         if (item.hero_url) {
-          html += '<div class="sp-hero-bg" id="sp-parallax" style="background-image:url(' + escapeAttr(item.hero_url) + ')"></div>';
+          html += '<div class="sp-hero-bg" id="sp-parallax"></div>';
         }
         html += '<div class="sp-hero-overlay"></div>';
         html += '<div class="sp-glow sp-glow-1"></div>';
@@ -198,7 +198,12 @@
         bindCTA(item);
         if (item.coupon_code) bindCopyButton();
         if (item.countdown_date) startCountdown(item.countdown_date);
-        if (item.hero_url) initParallax();
+        if (item.hero_url) {
+          // Set background-image via DOM to prevent CSS injection
+          var bgEl = document.getElementById('sp-parallax');
+          if (bgEl) bgEl.style.backgroundImage = 'url(' + item.hero_url + ')';
+          initParallax();
+        }
       }
 
       function bindCTA(item) {
@@ -267,10 +272,16 @@
       function initParallax() {
         var el = document.getElementById('sp-parallax');
         if (!el) return;
+        var ticking = false;
         window.addEventListener('mousemove', function(e) {
-          var x = (e.clientX / window.innerWidth - 0.5) * 20;
-          var y = (e.clientY / window.innerHeight - 0.5) * 20;
-          el.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(1.05)';
+          if (ticking) return;
+          ticking = true;
+          requestAnimationFrame(function() {
+            var x = (e.clientX / window.innerWidth - 0.5) * 20;
+            var y = (e.clientY / window.innerHeight - 0.5) * 20;
+            el.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(1.05)';
+            ticking = false;
+          });
         });
       }
 

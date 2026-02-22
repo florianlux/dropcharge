@@ -54,7 +54,6 @@ async function handler(event) {
 
   const headers = event.headers || {};
   const userAgent = headers['user-agent'] || '';
-  const ipRaw = (headers['x-forwarded-for'] || headers['client-ip'] || '').split(',')[0].trim() || null;
 
   try {
     // Increment click counter on the spotlight page
