@@ -26,7 +26,7 @@ exports.handler = withCors(async (event) => {
   try {
     let query = supabase
       .from('email_logs')
-      .select('id,recipient,template,subject,status,error,created_at,sent_at', { count: 'exact' })
+      .select('id,recipient,template,subject,status,provider,provider_message_id,error,created_at', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -39,7 +39,7 @@ exports.handler = withCors(async (event) => {
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-      body: JSON.stringify({ ok: true, items: data || [], total: count ?? 0 })
+      body: JSON.stringify({ ok: true, logs: data || [], total: count ?? 0 })
     };
   } catch (err) {
     const msg = (err && (err.message || err.details || '')) || '';
@@ -50,10 +50,9 @@ exports.handler = withCors(async (event) => {
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
         body: JSON.stringify({
           ok: true,
-          items: [],
+          logs: [],
           total: 0,
-          warning: 'schema_missing',
-          table: 'email_logs',
+          warning: 'email_logs_missing',
           hint: 'Run migration 004_email_logs.sql in your Supabase SQL editor to create the email_logs table.'
         })
       };

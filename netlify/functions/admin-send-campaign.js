@@ -132,7 +132,7 @@ function chunk(array, size) {
   return result;
 }
 
-async function logEmailSend({ email, template, subject, status, error: errMsg }) {
+async function logEmailSend({ email, template, subject, status, error: errMsg, provider, providerMessageId }) {
   if (!hasSupabase || !supabase) return { logged: false, reason: 'supabase_not_configured' };
   try {
     const { error } = await supabase.from('email_logs').insert({
@@ -140,8 +140,9 @@ async function logEmailSend({ email, template, subject, status, error: errMsg })
       template: template || 'campaign',
       subject,
       status,
-      error: errMsg || null,
-      sent_at: status === 'sent' ? new Date().toISOString() : null
+      provider: provider || null,
+      provider_message_id: providerMessageId || null,
+      error: errMsg || null
     });
     if (error) {
       console.error('email_log insert error:', error.message);
@@ -165,14 +166,14 @@ async function sendCampaign({ recipients, subject, html, context }) {
       const unsubscribe = `${BASE_URL}/unsubscribe?email=${encodeURIComponent(email)}`;
       const htmlWithUnsub = html.replace(/__UNSUB__/g, unsubscribe);
       try {
-        await sendEmail({ to: email, subject, html: htmlWithUnsub });
+        const result = await sendEmail({ to: email, subject, html: htmlWithUnsub });
         sent += 1;
-        const logResult = await logEmailSend({ email, subject, status: 'sent' });
+        const logResult = await logEmailSend({ email, subject, status: 'sent', provider: 'resend', providerMessageId: result.messageId });
         if (!logResult.logged) logWarnings += 1;
       } catch (err) {
         console.log('email send failed', email, err.message);
         failed.push(email);
-        const logResult = await logEmailSend({ email, subject, status: 'failed', error: err.message });
+        const logResult = await logEmailSend({ email, subject, status: 'failed', provider: 'resend', error: err.message });
         if (!logResult.logged) logWarnings += 1;
       }
     }));
