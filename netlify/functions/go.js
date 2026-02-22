@@ -63,7 +63,12 @@ const offers = {
   'xbox-6m': { url: 'https://www.g2a.com/n/xbox_lux1', platform: 'Xbox', amount: '6 Monate' },
   'nintendo-15': { url: 'https://www.g2a.com/n/nintendo15_lux', platform: 'Nintendo', amount: '15€' },
   'nintendo-25': { url: 'https://www.g2a.com/n/nintendo15_lux', platform: 'Nintendo', amount: '25€' },
-  'nintendo-50': { url: 'https://www.g2a.com/n/nintendo15_lux', platform: 'Nintendo', amount: '50€' }
+  'nintendo-50': { url: 'https://www.g2a.com/n/nintendo15_lux', platform: 'Nintendo', amount: '50€' },
+  // Drops-compatible IDs (same as seeded in drops table)
+  'nintendo15': { url: 'https://www.g2a.com/n/nintendo15_lux', platform: 'Nintendo', amount: '15€' },
+  'psn20': { url: 'https://www.g2a.com/n/psn5_lux', platform: 'PSN', amount: '20€' },
+  'xbox3m': { url: 'https://www.g2a.com/n/xbox_lux1', platform: 'Xbox', amount: '3 Monate' },
+  'steam20': { url: 'https://www.g2a.com/n/reanimalux', platform: 'Steam', amount: '20€' }
 };
 
 async function getFlags() {
@@ -73,6 +78,27 @@ async function getFlags() {
   } catch (err) {
     console.log('settings fetch failed', err.message);
     return extractFlags();
+  }
+}
+
+async function loadDropOffer(slug) {
+  if (!hasSupabase || !supabase || !slug) return null;
+  try {
+    const { data, error } = await supabase
+      .from('drops')
+      .select('id, title, platform, value_eur, destination_url, active')
+      .eq('id', slug)
+      .maybeSingle();
+    if (error || !data || data.active === false) return null;
+    if (!data.destination_url) return null;
+    return {
+      url: data.destination_url,
+      platform: data.platform || 'Deal',
+      amount: data.value_eur ? `${data.value_eur}€` : data.title || data.id
+    };
+  } catch (err) {
+    console.log('drops table lookup failed', err.message);
+    return null;
   }
 }
 
@@ -99,8 +125,12 @@ async function loadDynamicOffer(slug) {
 }
 
 async function handler(event) {
-  const slug = event.path.replace('/go/', '').replace(/^\//, '');
-  let offer = await loadDynamicOffer(slug);
+  const params = event.queryStringParameters || {};
+  // Support both /go/<slug> (path) and /go?id=<slug> (query)
+  const slug = params.id || event.path.replace('/go/', '').replace(/^\//, '');
+  // Try drops table first, then spotlights, then local fallback
+  let offer = await loadDropOffer(slug);
+  if (!offer) offer = await loadDynamicOffer(slug);
   if (!offer) {
     offer = offers[slug];
   }
@@ -118,10 +148,9 @@ async function handler(event) {
     };
   }
 
-  const params = event.queryStringParameters || {};
-  const headers = event.headers || {};
-  const userAgent = headers['user-agent'] || '';
-  const ipRaw = getClientIp(headers);
+  const hdrs = event.headers || {};
+  const userAgent = hdrs['user-agent'] || '';
+  const ipRaw = getClientIp(hdrs);
   const geo = ipRaw ? geoip.lookup(ipRaw) : null;
   const country = geo?.country || null;
   const ipHash = ipRaw ? crypto.createHash('sha256').update(ipRaw).digest('hex') : null;
@@ -138,7 +167,7 @@ async function handler(event) {
       utm_source: params.utm_source || null,
       utm_campaign: params.utm_campaign || null,
       utm_medium: params.utm_medium || null,
-      referrer: headers.referer || null,
+      referrer: hdrs.referer || null,
       user_agent: userAgent || null,
       user_agent_hash: uaHash,
       device_hint: deviceHint,
@@ -150,6 +179,24 @@ async function handler(event) {
     const { error } = await supabase.from('clicks').insert(insertPayload);
     if (error) {
       console.log('Supabase click insert error', error.message);
+    }
+
+    // Also track in events table (fail silently)
+    try {
+      await supabase.from('events').insert({
+        type: 'redirect',
+        slug,
+        platform: offer.platform,
+        utm_source: params.utm_source || null,
+        utm_medium: params.utm_medium || null,
+        utm_campaign: params.utm_campaign || null,
+        user_agent_hash: uaHash,
+        device_hint: deviceHint,
+        country,
+        created_at: new Date().toISOString()
+      });
+    } catch (evtErr) {
+      console.log('events insert failed (non-fatal)', evtErr.message);
     }
   } else {
     console.log('Supabase not configured – skipping click log');

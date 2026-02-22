@@ -198,4 +198,19 @@ create index if not exists email_logs_status_idx on public.email_logs (status);
 
 -- Add unsubscribe_token to existing newsletter_subscribers tables
 alter table if exists public.newsletter_subscribers
-  add column if not exists unsubscribe_token text;
+  add column if not exists unsubscribe_token text default gen_random_uuid()::text;
+
+-- Gaming drops table for outbound redirect system
+create table if not exists public.drops (
+  id text primary key,
+  title text,
+  platform text,
+  value_eur integer,
+  destination_url text,
+  active boolean default true,
+  featured boolean default false,
+  sort_order integer default 0,
+  created_at timestamptz default now()
+);
+
+create index if not exists drops_active_idx on public.drops (active, sort_order);

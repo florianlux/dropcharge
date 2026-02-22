@@ -100,6 +100,7 @@ function onTabActivate(tab) {
   if (tab === 'dashboard') loadDashboard();
   if (tab === 'newsletter') loadSubscribers();
   if (tab === 'email') loadEmailTab();
+  if (tab === 'drops') loadDrops();
   if (tab === 'analytics') loadAnalytics();
 }
 
@@ -686,6 +687,97 @@ function normalizeG2AReflinkClient(inputUrl, gtag) {
   }
 }
 
+// ── Gaming Drops Manager ───────────────────────────────
+async function loadDrops() {
+  const rows = $('#drops-rows');
+  if (!rows) return;
+  rows.innerHTML = '<p class="empty">Loading…</p>';
+  try {
+    const data = await apiGet('admin-drops');
+    if (!data.items || data.items.length === 0) {
+      rows.innerHTML = '<p class="empty">No drops configured.</p>';
+      return;
+    }
+    rows.innerHTML = data.items.map(d => {
+      const activeClass = d.active ? 'status-active' : 'status-unsubscribed';
+      const activeLabel = d.active ? 'Yes' : 'No';
+      return `<div class="table-row">
+        <span><strong>${escapeHtml(d.id)}</strong></span>
+        <span>${escapeHtml(d.title || '–')}</span>
+        <span>${escapeHtml(d.platform || '–')}</span>
+        <span style="font-size:.8rem;word-break:break-all;">${escapeHtml(d.destination_url || '–')}</span>
+        <span class="${activeClass}">${activeLabel}</span>
+        <span>${d.sort_order ?? 0}</span>
+        <span>
+          <button class="btn mini ghost" data-edit-drop="${escapeHtml(d.id)}">Edit</button>
+          <button class="btn mini ghost" data-toggle-drop="${escapeHtml(d.id)}" data-active="${d.active}">${d.active ? 'Disable' : 'Enable'}</button>
+        </span>
+      </div>`;
+    }).join('');
+    // Bind edit buttons
+    rows.querySelectorAll('[data-edit-drop]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const drop = data.items.find(d => d.id === btn.dataset.editDrop);
+        if (drop) populateDropForm(drop);
+      });
+    });
+    // Bind toggle buttons
+    rows.querySelectorAll('[data-toggle-drop]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const isActive = btn.dataset.active === 'true';
+        try {
+          await apiPost('admin-drops', { id: btn.dataset.toggleDrop, active: !isActive });
+          showToast(`Drop ${btn.dataset.toggleDrop} ${!isActive ? 'enabled' : 'disabled'}.`);
+          loadDrops();
+        } catch { /* toast shown */ }
+      });
+    });
+  } catch {
+    rows.innerHTML = '<p class="empty">Failed to load drops.</p>';
+  }
+}
+
+function populateDropForm(drop) {
+  const setVal = (id, val) => { const el = $(`#${id}`); if (el) el.value = val ?? ''; };
+  setVal('drop-id', drop.id);
+  setVal('drop-title', drop.title);
+  setVal('drop-platform', drop.platform);
+  setVal('drop-value', drop.value_eur);
+  setVal('drop-url', drop.destination_url);
+  setVal('drop-sort', drop.sort_order);
+  const activeEl = $('#drop-active');
+  if (activeEl) activeEl.checked = drop.active !== false;
+}
+
+function initDrops() {
+  const form = $('#drop-form');
+  const resetBtn = $('#drop-reset');
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = ($('#drop-id') || {}).value || '';
+      const title = ($('#drop-title') || {}).value || '';
+      const platform = ($('#drop-platform') || {}).value || '';
+      const value_eur = parseInt(($('#drop-value') || {}).value, 10) || null;
+      const destination_url = ($('#drop-url') || {}).value || '';
+      const sort_order = parseInt(($('#drop-sort') || {}).value, 10) || 0;
+      const active = ($('#drop-active') || {}).checked !== false;
+      if (!id || !destination_url) { showToast('ID and URL are required.', 'error'); return; }
+      try {
+        await apiPost('admin-drops', { id, title, platform, value_eur, destination_url, sort_order, active });
+        showToast(`Drop "${id}" saved.`);
+        form.reset();
+        loadDrops();
+      } catch { /* toast shown */ }
+    });
+  }
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      if (form) form.reset();
+    });
+  }
+}
+
 // ── Init ───────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   initTabs();
@@ -694,6 +786,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initEmail();
   initCampaigns();
   initDeals();
+  initDrops();
   initTracking();
   initBannerSettings();
   loadDashboard();
