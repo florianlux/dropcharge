@@ -27,9 +27,12 @@ async function api(path, options = {}) {
     const res = await fetch(url, { ...options, headers });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const errMsg = body.error || `HTTP ${res.status}`;
-      const detail = body.details ? `: ${body.details}` : '';
-      throw new Error(`${errMsg}${detail}`);
+      console.error(`[api] ${options.method || 'GET'} ${path} → ${res.status}`, body);
+      const errMsg = body.error || body.message || `HTTP ${res.status}`;
+      const detail = body.details
+        ? (typeof body.details === 'string' ? body.details : JSON.stringify(body.details))
+        : '';
+      throw new Error(`${errMsg}${detail ? ': ' + detail : ''} (status ${res.status})`);
     }
     return body;
   } catch (err) {
@@ -1085,8 +1088,12 @@ function _applyTemplate(templateKey, forceOverwrite) {
     if (!tpl[key]) continue;
     const el = $(`#${elId}`);
     if (!el) continue;
-    if (el.value && !forceOverwrite) continue;
+    const current = (el.value || '').trim();
+    const isPlaceholder = current === el.getAttribute('placeholder');
+    if (current && !isPlaceholder && !forceOverwrite) continue;
     el.value = tpl[key];
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
     filled.push(key);
   }
   // Gradient
@@ -1096,6 +1103,7 @@ function _applyTemplate(templateKey, forceOverwrite) {
       for (let i = 0; i < sel.options.length; i++) {
         if (sel.options[i].value === tpl.gradient) {
           sel.selectedIndex = i;
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
           filled.push('gradient');
           break;
         }
@@ -1104,7 +1112,10 @@ function _applyTemplate(templateKey, forceOverwrite) {
   }
   // Theme hidden field
   const themeEl = $('#spotlight-theme');
-  if (themeEl) themeEl.value = tpl.theme;
+  if (themeEl) {
+    themeEl.value = tpl.theme;
+    themeEl.dispatchEvent(new Event('change', { bubbles: true }));
+  }
 
   const snap = _templateUndoSnapshot;
   showToast(
@@ -1158,8 +1169,12 @@ function _applyAutofillData(data, forceOverwrite) {
     if (!data[key]) continue;
     const el = $(`#${elId}`);
     if (!el) continue;
-    if (el.value && !forceOverwrite) continue;
+    const current = (el.value || '').trim();
+    const isPlaceholder = current === el.getAttribute('placeholder');
+    if (current && !isPlaceholder && !forceOverwrite) continue;
     el.value = data[key];
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
     filled.push(key);
   }
   // Gradient — set select if value matches an option
@@ -1169,6 +1184,7 @@ function _applyAutofillData(data, forceOverwrite) {
       for (let i = 0; i < sel.options.length; i++) {
         if (sel.options[i].value === data.gradient) {
           sel.selectedIndex = i;
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
           filled.push('gradient');
           break;
         }
@@ -1180,6 +1196,7 @@ function _applyAutofillData(data, forceOverwrite) {
     const slugEl = $('#spotlight-slug');
     if (slugEl && (!slugEl.value || forceOverwrite)) {
       slugEl.value = data.suggested_slug;
+      slugEl.dispatchEvent(new Event('input', { bubbles: true }));
       filled.push('slug');
     }
   }

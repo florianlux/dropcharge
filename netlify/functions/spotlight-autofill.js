@@ -158,7 +158,7 @@ async function handler(event) {
   let url;
   try {
     const body = JSON.parse(event.body || '{}');
-    url = (body.url || '').trim();
+    url = (body.url || body.affiliate_url || '').trim();
   } catch {
     return {
       statusCode: 400,
@@ -171,7 +171,7 @@ async function handler(event) {
     return {
       statusCode: 400,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ok: false, error: 'url_required' })
+      body: JSON.stringify({ ok: false, error: 'url_required', details: 'Provide "url" or "affiliate_url" in request body' })
     };
   }
 
@@ -199,7 +199,7 @@ async function handler(event) {
     ({ html, finalUrl } = await fetchUrl(url));
   } catch (err) {
     return {
-      statusCode: 422,
+      statusCode: 502,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ok: false, error: 'fetch_failed', details: err.message })
     };
