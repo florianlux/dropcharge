@@ -107,6 +107,90 @@
       .sp-cd-unit{min-width:52px;padding:.5rem .6rem}
       .sp-cd-val{font-size:1.3rem}
     }
+
+    /* ── G2A Gaming Key-Store Layout ────────────────────── */
+    .g2a-layout{background:#0b0f1a;min-height:100vh;font-family:'Space Grotesk',system-ui,sans-serif;color:#e2e8f0}
+
+    /* Top nav bar */
+    .g2a-nav{display:flex;align-items:center;justify-content:space-between;padding:.65rem 1.2rem;background:rgba(0,0,0,.6);border-bottom:1px solid rgba(59,130,246,.12)}
+    .g2a-nav-brand{font-weight:700;font-size:1rem;color:#fff;letter-spacing:.02em}
+    .g2a-nav-brand span{color:#3b82f6}
+    .g2a-nav-chips{display:flex;gap:.6rem;align-items:center}
+    .g2a-trust-chip{font-size:.7rem;color:rgba(255,255,255,.55);display:flex;align-items:center;gap:.25rem}
+    .g2a-trust-chip svg{width:14px;height:14px;fill:none;stroke:#3b82f6;stroke-width:2}
+
+    /* Hero / product section */
+    .g2a-hero{position:relative;overflow:hidden}
+    .g2a-hero-bg{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(30px) brightness(.35);transform:scale(1.15)}
+    .g2a-hero-inner{position:relative;z-index:2;padding:1.5rem 1.2rem;display:flex;flex-direction:column;align-items:center}
+    .g2a-product-img{width:100%;max-width:420px;aspect-ratio:16/9;object-fit:cover;border-radius:12px;border:1px solid rgba(59,130,246,.15);box-shadow:0 4px 30px rgba(0,0,0,.5)}
+    .g2a-product-title{font-size:clamp(1.4rem,4.5vw,2rem);font-weight:800;margin-top:1.2rem;text-align:center;line-height:1.2}
+    .g2a-chips{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center;margin-top:.75rem}
+    .g2a-chip{font-size:.7rem;padding:.25rem .65rem;border-radius:6px;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.2);color:#93c5fd;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+    .g2a-chip--accent{background:rgba(168,85,247,.12);border-color:rgba(168,85,247,.2);color:#c4b5fd}
+    .g2a-product-desc{font-size:.85rem;color:rgba(255,255,255,.5);text-align:center;margin-top:.75rem;line-height:1.5;max-width:500px}
+
+    /* Price / deal card */
+    .g2a-deal-card{margin:1.2rem 1.2rem 0;padding:1.2rem;border-radius:16px;background:rgba(255,255,255,.04);border:1px solid rgba(59,130,246,.12);position:relative;overflow:hidden}
+    .g2a-deal-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#3b82f6,#a855f7)}
+    .g2a-price-row{display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+    .g2a-price-big{font-size:2rem;font-weight:800;color:#fff}
+    .g2a-price-curr{font-size:.9rem;color:rgba(255,255,255,.45);margin-left:.15rem}
+    .g2a-price-label{font-size:.75rem;color:rgba(255,255,255,.4)}
+    .g2a-price-check{font-size:.95rem;font-weight:600;color:#93c5fd}
+    .g2a-discount-pill{display:inline-block;padding:.2rem .6rem;border-radius:6px;font-size:.75rem;font-weight:700;background:linear-gradient(135deg,#3b82f6,#a855f7);color:#fff;margin-left:.5rem}
+    .g2a-stock-line{margin-top:.6rem;font-size:.8rem;color:rgba(255,255,255,.45);display:flex;align-items:center;gap:.35rem}
+    .g2a-stock-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;display:inline-block}
+
+    /* Coupon */
+    .g2a-coupon{display:flex;align-items:center;gap:.6rem;margin-top:.75rem;padding:.5rem .8rem;border-radius:8px;border:1px dashed rgba(59,130,246,.3);background:rgba(59,130,246,.06);font-size:.85rem}
+    .g2a-coupon code{font-weight:700;color:#93c5fd;letter-spacing:.04em}
+    .g2a-coupon-btn{background:none;border:none;color:#3b82f6;cursor:pointer;font-size:.78rem;font-weight:600;padding:.15rem .4rem;border-radius:4px;transition:background .15s}
+    .g2a-coupon-btn:hover{background:rgba(59,130,246,.12)}
+
+    /* Trust section */
+    .g2a-trust{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem;padding:1.2rem;margin:0}
+    .g2a-trust-item{display:flex;align-items:center;gap:.5rem;padding:.7rem;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
+    .g2a-trust-icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .g2a-trust-icon svg{width:20px;height:20px;fill:none;stroke:#3b82f6;stroke-width:1.8}
+    .g2a-trust-label{font-size:.78rem;font-weight:600;color:rgba(255,255,255,.7)}
+
+    /* How to redeem */
+    .g2a-steps{padding:1.2rem;margin:0}
+    .g2a-steps-title{font-size:.9rem;font-weight:700;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem}
+    .g2a-step{display:flex;align-items:flex-start;gap:.75rem;margin-bottom:.6rem}
+    .g2a-step-num{width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#a855f7);color:#fff;font-size:.75rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .g2a-step-text{font-size:.85rem;color:rgba(255,255,255,.6);line-height:1.4;padding-top:.2rem}
+
+    /* Reviews / social proof */
+    .g2a-reviews{margin:0 1.2rem;padding:1rem;border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);text-align:center}
+    .g2a-stars{color:#facc15;font-size:1rem;letter-spacing:.1rem}
+    .g2a-rating-text{font-size:.8rem;color:rgba(255,255,255,.45);margin-top:.25rem}
+    .g2a-ticker{margin-top:.5rem;font-size:.75rem;color:rgba(255,255,255,.35);overflow:hidden;white-space:nowrap}
+    .g2a-ticker span{display:inline-block;animation:g2aTick 12s linear infinite}
+    @keyframes g2aTick{0%{transform:translateX(100%)}100%{transform:translateX(-100%)}}
+
+    /* Sticky bottom bar */
+    .g2a-sticky{position:fixed;bottom:0;left:0;right:0;z-index:50;display:flex;align-items:center;justify-content:space-between;padding:.7rem 1.2rem;background:rgba(11,15,26,.95);border-top:1px solid rgba(59,130,246,.15);backdrop-filter:blur(12px)}
+    .g2a-sticky-price{font-size:1.1rem;font-weight:700;color:#fff}
+    .g2a-sticky-price .g2a-price-check{font-size:.85rem}
+    .g2a-sticky-cta{padding:.65rem 1.5rem;border-radius:10px;font-size:.95rem;font-weight:700;color:#fff;background:linear-gradient(135deg,#3b82f6,#a855f7);border:none;cursor:pointer;text-decoration:none;transition:transform .15s,box-shadow .15s;box-shadow:0 0 20px rgba(59,130,246,.3)}
+    .g2a-sticky-cta:hover{transform:translateY(-1px);box-shadow:0 0 30px rgba(59,130,246,.5)}
+    .g2a-sticky-cta:active{transform:scale(.97)}
+
+    /* Brand footer (G2A) */
+    .g2a-footer{text-align:center;padding:1.5rem 1.2rem 5rem;font-size:.75rem;color:rgba(255,255,255,.2)}
+    .g2a-footer a{color:rgba(255,255,255,.3);text-decoration:none}
+
+    /* Countdown (G2A variant) */
+    .g2a-countdown{display:flex;gap:.5rem;justify-content:center;margin-top:1rem}
+
+    @media(min-width:640px){
+      .g2a-hero-inner{padding:2rem}
+      .g2a-deal-card,.g2a-trust,.g2a-steps{max-width:560px;margin-left:auto;margin-right:auto}
+      .g2a-reviews{max-width:560px;margin-left:auto;margin-right:auto}
+      .g2a-trust{grid-template-columns:repeat(4,1fr)}
+    }
   </style>
 </head>
 <body>
@@ -146,7 +230,167 @@
         }
       }
 
+      /* ── G2A-themed layout renderer ──────────────────── */
+      function renderG2A(item) {
+        // OG tags
+        var ogTitle = document.getElementById('og-title');
+        var ogDesc = document.getElementById('og-desc');
+        var ogImg = document.getElementById('og-image');
+        if (ogTitle) ogTitle.setAttribute('content', item.title + ' – DropCharge');
+        if (ogDesc) ogDesc.setAttribute('content', item.subtitle || 'Digital key deal on DropCharge');
+        if (ogImg && (item.hero_url || item.product_image_url)) ogImg.setAttribute('content', item.hero_url || item.product_image_url);
+        document.title = item.title + ' – DropCharge Spotlight';
+
+        var img = item.hero_url || item.product_image_url || '';
+        var title = item.product_title || item.title || 'Deal';
+        var desc = item.product_description || 'Limited-time key deal. Prices may change. Click to check availability.';
+        var price = item.product_price;
+        var currency = item.product_currency || 'EUR';
+
+        // Auto-detect platform from title
+        var titleLower = title.toLowerCase();
+        var platforms = [];
+        if (/steam/i.test(titleLower)) platforms.push('Steam');
+        if (/xbox/i.test(titleLower)) platforms.push('Xbox');
+        if (/playstation|ps[45]/i.test(titleLower)) platforms.push('PlayStation');
+        if (/switch|nintendo/i.test(titleLower)) platforms.push('Switch');
+        if (platforms.length === 0) platforms.push('PC');
+
+        // Determine redeem text based on detected platform
+        var redeemPlatform = 'Redeem on platform';
+        if (platforms.indexOf('Steam') !== -1) redeemPlatform = 'Redeem on Steam';
+        else if (platforms.indexOf('Xbox') !== -1) redeemPlatform = 'Redeem on Xbox';
+        else if (platforms.indexOf('PlayStation') !== -1) redeemPlatform = 'Redeem on PlayStation';
+        else if (platforms.indexOf('Switch') !== -1) redeemPlatform = 'Redeem on Nintendo eShop';
+
+        var h = '';
+
+        // A) Top nav bar
+        h += '<div class="g2a-layout">';
+        h += '<div class="g2a-nav">';
+        h += '<div class="g2a-nav-brand"><span>Drop</span>Charge Deals</div>';
+        h += '<div class="g2a-nav-chips">';
+        h += '<span class="g2a-trust-chip"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Instant Delivery</span>';
+        h += '<span class="g2a-trust-chip"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Secure checkout</span>';
+        h += '</div></div>';
+
+        // B) Hero section
+        h += '<div class="g2a-hero">';
+        if (img) {
+          h += '<div class="g2a-hero-bg" id="g2a-hero-bg"></div>';
+        }
+        h += '<div class="g2a-hero-inner">';
+        if (img) {
+          h += '<img class="g2a-product-img" src="' + escapeAttr(img) + '" alt="' + escapeAttr(title) + '" />';
+        }
+        h += '<div class="g2a-product-title">' + escapeHtml(title) + '</div>';
+        h += '<div class="g2a-chips">';
+        for (var pi = 0; pi < platforms.length; pi++) {
+          h += '<span class="g2a-chip">' + escapeHtml(platforms[pi]) + '</span>';
+        }
+        h += '<span class="g2a-chip">GLOBAL</span>';
+        h += '<span class="g2a-chip g2a-chip--accent">Digital Key</span>';
+        h += '</div>';
+        if (desc && desc !== item.subtitle) {
+          h += '<p class="g2a-product-desc">' + escapeHtml(desc) + '</p>';
+        }
+        h += '</div></div>';
+
+        // C) Price / deal card
+        h += '<div class="g2a-deal-card">';
+        h += '<div class="g2a-price-row">';
+        if (price != null) {
+          h += '<span class="g2a-price-big">' + escapeHtml(String(price)) + '<span class="g2a-price-curr"> ' + escapeHtml(currency) + '</span></span>';
+          h += '<span class="g2a-price-label">Best price today</span>';
+        } else {
+          h += '<span class="g2a-price-check">Check price on G2A</span>';
+        }
+        if (item.badge_text) {
+          h += '<span class="g2a-discount-pill">' + escapeHtml(item.badge_text) + '</span>';
+        }
+        h += '</div>';
+        h += '<div class="g2a-stock-line"><span class="g2a-stock-dot"></span> In stock &bull; instant delivery</div>';
+
+        // Coupon
+        if (item.coupon_code) {
+          h += '<div class="g2a-coupon">';
+          h += '<span>Use code:</span> <code id="coupon-code">' + escapeHtml(item.coupon_code) + '</code>';
+          h += '<button class="g2a-coupon-btn" id="copy-coupon" title="Copy code">Copy</button>';
+          h += '</div>';
+        }
+        h += '</div>';
+
+        // D) Trust / safety section
+        h += '<div class="g2a-trust">';
+        var trustItems = [
+          {icon:'<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>',label:'Instant delivery'},
+          {icon:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',label:'Buyer protection'},
+          {icon:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>',label:'Secure payments'},
+          {icon:'<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>',label:'Support'}
+        ];
+        for (var ti = 0; ti < trustItems.length; ti++) {
+          h += '<div class="g2a-trust-item">';
+          h += '<div class="g2a-trust-icon"><svg viewBox="0 0 24 24">' + trustItems[ti].icon + '</svg></div>';
+          h += '<span class="g2a-trust-label">' + trustItems[ti].label + '</span>';
+          h += '</div>';
+        }
+        h += '</div>';
+
+        // E) How to redeem
+        h += '<div class="g2a-steps">';
+        h += '<div class="g2a-steps-title">How to redeem</div>';
+        var steps = ['Open deal', 'Purchase key', redeemPlatform];
+        for (var si = 0; si < steps.length; si++) {
+          h += '<div class="g2a-step"><span class="g2a-step-num">' + (si + 1) + '</span><span class="g2a-step-text">' + escapeHtml(steps[si]) + '</span></div>';
+        }
+        h += '</div>';
+
+        // F) Reviews / social proof
+        var purchases = Math.floor(Math.random() * 200) + 50;
+        h += '<div class="g2a-reviews">';
+        h += '<div class="g2a-stars">★★★★★</div>';
+        h += '<div class="g2a-rating-text">4.7 / 5 &mdash; Trusted by gamers</div>';
+        h += '<div class="g2a-ticker"><span>' + purchases + '+ purchases in the last 24h &nbsp;&bull;&nbsp; Fast &amp; secure delivery &nbsp;&bull;&nbsp; ' + purchases + '+ purchases in the last 24h</span></div>';
+        h += '</div>';
+
+        // Countdown
+        if (item.countdown_date) {
+          h += '<div class="g2a-countdown sp-countdown" id="sp-countdown">';
+          h += cdUnit('--', 'Days') + cdUnit('--', 'Hours') + cdUnit('--', 'Min') + cdUnit('--', 'Sec');
+          h += '</div>';
+        }
+
+        // Footer
+        h += '<p class="g2a-footer">Powered by <a href="/">DropCharge</a></p>';
+
+        // G) Sticky bottom bar
+        h += '<div class="g2a-sticky">';
+        if (price != null) {
+          h += '<span class="g2a-sticky-price">' + escapeHtml(String(price)) + ' <span class="g2a-price-curr">' + escapeHtml(currency) + '</span></span>';
+        } else {
+          h += '<span class="g2a-sticky-price"><span class="g2a-price-check">Check price</span></span>';
+        }
+        h += '<a class="g2a-sticky-cta" id="sp-cta-btn" href="' + escapeAttr(item.affiliate_url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(item.cta_text || 'Get Key →') + '</a>';
+        h += '</div>';
+
+        h += '</div>'; // end g2a-layout
+
+        root.innerHTML = h;
+
+        // Bind events
+        bindCTA(item);
+        if (item.coupon_code) bindCopyButton();
+        if (item.countdown_date) startCountdown(item.countdown_date);
+        if (img) {
+          var bgEl = document.getElementById('g2a-hero-bg');
+          if (bgEl) bgEl.style.backgroundImage = 'url(' + img + ')';
+        }
+      }
+
       function renderSpotlight(item) {
+        // Theme-based layout switch
+        if (item.theme === 'g2a') { renderG2A(item); return; }
+
         // Update OG tags
         const ogTitle = document.getElementById('og-title');
         const ogDesc = document.getElementById('og-desc');
