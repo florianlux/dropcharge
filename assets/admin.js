@@ -110,12 +110,18 @@ function initTabs() {
 }
 
 function onTabActivate(tab) {
+  if (tab !== 'deep-tracking' && _trkLiveTimer) {
+    clearInterval(_trkLiveTimer);
+    _trkLiveTimer = null;
+    _trkInitialised = false; // allow re-init on next open
+  }
   if (tab === 'dashboard') loadDashboard();
   if (tab === 'newsletter') loadSubscribers();
   if (tab === 'email') loadEmailTab();
   if (tab === 'drops') loadDrops();
   if (tab === 'spotlight') loadSpotlights();
   if (tab === 'analytics') loadAnalytics();
+  if (tab === 'deep-tracking') initDeepTracking();
 }
 
 // ── Logout ─────────────────────────────────────────────
@@ -1374,3 +1380,205 @@ document.addEventListener('DOMContentLoaded', () => {
   loadDashboard();
   loadNewsBanner();
 });
+
+// ── Deep Tracking Dashboard ─────────────────────────────
+let _trkLiveTimer = null;
+let _trkLivePaused = false;
+let _trkInitialised = false;
+
+function initDeepTracking() {
+  if (_trkInitialised) {
+    loadTrackingDashboard();
+    return;
+  }
+  _trkInitialised = true;
+
+  const rangeEl = $('#tracking-range');
+  const refreshBtn = $('#tracking-refresh');
+  const exportBtn = $('#tracking-export-btn');
+  const eventFilter = $('#tracking-event-filter');
+  const liveToggle = $('#trk-live-toggle');
+  const liveStatus = $('#trk-live-status');
+
+  if (rangeEl) rangeEl.addEventListener('change', loadTrackingDashboard);
+  if (refreshBtn) refreshBtn.addEventListener('click', loadTrackingDashboard);
+
+  if (liveToggle) {
+    liveToggle.addEventListener('click', () => {
+      _trkLivePaused = !_trkLivePaused;
+      liveToggle.textContent = _trkLivePaused ? 'Resume' : 'Pause';
+      if (liveStatus) liveStatus.textContent = `Auto-refresh: ${_trkLivePaused ? 'paused' : 'on'}`;
+      if (!_trkLivePaused) loadTrackingEvents();
+    });
+  }
+
+  if (eventFilter) eventFilter.addEventListener('change', loadTrackingEvents);
+
+  if (exportBtn) {
+    exportBtn.addEventListener('click', async () => {
+      const range = ($('#tracking-range') || {}).value || '7d';
+      const url = `${API_BASE}/.netlify/functions/tracking-export?range=${range}`;
+      const headers = { 'Content-Type': 'application/json', 'x-admin-token': getToken() };
+      try {
+        const res = await fetch(url, { method: 'GET', headers });
+        const text = await res.text();
+        const blob = new Blob([text], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `tracking-events-${range}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+        showToast('CSV exported.');
+      } catch { showToast('Export failed.', 'error'); }
+    });
+  }
+
+  loadTrackingDashboard();
+  // Auto-refresh live events every 10s
+  _trkLiveTimer = setInterval(() => {
+    if (!_trkLivePaused) loadTrackingEvents();
+  }, 10000);
+}
+
+async function loadTrackingDashboard() {
+  const range = ($('#tracking-range') || {}).value || '7d';
+  await Promise.all([
+    loadTrackingStats(range),
+    loadTrackingFunnel(range),
+    loadTrackingEvents()
+  ]);
+}
+
+async function loadTrackingStats(range) {
+  try {
+    const data = await apiGet(`tracking-stats?range=${range}`);
+    if (!data || !data.ok) return;
+    const k = data.kpis || {};
+    const setVal = (id, val) => { const el = $(`#${id}`); if (el) el.textContent = val ?? '–'; };
+    setVal('trk-pageviews', k.pageviews ?? '–');
+    setVal('trk-sessions', k.sessions ?? '–');
+    setVal('trk-uniques', k.uniques ?? '–');
+    setVal('trk-cta-clicks', k.cta_clicks ?? '–');
+    setVal('trk-ctr', k.ctr != null ? k.ctr + '%' : '–');
+    setVal('trk-nl-conv', k.newsletter_conversion != null ? k.newsletter_conversion + '%' : '–');
+    setVal('trk-consent-rate', k.consent_rate != null ? k.consent_rate + '%' : '–');
+
+    renderBarChart('#tracking-chart-sources', data.top_sources || [], 'name', 'count');
+    renderBarChart('#tracking-chart-campaigns', data.top_campaigns || [], 'name', 'count');
+    renderBarChart('#tracking-chart-spotlights', data.top_spotlights || [], 'slug', 'count');
+    renderDeviceChart('#tracking-chart-devices', data.device_breakdown || {});
+  } catch { /* ignore */ }
+}
+
+async function loadTrackingFunnel(range) {
+  const container = $('#tracking-funnel-viz');
+  if (!container) return;
+  try {
+    const data = await apiGet(`tracking-funnel?range=${range}`);
+    if (!data || !data.ok || !data.steps) {
+      container.innerHTML = '<p class="empty">Funnel data unavailable.</p>';
+      return;
+    }
+    const maxCount = Math.max(...data.steps.map(s => s.count), 1);
+    container.innerHTML = data.steps.map((step, i) => {
+      const widthPct = Math.round((step.count / maxCount) * 100);
+      const color = ['#7c3aed', '#3b82f6', '#06b6d4', '#10b981'][i] || '#7c3aed';
+      return `<div style="margin-bottom:.75rem;">
+        <div style="display:flex;justify-content:space-between;font-size:.82rem;margin-bottom:.3rem;">
+          <span>${escapeHtml(step.name)}</span>
+          <span><strong>${step.count.toLocaleString()}</strong> <span style="color:var(--admin-muted)">${step.pct_top}% of top</span></span>
+        </div>
+        <div style="background:var(--admin-border);border-radius:4px;height:18px;overflow:hidden;">
+          <div style="height:100%;width:${widthPct}%;background:${color};border-radius:4px;transition:width .4s;"></div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch {
+    if (container) container.innerHTML = '<p class="empty">Funnel unavailable.</p>';
+  }
+}
+
+async function loadTrackingEvents() {
+  const rows = $('#tracking-events-rows');
+  if (!rows) return;
+  const range = ($('#tracking-range') || {}).value || '7d';
+  const eventName = ($('#tracking-event-filter') || {}).value || '';
+  try {
+    const params = new URLSearchParams({ limit: '100', range });
+    if (eventName) params.set('event_name', eventName);
+    const data = await apiGet(`tracking-events?${params}`);
+    const items = (data && data.items) || [];
+    if (items.length === 0) {
+      rows.innerHTML = '<p class="empty">No events found.</p>';
+      return;
+    }
+    rows.innerHTML = items.map(ev => {
+      const ts = ev.ts || ev.created_at;
+      const time = ts ? new Date(ts).toLocaleString() : '–';
+      const name = ev.event_name || ev.name || ev.type || '–';
+      const slug = ev.slug || ev.path || '–';
+      const device = ev.device_type || ev.device_hint || '–';
+      const country = ev.country || '–';
+      const session = ev.session_key ? ev.session_key.slice(0, 8) + '…' : '–';
+      return `<div class="table-row" style="grid-template-columns:120px 130px 1fr 90px 90px 80px;">
+        <span style="font-size:.78rem;color:var(--admin-muted);">${time}</span>
+        <span><code style="font-size:.78rem;background:var(--admin-accent-light);color:var(--admin-accent);padding:.1rem .3rem;border-radius:3px;">${escapeHtml(name)}</code></span>
+        <span style="font-size:.82rem;word-break:break-all;">${escapeHtml(slug)}</span>
+        <span style="font-size:.8rem;">${escapeHtml(device)}</span>
+        <span style="font-size:.8rem;">${escapeHtml(country)}</span>
+        <span style="font-size:.75rem;color:var(--admin-muted);">${escapeHtml(session)}</span>
+      </div>`;
+    }).join('');
+  } catch {
+    if (rows) rows.innerHTML = '<p class="empty">Failed to load events.</p>';
+  }
+}
+
+function renderBarChart(selector, items, labelKey, valueKey) {
+  const container = $(selector);
+  if (!container) return;
+  if (!items || items.length === 0) {
+    container.innerHTML = '<p class="empty" style="font-size:.82rem;">No data yet.</p>';
+    return;
+  }
+  const maxVal = Math.max(...items.map(i => i[valueKey] || 0), 1);
+  container.innerHTML = items.slice(0, 8).map(item => {
+    const pct = Math.round(((item[valueKey] || 0) / maxVal) * 100);
+    return `<div style="margin-bottom:.5rem;">
+      <div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:.2rem;">
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;" title="${escapeHtml(item[labelKey] || '–')}">${escapeHtml(item[labelKey] || '–')}</span>
+        <strong>${item[valueKey] || 0}</strong>
+      </div>
+      <div style="background:var(--admin-border);border-radius:3px;height:8px;">
+        <div style="height:100%;width:${pct}%;background:var(--admin-accent);border-radius:3px;"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderDeviceChart(selector, breakdown) {
+  const container = $(selector);
+  if (!container) return;
+  const entries = Object.entries(breakdown);
+  if (entries.length === 0) {
+    container.innerHTML = '<p class="empty" style="font-size:.82rem;">No data yet.</p>';
+    return;
+  }
+  const total = entries.reduce((s, [, v]) => s + v, 0);
+  const colors = { mobile: '#7c3aed', desktop: '#06b6d4', tablet: '#f59e0b', unknown: '#9ca3af' };
+  container.innerHTML = entries.map(([device, count]) => {
+    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+    const color = colors[device] || '#9ca3af';
+    return `<div style="margin-bottom:.5rem;">
+      <div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:.2rem;">
+        <span>${escapeHtml(device)}</span>
+        <strong>${pct}% (${count})</strong>
+      </div>
+      <div style="background:var(--admin-border);border-radius:3px;height:8px;">
+        <div style="height:100%;width:${pct}%;background:${color};border-radius:3px;"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
