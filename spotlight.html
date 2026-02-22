@@ -102,6 +102,52 @@
     .sp-theme-g2a .sp-glow-2{background:#a855f7}
     .sp-theme-g2a .sp-price-amount{background:linear-gradient(135deg,#3b82f6,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 
+    /* ── G2A Enhanced Layout ── */
+    .sp-g2a-wrap{position:relative;z-index:2;max-width:1100px;width:100%;margin:0 auto;padding:2rem 1.5rem}
+    .sp-g2a-chips{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}
+    .sp-g2a-chip{display:inline-block;padding:.25rem .7rem;border-radius:999px;font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#fff}
+    .sp-g2a-chip--steam{background:#1b2838}
+    .sp-g2a-chip--ps5,.sp-g2a-chip--ps4{background:#006fcd}
+    .sp-g2a-chip--xbox-series,.sp-g2a-chip--xbox-one{background:#107c10}
+    .sp-g2a-chip--nintendo-switch{background:#e4000f}
+    .sp-g2a-chip--pc{background:#7c3aed}
+    .sp-g2a-chip--region{background:rgba(255,255,255,.12);color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.15)}
+
+    .sp-g2a-mobile-cta .sp-price-card{margin-bottom:1rem}
+    .sp-g2a-mobile-cta .sp-coupon{margin-bottom:1rem}
+
+    .sp-g2a-social{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;font-size:.85rem;color:rgba(255,255,255,.6);margin-bottom:1.5rem}
+    .sp-g2a-stars{color:#facc15;font-size:1rem;letter-spacing:1px}
+    .sp-g2a-hot{color:#f97316;font-weight:600}
+
+    /* Desktop: two-column layout */
+    @media(min-width:1024px){
+      .sp-g2a-wrap{display:grid;grid-template-columns:1fr 360px;gap:2.5rem;align-items:start}
+      .sp-g2a-left{display:flex;flex-direction:column}
+      .sp-g2a-left .sp-hero-img{max-width:100%;margin-bottom:1.5rem}
+      .sp-g2a-left .sp-g2a-mobile-cta{display:none}
+      .sp-g2a-buybox{position:sticky;top:120px;background:rgba(18,18,24,.95);border:1px solid rgba(59,130,246,.25);border-radius:16px;padding:1.5rem;box-shadow:0 0 40px rgba(59,130,246,.08);display:flex;flex-direction:column;gap:1rem}
+      .sp-g2a-buybox .sp-price-card{margin-bottom:0}
+      .sp-g2a-buybox .sp-cta{width:100%;justify-content:center;border-radius:12px;padding:1rem;font-size:1.1rem}
+      .sp-g2a-trust{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.4rem;font-size:.82rem;color:rgba(255,255,255,.6)}
+      .sp-g2a-trust li::before{content:'✓ ';color:#22c55e;font-weight:700}
+      .sp-g2a-buybox .sp-coupon{margin-bottom:0;width:100%;justify-content:center}
+      .sp-g2a-buybox .sp-badge{font-size:.7rem;padding:.3rem .8rem;margin-bottom:0}
+    }
+    @media(max-width:1023px){
+      .sp-g2a-buybox{display:none}
+      .sp-g2a-left{display:flex;flex-direction:column;align-items:center;text-align:center}
+    }
+
+    /* Mobile sticky bar */
+    .sp-g2a-mobilebar{display:none}
+    @media(max-width:1023px){
+      .sp-g2a-mobilebar{display:flex;position:fixed;bottom:0;left:0;right:0;z-index:50;background:rgba(12,12,18,.96);border-top:1px solid rgba(59,130,246,.2);padding:.75rem 1rem;align-items:center;justify-content:space-between;gap:.75rem;box-shadow:0 -4px 20px rgba(0,0,0,.4);transform:translateY(100%);transition:transform .35s ease}
+      .sp-g2a-mobilebar.visible{transform:translateY(0)}
+      .sp-g2a-mobilebar-price{font-size:1.1rem;font-weight:800;color:#fff}
+      .sp-g2a-mobilebar-cta{padding:.65rem 1.4rem;border-radius:10px;font-size:.95rem;font-weight:700;color:#fff;text-decoration:none;background:linear-gradient(135deg,#3b82f6,#a855f7);border:none;cursor:pointer;white-space:nowrap}
+    }
+
     @media(max-width:480px){
       .sp-countdown{gap:.4rem}
       .sp-cd-unit{min-width:52px;padding:.5rem .6rem}
@@ -230,16 +276,65 @@
         }
       }
 
+      /* ── Platform & Region auto-detect (G2A) ── */
+      function detectPlatform(title) {
+        var t = (title || '').toLowerCase();
+        if (t.indexOf('steam') !== -1) return 'Steam';
+        if (t.indexOf('ps5') !== -1 || t.indexOf('playstation 5') !== -1) return 'PS5';
+        if (t.indexOf('ps4') !== -1) return 'PS4';
+        if (t.indexOf('xbox series') !== -1) return 'Xbox Series';
+        if (t.indexOf('xbox one') !== -1) return 'Xbox One';
+        if (t.indexOf('switch') !== -1 || t.indexOf('nintendo') !== -1) return 'Nintendo Switch';
+        if (t.indexOf('pc') !== -1) return 'PC';
+        return 'PC';
+      }
+
+      function detectRegion(title) {
+        var t = (title || '').toLowerCase();
+        if (t.indexOf('global') !== -1) return 'GLOBAL';
+        if (t.indexOf(' eu') !== -1 || t.indexOf('(eu)') !== -1 || t.indexOf('/eu') !== -1) return 'EU';
+        if (t.indexOf(' us') !== -1 || t.indexOf('(us)') !== -1 || t.indexOf('/us') !== -1) return 'US';
+        return 'GLOBAL';
+      }
+
+      /* Seeded PRNG for deterministic social proof per slug */
+      function seededRandom(seed) {
+        var h = 0;
+        for (var i = 0; i < seed.length; i++) {
+          h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
+        }
+        return function() {
+          h = (h * 16807) % 2147483647;
+          if (h < 0) h += 2147483647;
+          return (h - 1) / 2147483646;
+        };
+      }
+
+      function generateSocialProof(seedStr) {
+        var rng = seededRandom(seedStr || 'default');
+        var rating = (4.4 + rng() * 0.5).toFixed(1);
+        var reviews = Math.floor(2000 + rng() * 23000);
+        var reviewsStr = reviews >= 1000 ? (reviews / 1000).toFixed(1) + 'k' : String(reviews);
+        var purchases = Math.floor(300 + rng() * 1200);
+
+        var stars = '';
+        var full = Math.floor(Number(rating));
+        for (var i = 0; i < full; i++) stars += '★';
+        if (Number(rating) - full >= 0.3) stars += '☆';
+
+        return { rating: rating, reviews: reviewsStr, purchases: purchases, stars: stars };
+      }
+
       /* ── G2A-themed layout renderer ──────────────────── */
       function renderG2A(item) {
         // OG tags
         var ogTitle = document.getElementById('og-title');
         var ogDesc = document.getElementById('og-desc');
         var ogImg = document.getElementById('og-image');
-        if (ogTitle) ogTitle.setAttribute('content', item.title + ' – DropCharge');
+        if (ogTitle) ogTitle.setAttribute('content', (item.title || 'Deal') + ' – DropCharge');
         if (ogDesc) ogDesc.setAttribute('content', item.subtitle || 'Digital key deal on DropCharge');
         if (ogImg && (item.hero_url || item.product_image_url)) ogImg.setAttribute('content', item.hero_url || item.product_image_url);
-        document.title = item.title + ' – DropCharge Spotlight';
+        document.title = (item.title || 'Deal') + ' – DropCharge Spotlight';
 
         var img = item.hero_url || item.product_image_url || '';
         var title = item.product_title || item.title || 'Deal';
@@ -247,25 +342,20 @@
         var price = item.product_price;
         var currency = item.product_currency || 'EUR';
 
-        // Auto-detect platform from title
-        var titleLower = title.toLowerCase();
-        var platforms = [];
-        if (/steam/i.test(titleLower)) platforms.push('Steam');
-        if (/xbox/i.test(titleLower)) platforms.push('Xbox');
-        if (/playstation|ps[45]/i.test(titleLower)) platforms.push('PlayStation');
-        if (/switch|nintendo/i.test(titleLower)) platforms.push('Switch');
-        if (platforms.length === 0) platforms.push('PC');
+        var platform = detectPlatform(title);
+        var region = detectRegion(title);
 
-        // Determine redeem text based on detected platform
+        var social = generateSocialProof(item.slug || title);
+
+        // Determine redeem text
         var redeemPlatform = 'Redeem on platform';
-        if (platforms.indexOf('Steam') !== -1) redeemPlatform = 'Redeem on Steam';
-        else if (platforms.indexOf('Xbox') !== -1) redeemPlatform = 'Redeem on Xbox';
-        else if (platforms.indexOf('PlayStation') !== -1) redeemPlatform = 'Redeem on PlayStation';
-        else if (platforms.indexOf('Switch') !== -1) redeemPlatform = 'Redeem on Nintendo eShop';
+        if (platform === 'Steam') redeemPlatform = 'Redeem on Steam';
+        else if (platform.indexOf('Xbox') === 0) redeemPlatform = 'Redeem on Xbox';
+        else if (platform.indexOf('PS') === 0) redeemPlatform = 'Redeem on PlayStation';
+        else if (platform === 'Nintendo Switch') redeemPlatform = 'Redeem on Nintendo eShop';
 
         var h = '';
 
-        // A) Top nav bar
         h += '<div class="g2a-layout">';
         h += '<div class="g2a-nav">';
         h += '<div class="g2a-nav-brand"><span>Drop</span>Charge Deals</div>';
@@ -274,44 +364,33 @@
         h += '<span class="g2a-trust-chip"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Secure checkout</span>';
         h += '</div></div>';
 
-        // B) Hero section
+        // Hero
         h += '<div class="g2a-hero">';
-        if (img) {
-          h += '<div class="g2a-hero-bg" id="g2a-hero-bg"></div>';
-        }
+        if (img) h += '<div class="g2a-hero-bg" id="g2a-hero-bg"></div>';
         h += '<div class="g2a-hero-inner">';
-        if (img) {
-          h += '<img class="g2a-product-img" src="' + escapeAttr(img) + '" alt="' + escapeAttr(title) + '" />';
-        }
+        if (img) h += '<img class="g2a-product-img" src="' + escapeAttr(img) + '" alt="' + escapeAttr(title) + '" />';
         h += '<div class="g2a-product-title">' + escapeHtml(title) + '</div>';
         h += '<div class="g2a-chips">';
-        for (var pi = 0; pi < platforms.length; pi++) {
-          h += '<span class="g2a-chip">' + escapeHtml(platforms[pi]) + '</span>';
-        }
-        h += '<span class="g2a-chip">GLOBAL</span>';
+        h += '<span class="g2a-chip">' + escapeHtml(platform) + '</span>';
+        h += '<span class="g2a-chip">' + escapeHtml(region) + '</span>';
         h += '<span class="g2a-chip g2a-chip--accent">Digital Key</span>';
         h += '</div>';
-        if (desc && desc !== item.subtitle) {
-          h += '<p class="g2a-product-desc">' + escapeHtml(desc) + '</p>';
-        }
+        h += '<p class="g2a-product-desc">' + escapeHtml(desc) + '</p>';
         h += '</div></div>';
 
-        // C) Price / deal card
+        // Deal card
         h += '<div class="g2a-deal-card">';
         h += '<div class="g2a-price-row">';
         if (price != null) {
           h += '<span class="g2a-price-big">' + escapeHtml(String(price)) + '<span class="g2a-price-curr"> ' + escapeHtml(currency) + '</span></span>';
           h += '<span class="g2a-price-label">Best price today</span>';
         } else {
-          h += '<span class="g2a-price-check">Check price on G2A</span>';
+          h += '<span class="g2a-price-check">Check price</span>';
         }
-        if (item.badge_text) {
-          h += '<span class="g2a-discount-pill">' + escapeHtml(item.badge_text) + '</span>';
-        }
+        if (item.badge_text) h += '<span class="g2a-discount-pill">' + escapeHtml(item.badge_text) + '</span>';
         h += '</div>';
-        h += '<div class="g2a-stock-line"><span class="g2a-stock-dot"></span> In stock &bull; instant delivery</div>';
+        h += '<div class="g2a-stock-line"><span class="g2a-stock-dot"></span> In stock • instant delivery</div>';
 
-        // Coupon
         if (item.coupon_code) {
           h += '<div class="g2a-coupon">';
           h += '<span>Use code:</span> <code id="coupon-code">' + escapeHtml(item.coupon_code) + '</code>';
@@ -320,37 +399,20 @@
         }
         h += '</div>';
 
-        // D) Trust / safety section
-        h += '<div class="g2a-trust">';
-        var trustItems = [
-          {icon:'<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>',label:'Instant delivery'},
-          {icon:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',label:'Buyer protection'},
-          {icon:'<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>',label:'Secure payments'},
-          {icon:'<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>',label:'Support'}
-        ];
-        for (var ti = 0; ti < trustItems.length; ti++) {
-          h += '<div class="g2a-trust-item">';
-          h += '<div class="g2a-trust-icon"><svg viewBox="0 0 24 24">' + trustItems[ti].icon + '</svg></div>';
-          h += '<span class="g2a-trust-label">' + trustItems[ti].label + '</span>';
-          h += '</div>';
-        }
+        // Reviews / social proof
+        h += '<div class="g2a-reviews">';
+        h += '<div class="g2a-stars">' + escapeHtml(social.stars || '★★★★★') + '</div>';
+        h += '<div class="g2a-rating-text">' + escapeHtml(social.rating) + ' / 5 — Community rating (' + escapeHtml(social.reviews) + ')</div>';
+        h += '<div class="g2a-ticker"><span>🔥 ' + escapeHtml(String(social.purchases)) + ' purchases in the last 24h • Instant delivery • 🔥 ' + escapeHtml(String(social.purchases)) + ' purchases in the last 24h</span></div>';
         h += '</div>';
 
-        // E) How to redeem
+        // Steps
         h += '<div class="g2a-steps">';
         h += '<div class="g2a-steps-title">How to redeem</div>';
         var steps = ['Open deal', 'Purchase key', redeemPlatform];
         for (var si = 0; si < steps.length; si++) {
           h += '<div class="g2a-step"><span class="g2a-step-num">' + (si + 1) + '</span><span class="g2a-step-text">' + escapeHtml(steps[si]) + '</span></div>';
         }
-        h += '</div>';
-
-        // F) Reviews / social proof
-        var purchases = Math.floor(Math.random() * 200) + 50;
-        h += '<div class="g2a-reviews">';
-        h += '<div class="g2a-stars">★★★★★</div>';
-        h += '<div class="g2a-rating-text">4.7 / 5 &mdash; Trusted by gamers</div>';
-        h += '<div class="g2a-ticker"><span>' + purchases + '+ purchases in the last 24h &nbsp;&bull;&nbsp; Fast &amp; secure delivery &nbsp;&bull;&nbsp; ' + purchases + '+ purchases in the last 24h</span></div>';
         h += '</div>';
 
         // Countdown
@@ -360,24 +422,21 @@
           h += '</div>';
         }
 
-        // Footer
-        h += '<p class="g2a-footer">Powered by <a href="/">DropCharge</a></p>';
-
-        // G) Sticky bottom bar
+        // Sticky bottom bar
         h += '<div class="g2a-sticky">';
         if (price != null) {
           h += '<span class="g2a-sticky-price">' + escapeHtml(String(price)) + ' <span class="g2a-price-curr">' + escapeHtml(currency) + '</span></span>';
         } else {
           h += '<span class="g2a-sticky-price"><span class="g2a-price-check">Check price</span></span>';
         }
-        h += '<a class="g2a-sticky-cta" id="sp-cta-btn" href="' + escapeAttr(item.affiliate_url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(item.cta_text || 'Get Key →') + '</a>';
+        h += '<a class="g2a-sticky-cta" id="sp-cta-btn" href="' + escapeAttr(item.affiliate_url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(item.cta_text || 'Key sichern →') + '</a>';
         h += '</div>';
 
-        h += '</div>'; // end g2a-layout
+        h += '<p class="g2a-footer">Powered by <a href="/">DropCharge</a></p>';
+        h += '</div>';
 
         root.innerHTML = h;
 
-        // Bind events
         bindCTA(item);
         if (item.coupon_code) bindCopyButton();
         if (item.countdown_date) startCountdown(item.countdown_date);
@@ -385,6 +444,7 @@
           var bgEl = document.getElementById('g2a-hero-bg');
           if (bgEl) bgEl.style.backgroundImage = 'url(' + img + ')';
         }
+      }
       }
 
       function renderSpotlight(item) {
@@ -399,6 +459,12 @@
         if (ogDesc) ogDesc.setAttribute('content', item.subtitle || 'Exclusive deal on DropCharge');
         if (ogImg && (item.hero_url || item.product_image_url)) ogImg.setAttribute('content', item.hero_url || item.product_image_url);
         document.title = item.title + ' – DropCharge Spotlight';
+
+        // Use G2A enhanced layout when theme is g2a
+        if (item.theme === 'g2a') {
+          renderG2A(item);
+          return;
+        }
 
         const gradient = item.gradient || 'linear-gradient(135deg, #7c3aed, #06b6d4)';
         const themeClass = item.theme ? ' sp-theme-' + item.theme : '';
@@ -490,6 +556,136 @@
         }
       }
 
+      /* ── G2A Enhanced Render ── */
+      function renderG2A(item) {
+        var heroImage = item.hero_url || item.product_image_url || null;
+        var platform = detectPlatform(item.product_title || item.title);
+        var region = detectRegion(item.product_title || item.title);
+        var social = generateSocialProof(item.slug);
+        var priceStr = item.product_price != null ? escapeHtml(String(item.product_price)) + ' ' + escapeHtml(item.product_currency || 'EUR') : '';
+
+        var html = '<div class="sp-hero sp-theme-g2a">';
+        if (heroImage) html += '<div class="sp-hero-bg" id="sp-parallax"></div>';
+        html += '<div class="sp-hero-overlay"></div>';
+        html += '<div class="sp-glow sp-glow-1"></div>';
+        html += '<div class="sp-glow sp-glow-2"></div>';
+
+        html += '<div class="sp-g2a-wrap">';
+
+        /* ── Left column ── */
+        html += '<div class="sp-g2a-left">';
+        if (item.logo_url) {
+          html += '<img class="sp-logo" src="' + escapeAttr(item.logo_url) + '" alt="' + escapeAttr(item.brand || 'Brand') + '" />';
+        }
+        if (heroImage) {
+          html += '<img class="sp-hero-img" src="' + escapeAttr(heroImage) + '" alt="' + escapeAttr(item.title) + '" />';
+        }
+
+        // Platform + Region chips
+        html += '<div class="sp-g2a-chips">';
+        html += '<span class="sp-g2a-chip ' + platformChipClass(platform) + '">' + escapeHtml(platform) + '</span>';
+        html += '<span class="sp-g2a-chip sp-g2a-chip--region">' + escapeHtml(region) + '</span>';
+        html += '</div>';
+
+        html += '<h1 class="sp-title">' + escapeHtml(item.title) + '</h1>';
+        if (item.subtitle) {
+          html += '<p class="sp-subtitle">' + escapeHtml(item.subtitle) + '</p>';
+        }
+
+        // Social proof
+        html += '<div class="sp-g2a-social">';
+        html += '<span class="sp-g2a-stars">' + social.stars + '</span>';
+        html += '<span>' + escapeHtml(social.rating) + ' Community rating (' + escapeHtml(social.reviews) + ' reviews)</span>';
+        html += '<span class="sp-g2a-hot">\uD83D\uDD25 ' + escapeHtml(String(social.purchases)) + ' purchases in last 24h</span>';
+        html += '</div>';
+
+        // Product description
+        if (item.product_description && item.product_description !== item.subtitle) {
+          html += '<p class="sp-product-desc">' + escapeHtml(item.product_description) + '</p>';
+        }
+
+        // Mobile-only price + CTA (shown below 1024px)
+        html += '<div class="sp-g2a-mobile-cta">';
+        if (item.product_price != null) {
+          html += '<div class="sp-price-card">';
+          html += '<span class="sp-price-amount">' + escapeHtml(String(item.product_price)) + '</span>';
+          html += '<span class="sp-price-currency">' + escapeHtml(item.product_currency || 'EUR') + '</span>';
+          html += '</div>';
+        }
+        if (item.coupon_code) {
+          html += '<div class="sp-coupon">';
+          html += '<span>Code:</span> <code id="coupon-code">' + escapeHtml(item.coupon_code) + '</code>';
+          html += '<button class="sp-coupon-copy" id="copy-coupon" title="Copy code">Copy</button>';
+          html += '</div>';
+        }
+        html += '<a class="sp-cta" id="sp-cta-btn" href="' + escapeAttr(item.affiliate_url) + '" target="_blank" rel="noopener noreferrer">';
+        html += escapeHtml(item.cta_text || 'Jetzt sichern');
+        html += ' <span class="sp-cta-arrow">\u2192</span>';
+        html += '</a>';
+        html += '</div>'; // end mobile-cta
+
+        // Countdown
+        if (item.countdown_date) {
+          html += '<div class="sp-countdown" id="sp-countdown">';
+          html += cdUnit('--', 'Days') + cdUnit('--', 'Hours') + cdUnit('--', 'Min') + cdUnit('--', 'Sec');
+          html += '</div>';
+        }
+
+        html += '<p class="sp-brand">Powered by <a href="/">DropCharge</a></p>';
+        html += '</div>'; // end left
+
+        /* ── Right column: Desktop sticky buy box ── */
+        html += '<div class="sp-g2a-buybox">';
+        if (item.badge_text) {
+          html += '<div class="sp-badge">' + escapeHtml(item.badge_text) + '</div>';
+        }
+        if (item.product_price != null) {
+          html += '<div class="sp-price-card">';
+          html += '<span class="sp-price-amount">' + escapeHtml(String(item.product_price)) + '</span>';
+          html += '<span class="sp-price-currency">' + escapeHtml(item.product_currency || 'EUR') + '</span>';
+          html += '</div>';
+        }
+        html += '<ul class="sp-g2a-trust"><li>Instant delivery</li><li>Secure checkout</li><li>Buyer protection</li></ul>';
+        html += '<a class="sp-cta" id="sp-cta-btn-desktop" href="' + escapeAttr(item.affiliate_url) + '" target="_blank" rel="noopener noreferrer">';
+        html += escapeHtml(item.cta_text || 'Jetzt sichern');
+        html += ' <span class="sp-cta-arrow">\u2192</span>';
+        html += '</a>';
+        if (item.coupon_code) {
+          html += '<div class="sp-coupon">';
+          html += '<span>Code:</span> <code id="coupon-code-desktop">' + escapeHtml(item.coupon_code) + '</code>';
+          html += '<button class="sp-coupon-copy" id="copy-coupon-desktop" title="Copy code">Copy</button>';
+          html += '</div>';
+        }
+        html += '</div>'; // end buybox
+
+        html += '</div>'; // end g2a-wrap
+
+        /* ── Mobile sticky bar ── */
+        html += '<div class="sp-g2a-mobilebar" id="sp-mobilebar">';
+        html += '<span class="sp-g2a-mobilebar-price">' + (priceStr || 'Check price') + '</span>';
+        html += '<a class="sp-g2a-mobilebar-cta" id="sp-cta-btn-mobile" href="' + escapeAttr(item.affiliate_url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(item.cta_text || 'Buy now') + '</a>';
+        html += '</div>';
+
+        html += '</div>'; // end hero
+
+        root.innerHTML = html;
+
+        // Bind events
+        bindCTA(item);
+        bindG2ACTA(item);
+        if (item.coupon_code) {
+          bindCopyButton();
+          bindCopyButtonById('copy-coupon-desktop', 'coupon-code-desktop');
+        }
+        if (item.countdown_date) startCountdown(item.countdown_date);
+        if (heroImage) {
+          var bgEl = document.getElementById('sp-parallax');
+          if (bgEl) bgEl.style.backgroundImage = 'url(' + heroImage + ')';
+          initParallax();
+        }
+        initMobileBar();
+      }
+
       function bindCTA(item) {
         const btn = document.getElementById('sp-cta-btn');
         if (!btn) return;
@@ -518,6 +714,48 @@
             });
           }
         });
+      }
+
+      function bindG2ACTA(item) {
+        ['sp-cta-btn-desktop', 'sp-cta-btn-mobile'].forEach(function(id) {
+          var btn = document.getElementById(id);
+          if (!btn) return;
+          btn.addEventListener('click', function() {
+            try {
+              fetch(API_BASE + '/.netlify/functions/spotlight-click', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slug: item.slug })
+              }).catch(function() {});
+            } catch (err) { /* fire and forget */ }
+          });
+        });
+      }
+
+      function bindCopyButtonById(btnId, codeId) {
+        var btn = document.getElementById(btnId);
+        var code = document.getElementById(codeId);
+        if (!btn || !code) return;
+        btn.addEventListener('click', function() {
+          var text = code.textContent;
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).then(function() {
+              btn.textContent = 'Copied!';
+              setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
+            });
+          }
+        });
+      }
+
+      function initMobileBar() {
+        var bar = document.getElementById('sp-mobilebar');
+        if (!bar) return;
+        var shown = false;
+        window.addEventListener('scroll', function() {
+          var shouldShow = window.scrollY > 200;
+          if (shouldShow && !shown) { bar.classList.add('visible'); shown = true; }
+          else if (!shouldShow && shown) { bar.classList.remove('visible'); shown = false; }
+        }, { passive: true });
       }
 
       function startCountdown(dateStr) {
