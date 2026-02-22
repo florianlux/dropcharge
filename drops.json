@@ -1,0 +1,42 @@
+[
+  {
+    "id": "nintendo15",
+    "title": "Nintendo eShop 15 €",
+    "platform": "Nintendo",
+    "value_eur": 15,
+    "destination_url": "https://www.g2a.com/n/nintendo15_lux",
+    "active": true,
+    "featured": true,
+    "sort_order": 1
+  },
+  {
+    "id": "psn20",
+    "title": "PSN Guthaben 20 €",
+    "platform": "PSN",
+    "value_eur": 20,
+    "destination_url": "https://www.g2a.com/n/psn5_lux",
+    "active": true,
+    "featured": true,
+    "sort_order": 2
+  },
+  {
+    "id": "xbox3m",
+    "title": "Xbox Game Pass 3 Monate",
+    "platform": "Xbox",
+    "value_eur": 30,
+    "destination_url": "https://www.g2a.com/n/xbox_lux1",
+    "active": true,
+    "featured": true,
+    "sort_order": 3
+  },
+  {
+    "id": "steam20",
+    "title": "Steam Guthaben 20 €",
+    "platform": "Steam",
+    "value_eur": 20,
+    "destination_url": "https://www.g2a.com/n/reanimalux",
+    "active": true,
+    "featured": true,
+    "sort_order": 4
+  }
+]
