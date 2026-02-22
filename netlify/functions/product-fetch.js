@@ -106,6 +106,143 @@ function resolveRedirects(urlStr, redirectsLeft = MAX_REDIRECTS) {
   });
 }
 
+/* ── Extract ASIN from Amazon URL ───────────────────── */
+function extractASIN(url) {
+  const m = url.match(/\/(?:dp|gp\/product|gp\/aw\/d|exec\/obidos\/asin)\/([A-Z0-9]{10})/i)
+    || url.match(/(?:^|&|\?)asin=([A-Z0-9]{10})/i)
+    || url.match(/\/([A-Z0-9]{10})(?:[/?&#]|$)/);
+  return m ? m[1].toUpperCase() : null;
+}
+
+/* ── Amazon Creators API (OAuth 2.0 Client Credentials) ── */
+const CREATORS_AUTH_HOST = 'api.amazon.com';
+const CREATORS_AUTH_PATH = '/auth/o2/token';
+
+function hasCreatorsAPI() {
+  return Boolean(
+    process.env.AMAZON_CREATORS_CREDENTIAL_ID &&
+    process.env.AMAZON_CREATORS_CREDENTIAL_SECRET
+  );
+}
+
+// In-memory token cache (per function instance)
+let _creatorsToken = null;
+let _creatorsTokenExpiry = 0;
+
+function getCreatorsToken() {
+  // Return cached token if still valid (with 60 s buffer)
+  if (_creatorsToken && Date.now() < _creatorsTokenExpiry - 60000) {
+    return Promise.resolve(_creatorsToken);
+  }
+
+  const credId = process.env.AMAZON_CREATORS_CREDENTIAL_ID;
+  const credSecret = process.env.AMAZON_CREATORS_CREDENTIAL_SECRET;
+
+  const body = [
+    'grant_type=client_credentials',
+    'client_id=' + encodeURIComponent(credId),
+    'client_secret=' + encodeURIComponent(credSecret),
+    'scope=ProductAdvertisingAPI'
+  ].join('&');
+
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      hostname: CREATORS_AUTH_HOST,
+      path: CREATORS_AUTH_PATH,
+      method: 'POST',
+      timeout: FETCH_TIMEOUT_MS,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': Buffer.byteLength(body),
+      }
+    }, (res) => {
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => {
+        try {
+          const data = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
+          if (data.access_token) {
+            _creatorsToken = data.access_token;
+            _creatorsTokenExpiry = Date.now() + ((data.expires_in || 3600) * 1000);
+            resolve(_creatorsToken);
+          } else {
+            reject(new Error('creators_token_error:' + (data.error || 'no_token')));
+          }
+        } catch (e) { reject(e); }
+      });
+      res.on('error', reject);
+    });
+    req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+    req.on('error', reject);
+    req.write(body);
+    req.end();
+  });
+}
+
+function fetchFromCreatorsAPI(asin) {
+  return getCreatorsToken().then(token => {
+    const partnerTag = process.env.AMAZON_ASSOCIATE_TAG || 'imsk01-21';
+    const apiHost = 'webservices.amazon.de';
+
+    const payload = JSON.stringify({
+      ItemIds: [asin],
+      PartnerTag: partnerTag,
+      PartnerType: 'Associates',
+      Resources: [
+        'ItemInfo.Title',
+        'ItemInfo.Features',
+        'Images.Primary.Large',
+        'Offers.Listings.Price'
+      ]
+    });
+
+    return new Promise((resolve, reject) => {
+      const req = https.request({
+        hostname: apiHost,
+        path: '/paapi5/getitems',
+        method: 'POST',
+        timeout: FETCH_TIMEOUT_MS,
+        headers: {
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json; charset=utf-8',
+          'Content-Length': Buffer.byteLength(payload),
+        }
+      }, (res) => {
+        const chunks = [];
+        res.on('data', c => chunks.push(c));
+        res.on('end', () => {
+          try {
+            const respBody = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
+            if (respBody.Errors || !respBody.ItemsResult || !respBody.ItemsResult.Items || !respBody.ItemsResult.Items.length) {
+              return reject(new Error('creators_api_no_results'));
+            }
+            const item = respBody.ItemsResult.Items[0];
+            const result = {
+              product_title: item.ItemInfo && item.ItemInfo.Title ? item.ItemInfo.Title.DisplayValue : null,
+              product_description: (item.ItemInfo && item.ItemInfo.Features && item.ItemInfo.Features.DisplayValues ? item.ItemInfo.Features.DisplayValues.join(' ').slice(0, 300) : null),
+              product_image_url: item.Images && item.Images.Primary && item.Images.Primary.Large ? item.Images.Primary.Large.URL : null,
+              product_price: null,
+              product_currency: null,
+              brand: 'Amazon'
+            };
+            const listing = item.Offers && item.Offers.Listings && item.Offers.Listings[0];
+            if (listing && listing.Price && listing.Price.Amount !== null && listing.Price.Amount !== undefined) {
+              result.product_price = listing.Price.Amount;
+              result.product_currency = listing.Price.Currency || 'EUR';
+            }
+            resolve(result);
+          } catch (e) { reject(e); }
+        });
+        res.on('error', reject);
+      });
+      req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+      req.on('error', reject);
+      req.write(payload);
+      req.end();
+    });
+  });
+}
+
 /* ── Detect source from URL ─────────────────────────── */
 function detectSource(url) {
   try {
@@ -349,19 +486,45 @@ async function handler(event) {
   if (source === 'amazon') {
     data.brand = 'Amazon';
 
-    // Amazon: OG metadata only, no price scraping
-    try {
-      const { html } = await fetchUrl(canonicalUrl);
-      const meta = parseMetadata(html);
-      data.product_title = meta.ogTitle || meta.titleTag || null;
-      data.product_description = (meta.ogDescription || meta.metaDesc || '').slice(0, 300) || null;
-      data.product_image_url = meta.ogImage || null;
-      data.product_price = null;
-      data.product_currency = null;
-      data.confidence = data.product_title ? 'medium' : 'low';
-      steps.push('amazon_og_parsed');
-    } catch (e) {
-      steps.push('amazon_fetch_failed:' + e.message);
+    // Try Creators API first (if configured)
+    if (hasCreatorsAPI()) {
+      const asin = extractASIN(canonicalUrl);
+      if (asin) {
+        steps.push('asin:' + asin);
+        try {
+          const apiResult = await fetchFromCreatorsAPI(asin);
+          data.product_title = apiResult.product_title;
+          data.product_description = apiResult.product_description;
+          data.product_image_url = apiResult.product_image_url;
+          data.product_price = apiResult.product_price;
+          data.product_currency = apiResult.product_currency;
+          data.confidence = 'high';
+          steps.push('creators_api_success');
+        } catch (e) {
+          steps.push('creators_api_failed:' + e.message);
+        }
+      } else {
+        steps.push('asin_not_found');
+      }
+    } else {
+      steps.push('creators_api_not_configured');
+    }
+
+    // Fallback: OG metadata from HTML (no price scraping)
+    if (!data.product_title) {
+      try {
+        const { html } = await fetchUrl(canonicalUrl);
+        const meta = parseMetadata(html);
+        data.product_title = meta.ogTitle || meta.titleTag || null;
+        data.product_description = (meta.ogDescription || meta.metaDesc || '').slice(0, 300) || null;
+        data.product_image_url = meta.ogImage || null;
+        data.product_price = null;
+        data.product_currency = null;
+        data.confidence = data.product_title ? 'medium' : 'low';
+        steps.push('amazon_og_fallback');
+      } catch (e) {
+        steps.push('amazon_fetch_failed:' + e.message);
+      }
     }
   } else {
     // Temu, G2A, Generic
