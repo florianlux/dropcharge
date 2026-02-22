@@ -654,6 +654,7 @@ function statCard(label, value) {
 }
 
 // ── G2A URL normalisation (client-side) ────────────────
+// Mirrors netlify/functions/_lib/affiliates.js for browser use (no build step).
 function isG2AUrl(input) {
   try {
     const raw = String(input || '').trim();

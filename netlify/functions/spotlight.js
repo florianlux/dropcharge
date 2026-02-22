@@ -13,7 +13,7 @@ function slugify(value) {
 }
 
 function normalizeUrl(url) {
-  return url ? normalizeDealUrlByProvider(url) : null;
+  return url ? normalizeDealUrlByProvider(url, null, process.env) : null;
 }
 
 function sanitizePayload(payload = {}) {
