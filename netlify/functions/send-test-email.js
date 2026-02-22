@@ -87,7 +87,7 @@ async function handler(event) {
     };
   }
 
-  const subject = rendered.subject || templateId;
+  const subject = rendered.subject;
   const html = rendered.html;
 
   const emailBody = {
