@@ -1047,7 +1047,7 @@ const SPOTLIGHT_TEMPLATES = {
     badge_text: 'LIMITED • DEAL',
     cta_text: 'Jetzt sichern →',
     subtitle: 'Viral Deal – nur kurz verfügbar. Link öffnen & Angebot checken.',
-    gradient: 'linear-gradient(135deg, #f97316, #a855f7)',
+    // No gradient — temu theme drives its own layout and color scheme
   },
   amazon: {
     theme: 'amazon',

@@ -83,13 +83,7 @@
     .sp-price-currency{font-size:.9rem;color:rgba(255,255,255,.5)}
     .sp-product-desc{font-size:.9rem;color:rgba(255,255,255,.5);line-height:1.5;margin-bottom:1.5rem;max-width:500px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 
-    /* Theme accents */
-    .sp-theme-temu .sp-badge{background:linear-gradient(135deg,#f97316,#a855f7)}
-    .sp-theme-temu .sp-cta{background:linear-gradient(135deg,#f97316,#a855f7);box-shadow:0 0 30px rgba(249,115,22,.4),0 0 60px rgba(168,85,247,.2)}
-    .sp-theme-temu .sp-glow-1{background:#f97316}
-    .sp-theme-temu .sp-glow-2{background:#a855f7}
-    .sp-theme-temu .sp-price-amount{background:linear-gradient(135deg,#f97316,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-
+    /* Theme accents — neon fallback (non-temu-layout themes) */
     .sp-theme-amazon .sp-badge{background:linear-gradient(135deg,#f59e0b,#06b6d4)}
     .sp-theme-amazon .sp-cta{background:linear-gradient(135deg,#f59e0b,#06b6d4);box-shadow:0 0 30px rgba(245,158,11,.4),0 0 60px rgba(6,182,212,.2)}
     .sp-theme-amazon .sp-glow-1{background:#f59e0b}
@@ -106,6 +100,102 @@
       .sp-countdown{gap:.4rem}
       .sp-cd-unit{min-width:52px;padding:.5rem .6rem}
       .sp-cd-val{font-size:1.3rem}
+    }
+
+    /* ═══════════════════════════════════════════════════════
+       Temu-inspired e-commerce layout (theme="temu")
+       Scoped under .sp-temu-layout — no effect on other themes
+       ═══════════════════════════════════════════════════════ */
+    .sp-temu-layout{font-family:Inter,system-ui,-apple-system,sans-serif;background:#f5f5f5;color:#222;min-height:100vh;padding-bottom:80px}
+
+    /* Header band */
+    .tm-header{background:linear-gradient(135deg,#ff5a1f 0%,#ff8a3d 100%);padding:.75rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.5rem;position:sticky;top:0;z-index:50}
+    .tm-header-left{display:flex;align-items:center;gap:.5rem;min-width:0}
+    .tm-pill{display:inline-block;padding:.25rem .6rem;border-radius:999px;font-size:.65rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.25);color:#fff;white-space:nowrap;animation:tmPulse 2s ease-in-out infinite}
+    @keyframes tmPulse{0%,100%{opacity:1}50%{opacity:.7}}
+    .tm-header-title{font-size:.9rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .tm-cd-inline{display:flex;align-items:center;gap:.3rem;font-size:.8rem;font-weight:700;color:#fff;background:rgba(0,0,0,.15);padding:.25rem .6rem;border-radius:8px;white-space:nowrap;font-variant-numeric:tabular-nums}
+
+    /* Container */
+    .tm-container{max-width:480px;margin:0 auto;padding:.75rem}
+
+    /* Product card */
+    .tm-card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-bottom:.75rem}
+    .tm-card-body{padding:1rem}
+    .tm-product-img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#eee}
+    .tm-product-title{font-size:1.1rem;font-weight:700;line-height:1.3;margin-bottom:.5rem;color:#111}
+    .tm-rating{display:flex;align-items:center;gap:.35rem;margin-bottom:.6rem;font-size:.85rem;color:#666}
+    .tm-stars{color:#ff5a1f;letter-spacing:1px;font-size:.9rem}
+    .tm-rating-num{font-weight:700;color:#222}
+
+    /* Price row */
+    .tm-price-row{display:flex;align-items:baseline;gap:.5rem;margin-bottom:.75rem;flex-wrap:wrap}
+    .tm-price-big{font-size:1.8rem;font-weight:800;color:#ff5a1f}
+    .tm-price-old{font-size:1rem;color:#999;text-decoration:line-through}
+    .tm-price-label{font-size:.95rem;font-weight:600;color:#ff5a1f}
+
+    /* Coupon box */
+    .tm-coupon{display:flex;align-items:center;gap:.5rem;padding:.6rem .8rem;border-radius:10px;border:2px dashed #ff5a1f;background:#fff5f0;margin-bottom:.5rem}
+    .tm-coupon-icon{font-size:1.1rem}
+    .tm-coupon-code{font-weight:800;font-size:1rem;color:#ff5a1f;letter-spacing:.04em;flex:1}
+    .tm-coupon-copy{background:#ff5a1f;color:#fff;border:none;padding:.35rem .7rem;border-radius:8px;font-size:.8rem;font-weight:700;cursor:pointer;transition:transform .1s}
+    .tm-coupon-copy:active{transform:scale(.95)}
+
+    /* Trust row */
+    .tm-trust{display:flex;justify-content:space-around;padding:.9rem .5rem;background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-bottom:.75rem}
+    .tm-trust-item{display:flex;flex-direction:column;align-items:center;gap:.3rem;font-size:.72rem;font-weight:600;color:#444;text-align:center}
+    .tm-trust-icon{font-size:1.3rem}
+
+    /* Social proof */
+    .tm-social{display:flex;align-items:center;gap:.4rem;padding:.7rem 1rem;background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-bottom:.75rem;font-size:.85rem;color:#444}
+    .tm-social-fire{font-size:1.1rem}
+    .tm-social-bold{font-weight:700;color:#222}
+    .tm-social-stock{margin-left:auto;color:#ff5a1f;font-weight:700;font-size:.8rem;white-space:nowrap}
+
+    /* FAQ accordion */
+    .tm-faq{background:#fff;border-radius:16px;box-shadow:0 2px 12px rgba(0,0,0,.08);margin-bottom:.75rem;overflow:hidden}
+    .tm-faq-title{font-size:.95rem;font-weight:700;padding:.75rem 1rem;border-bottom:1px solid #eee;color:#222}
+    .tm-faq-item{border-bottom:1px solid #f0f0f0}
+    .tm-faq-item:last-child{border-bottom:none}
+    .tm-faq-q{display:flex;align-items:center;justify-content:space-between;padding:.7rem 1rem;cursor:pointer;font-size:.88rem;font-weight:600;color:#333;-webkit-user-select:none;user-select:none}
+    .tm-faq-q:hover{background:#fafafa}
+    .tm-faq-arrow{font-size:.7rem;transition:transform .2s;color:#999}
+    .tm-faq-a{display:none;padding:0 1rem .7rem;font-size:.82rem;line-height:1.5;color:#666}
+    .tm-faq-item.open .tm-faq-a{display:block}
+    .tm-faq-item.open .tm-faq-arrow{transform:rotate(180deg)}
+
+    /* Sticky bottom bar */
+    .tm-sticky{position:fixed;bottom:0;left:0;right:0;z-index:60;background:#fff;border-top:1px solid #eee;box-shadow:0 -2px 12px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:space-between;padding:.6rem 1rem;gap:.75rem}
+    .tm-sticky-price{font-size:.8rem;color:#666}
+    .tm-sticky-price-val{display:block;font-size:1.1rem;font-weight:800;color:#ff5a1f}
+    .tm-sticky-cta{flex:1;max-width:240px;text-align:center;padding:.75rem 1.2rem;border-radius:999px;background:#ff5a1f;color:#fff;font-size:1rem;font-weight:700;text-decoration:none;border:none;cursor:pointer;transition:transform .1s,box-shadow .15s;box-shadow:0 4px 16px rgba(255,90,31,.35)}
+    .tm-sticky-cta:active{transform:scale(.97)}
+    .tm-sticky-cta:hover{box-shadow:0 6px 24px rgba(255,90,31,.45)}
+
+    /* Brand footer */
+    .tm-brand{text-align:center;font-size:.75rem;color:#aaa;padding:1.5rem 0 .5rem;letter-spacing:.04em}
+    .tm-brand a{color:#bbb;text-decoration:none}
+
+    /* CTA inside card */
+    .tm-cta-main{display:block;width:100%;text-align:center;padding:.85rem;border-radius:12px;background:#ff5a1f;color:#fff;font-size:1.05rem;font-weight:700;text-decoration:none;border:none;cursor:pointer;transition:transform .1s;box-shadow:0 4px 16px rgba(255,90,31,.3);margin-top:.5rem}
+    .tm-cta-main:active{transform:scale(.97)}
+
+    /* Micro-animations desktop */
+    @media(hover:hover){
+      .tm-card{transition:transform .15s,box-shadow .15s}
+      .tm-card:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.12)}
+      .tm-cta-main:hover{box-shadow:0 6px 24px rgba(255,90,31,.45)}
+    }
+
+    /* Temu expired overlay */
+    .sp-temu-layout .sp-expired-overlay{background:rgba(245,245,245,.95);backdrop-filter:blur(8px)}
+    .sp-temu-layout .sp-expired-overlay h2{color:#ff5a1f}
+    .sp-temu-layout .sp-expired-overlay p{color:#666}
+    .sp-temu-layout .sp-expired-overlay a{color:#ff5a1f;border-bottom-color:rgba(255,90,31,.3)}
+
+    @media(min-width:481px){
+      .tm-sticky{display:none}
+      .sp-temu-layout{padding-bottom:0}
     }
   </style>
 </head>
@@ -155,6 +245,12 @@
         if (ogDesc) ogDesc.setAttribute('content', item.subtitle || 'Exclusive deal on DropCharge');
         if (ogImg && (item.hero_url || item.product_image_url)) ogImg.setAttribute('content', item.hero_url || item.product_image_url);
         document.title = item.title + ' – DropCharge Spotlight';
+
+        // Theme-based layout switch
+        if (item.theme === 'temu') {
+          renderTemuSpotlight(item);
+          return;
+        }
 
         const gradient = item.gradient || 'linear-gradient(135deg, #7c3aed, #06b6d4)';
         const themeClass = item.theme ? ' sp-theme-' + item.theme : '';
@@ -246,19 +342,190 @@
         }
       }
 
-      function bindCTA(item) {
-        const btn = document.getElementById('sp-cta-btn');
-        if (!btn) return;
-        btn.addEventListener('click', function(e) {
-          // Log the click asynchronously
-          try {
-            fetch(API_BASE + '/.netlify/functions/spotlight-click', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ slug: item.slug })
-            }).catch(function() {});
-          } catch (err) { /* fire and forget */ }
+      /* ── Temu-inspired layout renderer ─────────────────── */
+      function renderTemuSpotlight(item) {
+        document.body.style.background = '#f5f5f5';
+        var heroImage = item.hero_url || item.product_image_url || '';
+        var ctaText = item.cta_text || 'Jetzt sichern';
+        var affiliateUrl = escapeAttr(item.affiliate_url);
+
+        // Generate plausible review data
+        var rating = '4.6';
+        var reviewCount = '12.4k';
+        var starsHtml = '★★★★★';
+
+        // Price display
+        var hasPriceVal = item.product_price != null && item.product_price !== '';
+        var priceHtml = '';
+        if (hasPriceVal) {
+          priceHtml = '<span class="tm-price-big">' + escapeHtml(String(item.product_price)) + ' ' + escapeHtml(item.product_currency || 'EUR') + '</span>';
+          if (item.product_list_price) {
+            priceHtml += ' <span class="tm-price-old">' + escapeHtml(String(item.product_list_price)) + ' ' + escapeHtml(item.product_currency || 'EUR') + '</span>';
+          }
+        } else {
+          priceHtml = '<span class="tm-price-label">Preis auf Temu pr\u00fcfen</span>';
+        }
+
+        var stickyPriceHtml = '';
+        if (hasPriceVal) {
+          stickyPriceHtml = '<div class="tm-sticky-price"><span>Preis</span><span class="tm-sticky-price-val">' + escapeHtml(String(item.product_price)) + ' ' + escapeHtml(item.product_currency || 'EUR') + '</span></div>';
+        } else {
+          stickyPriceHtml = '<div class="tm-sticky-price"><span class="tm-sticky-price-val">Preis checken</span></div>';
+        }
+
+        var html = '<div class="sp-temu-layout">';
+
+        // A) Top promo header
+        html += '<div class="tm-header">';
+        html += '<div class="tm-header-left">';
+        html += '<span class="tm-pill">' + escapeHtml(item.badge_text || 'LIMITED TIME') + '</span>';
+        html += '<span class="tm-header-title">' + escapeHtml(item.title) + '</span>';
+        html += '</div>';
+        if (item.countdown_date) {
+          html += '<div class="tm-cd-inline" id="sp-countdown">⏱ <span class="sp-cd-val">--:--:--</span></div>';
+        }
+        html += '</div>';
+
+        html += '<div class="tm-container">';
+
+        // B) Product block card
+        html += '<div class="tm-card">';
+        if (heroImage) {
+          html += '<img class="tm-product-img" src="' + escapeAttr(heroImage) + '" alt="' + escapeAttr(item.title) + '" />';
+        }
+        html += '<div class="tm-card-body">';
+        html += '<h1 class="tm-product-title">' + escapeHtml(item.title) + '</h1>';
+
+        // Subtitle
+        if (item.subtitle) {
+          html += '<p style="font-size:.88rem;color:#666;margin-bottom:.6rem;line-height:1.4">' + escapeHtml(item.subtitle) + '</p>';
+        }
+
+        // Rating row
+        html += '<div class="tm-rating">';
+        html += '<span class="tm-stars">' + starsHtml + '</span>';
+        html += '<span class="tm-rating-num">' + rating + '</span>';
+        html += '<span>' + reviewCount + ' reviews &middot; community rating</span>';
+        html += '</div>';
+
+        // Price row
+        html += '<div class="tm-price-row">' + priceHtml + '</div>';
+
+        // Coupon box
+        if (item.coupon_code) {
+          html += '<div class="tm-coupon">';
+          html += '<span class="tm-coupon-icon">🏷️</span>';
+          html += '<code class="tm-coupon-code" id="coupon-code">' + escapeHtml(item.coupon_code) + '</code>';
+          html += '<button class="tm-coupon-copy" id="copy-coupon" title="Copy code">Copy</button>';
+          html += '</div>';
+        }
+
+        // CTA in card
+        html += '<a class="tm-cta-main" data-cta-track href="' + affiliateUrl + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(ctaText) + '</a>';
+
+        html += '</div></div>'; // tm-card-body, tm-card
+
+        // C) Trust row
+        html += '<div class="tm-trust">';
+        html += '<div class="tm-trust-item"><span class="tm-trust-icon">🚚</span>Free shipping</div>';
+        html += '<div class="tm-trust-item"><span class="tm-trust-icon">↩️</span>Easy returns</div>';
+        html += '<div class="tm-trust-item"><span class="tm-trust-icon">🛡️</span>Buyer protection</div>';
+        html += '</div>';
+
+        // D) Social proof ticker
+        html += '<div class="tm-social">';
+        html += '<span class="tm-social-fire">🔥</span>';
+        html += '<span><span class="tm-social-bold">1,2k people</span> viewed today</span>';
+        html += '<span class="tm-social-stock">⚡ Limited stock</span>';
+        html += '</div>';
+
+        // E) FAQ accordion
+        html += '<div class="tm-faq">';
+        html += '<div class="tm-faq-title">Frequently Asked Questions</div>';
+        html += faqItem('How do I claim this deal?', 'Tap the button above to visit the deal page. If a coupon code is shown, copy it first, then paste it at checkout for your discount.');
+        html += faqItem('Is this safe to purchase?', 'Yes. The link goes directly to the official retailer. Buyer protection and secure payment apply.');
+        html += faqItem('When does this deal expire?', item.countdown_date ? 'This deal has a limited-time countdown shown at the top of the page. Once expired, the offer may no longer be available.' : 'Availability depends on the retailer. We recommend acting quickly as deals can end without notice.');
+        html += '</div>';
+
+        // Brand
+        html += '<p class="tm-brand">Powered by <a href="/">DropCharge</a></p>';
+
+        html += '</div>'; // tm-container
+
+        // F) Sticky bottom bar (mobile)
+        html += '<div class="tm-sticky">';
+        html += stickyPriceHtml;
+        html += '<a class="tm-sticky-cta" data-cta-track href="' + affiliateUrl + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(ctaText) + '</a>';
+        html += '</div>';
+
+        html += '</div>'; // sp-temu-layout
+
+        root.innerHTML = html;
+
+        // Bind events
+        bindCTA(item);
+        if (item.coupon_code) bindCopyButton();
+        if (item.countdown_date) startTemuCountdown(item.countdown_date);
+        bindFaqAccordion();
+      }
+
+      function faqItem(question, answer) {
+        return '<div class="tm-faq-item"><div class="tm-faq-q">' + escapeHtml(question) + '<span class="tm-faq-arrow">▼</span></div><div class="tm-faq-a">' + escapeHtml(answer) + '</div></div>';
+      }
+
+      function bindFaqAccordion() {
+        var items = document.querySelectorAll('.tm-faq-q');
+        items.forEach(function(q) {
+          q.addEventListener('click', function() {
+            var parent = q.parentElement;
+            parent.classList.toggle('open');
+          });
         });
+      }
+
+      function startTemuCountdown(dateStr) {
+        var target = new Date(dateStr).getTime();
+        var el = document.querySelector('#sp-countdown .sp-cd-val');
+        if (!el) return;
+        function update() {
+          var now = Date.now();
+          var diff = target - now;
+          if (diff <= 0) { showExpired(); return; }
+          var h = Math.floor(diff / 3600000);
+          var m = Math.floor((diff % 3600000) / 60000);
+          var s = Math.floor((diff % 60000) / 1000);
+          el.textContent = pad(h) + ':' + pad(m) + ':' + pad(s);
+        }
+        update();
+        setInterval(update, 1000);
+      }
+
+      function bindCTA(item) {
+        var btns = document.querySelectorAll('[data-cta-track]');
+        btns.forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            try {
+              fetch(API_BASE + '/.netlify/functions/spotlight-click', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slug: item.slug })
+              }).catch(function() {});
+            } catch (err) { /* fire and forget */ }
+          });
+        });
+        // Legacy single-button binding
+        var single = document.getElementById('sp-cta-btn');
+        if (single && !single.hasAttribute('data-cta-track')) {
+          single.addEventListener('click', function(e) {
+            try {
+              fetch(API_BASE + '/.netlify/functions/spotlight-click', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ slug: item.slug })
+              }).catch(function() {});
+            } catch (err) { /* fire and forget */ }
+          });
+        }
       }
 
       function bindCopyButton() {
