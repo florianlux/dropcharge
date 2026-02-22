@@ -106,6 +106,7 @@ create table if not exists public.newsletter_subscribers (
   status text default 'active',
   created_at timestamptz default now(),
   unsubscribed_at timestamptz,
+  unsubscribe_token text,
   source text,
   utm_source text,
   utm_medium text,
@@ -177,3 +178,23 @@ create table if not exists public.admin_audit_log (
 
 create index if not exists admin_login_attempts_ip_created_idx on public.admin_login_attempts (ip, created_at desc);
 create index if not exists admin_sessions_expires_idx on public.admin_sessions (expires_at);
+
+-- Email logs for tracking all sent emails (welcome, campaigns, etc.)
+create table if not exists public.email_logs (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz default now(),
+  recipient text not null,
+  template text,
+  subject text,
+  status text default 'queued',
+  error text,
+  sent_at timestamptz
+);
+
+create index if not exists email_logs_created_idx on public.email_logs (created_at desc);
+create index if not exists email_logs_recipient_idx on public.email_logs (recipient);
+create index if not exists email_logs_status_idx on public.email_logs (status);
+
+-- Add unsubscribe_token to existing newsletter_subscribers tables
+alter table if exists public.newsletter_subscribers
+  add column if not exists unsubscribe_token text;

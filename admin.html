@@ -22,6 +22,7 @@
       <nav class="admin-nav" role="tablist">
         <button class="nav-link active" data-tab="dashboard">Dashboard</button>
         <button class="nav-link" data-tab="newsletter">Newsletter</button>
+        <button class="nav-link" data-tab="email">Email</button>
         <button class="nav-link" data-tab="campaigns">Campaigns</button>
         <button class="nav-link" data-tab="tracking">Tracking Links</button>
         <button class="nav-link" data-tab="analytics">Analytics</button>
@@ -89,6 +90,100 @@
           </div>
           <div class="table-body" id="subscriber-rows">
             <p class="empty">Loading subscribers…</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Email Hub -->
+      <section class="tab-panel" data-panel="email">
+        <div class="panel-head">
+          <h2>Email</h2>
+        </div>
+
+        <!-- Audience Overview -->
+        <div class="card">
+          <h3>📊 Audience Overview</h3>
+          <div class="stats-row">
+            <div class="stat-card">
+              <span class="stat-label">Active</span>
+              <strong class="stat-value" id="email-stat-active">–</strong>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Unsubscribed</span>
+              <strong class="stat-value" id="email-stat-unsub">–</strong>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Emails Sent (Total)</span>
+              <strong class="stat-value" id="email-stat-sent">–</strong>
+            </div>
+            <div class="stat-card">
+              <span class="stat-label">Failed</span>
+              <strong class="stat-value" id="email-stat-failed">–</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Templates -->
+        <div class="card">
+          <h3>📧 Templates</h3>
+          <div id="email-templates-list" class="email-templates-grid">
+            <p class="empty">Loading templates…</p>
+          </div>
+        </div>
+
+        <!-- Template Preview -->
+        <div class="card" id="email-template-preview-card" style="display:none;">
+          <h3>Preview: <span id="email-preview-name"></span></h3>
+          <div class="email-preview-frame-wrap">
+            <iframe id="email-preview-frame" class="email-preview-frame" sandbox="allow-same-origin"></iframe>
+          </div>
+        </div>
+
+        <!-- Send Test Email -->
+        <div class="card">
+          <h3>🧪 Send Test Email</h3>
+          <form id="email-test-form" class="card-form" style="border:none;padding:0;">
+            <div class="form-row">
+              <label class="form-field">
+                <span>Template</span>
+                <select id="email-test-template">
+                  <option value="welcome">Welcome Email</option>
+                  <option value="flash_deal">Flash Deal</option>
+                </select>
+              </label>
+              <label class="form-field">
+                <span>Recipient</span>
+                <input type="email" id="email-test-recipient" placeholder="test@example.com" required />
+              </label>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn primary">Send Test</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Email Logs -->
+        <div class="card">
+          <h3>📋 Email Logs</h3>
+          <div class="filter-bar">
+            <select id="email-log-status-filter">
+              <option value="">All</option>
+              <option value="sent">Sent</option>
+              <option value="failed">Failed</option>
+            </select>
+            <button class="btn mini ghost" id="email-log-refresh">Refresh</button>
+          </div>
+          <div class="data-table" id="email-log-table">
+            <div class="table-head email-log-head">
+              <span>Recipient</span>
+              <span>Template</span>
+              <span>Subject</span>
+              <span>Status</span>
+              <span>Time</span>
+            </div>
+            <div class="table-body" id="email-log-rows">
+              <p class="empty">Loading logs…</p>
+            </div>
           </div>
         </div>
       </section>

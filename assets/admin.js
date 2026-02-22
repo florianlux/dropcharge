@@ -80,6 +80,7 @@ function initTabs() {
 function onTabActivate(tab) {
   if (tab === 'dashboard') loadDashboard();
   if (tab === 'newsletter') loadSubscribers();
+  if (tab === 'email') loadEmailTab();
   if (tab === 'analytics') loadAnalytics();
 }
 
@@ -244,6 +245,130 @@ function initCampaigns() {
   }
 }
 
+// ── Email Hub ──────────────────────────────────────────
+async function loadEmailTab() {
+  loadEmailAudience();
+  loadEmailTemplates();
+  loadEmailLogs();
+}
+
+async function loadEmailAudience() {
+  try {
+    const [activeData, unsubData, sentData, failedData] = await Promise.all([
+      apiGet('admin-list-subscribers?limit=1&status=active').catch(() => null),
+      apiGet('admin-list-subscribers?limit=1&status=unsubscribed').catch(() => null),
+      apiGet('admin-email-logs?limit=1&status=sent').catch(() => null),
+      apiGet('admin-email-logs?limit=1&status=failed').catch(() => null)
+    ]);
+    const setVal = (id, data) => {
+      const el = $(`#${id}`);
+      if (el && data) el.textContent = data.total ?? '–';
+    };
+    setVal('email-stat-active', activeData);
+    setVal('email-stat-unsub', unsubData);
+    setVal('email-stat-sent', sentData);
+    setVal('email-stat-failed', failedData);
+  } catch { /* errors shown via toast */ }
+}
+
+async function loadEmailTemplates() {
+  const container = $('#email-templates-list');
+  if (!container) return;
+  try {
+    const data = await apiGet('admin-email-templates');
+    if (!data.templates || data.templates.length === 0) {
+      container.innerHTML = '<p class="empty">No templates found.</p>';
+      return;
+    }
+    container.innerHTML = data.templates.map(tpl =>
+      `<div class="template-card" data-template="${escapeHtml(tpl.key)}">
+        <strong>${escapeHtml(tpl.name)}</strong>
+        <p class="template-desc">${escapeHtml(tpl.description)}</p>
+        <button class="btn mini ghost" data-preview="${escapeHtml(tpl.key)}">Preview</button>
+      </div>`
+    ).join('');
+    container.querySelectorAll('[data-preview]').forEach(btn => {
+      btn.addEventListener('click', () => previewTemplate(btn.dataset.preview));
+    });
+  } catch {
+    container.innerHTML = '<p class="empty">Failed to load templates.</p>';
+  }
+}
+
+async function previewTemplate(key) {
+  const card = $('#email-template-preview-card');
+  const nameEl = $('#email-preview-name');
+  const frame = $('#email-preview-frame');
+  if (!card || !frame) return;
+  try {
+    const data = await apiPost('admin-email-templates', { template: key });
+    if (nameEl) nameEl.textContent = key;
+    card.style.display = 'block';
+    const doc = frame.contentDocument || frame.contentWindow.document;
+    doc.open();
+    doc.write(data.html);
+    doc.close();
+  } catch { /* toast shown */ }
+}
+
+async function loadEmailLogs() {
+  const rows = $('#email-log-rows');
+  if (!rows) return;
+  rows.innerHTML = '<p class="empty">Loading…</p>';
+  const status = ($('#email-log-status-filter') || {}).value || '';
+  try {
+    const params = new URLSearchParams({ limit: '50' });
+    if (status) params.set('status', status);
+    const data = await apiGet(`admin-email-logs?${params}`);
+    if (!data.items || data.items.length === 0) {
+      rows.innerHTML = '<p class="empty">No email logs found.</p>';
+      return;
+    }
+    rows.innerHTML = data.items.map(log => {
+      const time = log.created_at ? new Date(log.created_at).toLocaleString() : '–';
+      const statusClass = log.status === 'sent' ? 'status-active' : log.status === 'failed' ? 'status-bounced' : '';
+      return `<div class="table-row">
+        <span>${escapeHtml(log.recipient)}</span>
+        <span>${escapeHtml(log.template || '–')}</span>
+        <span>${escapeHtml(log.subject || '–')}</span>
+        <span class="${statusClass}">${escapeHtml(log.status || '–')}</span>
+        <span>${time}</span>
+      </div>`;
+    }).join('');
+  } catch {
+    rows.innerHTML = '<p class="empty">Failed to load logs.</p>';
+  }
+}
+
+function initEmail() {
+  const refreshBtn = $('#email-log-refresh');
+  if (refreshBtn) refreshBtn.addEventListener('click', loadEmailLogs);
+  const statusFilter = $('#email-log-status-filter');
+  if (statusFilter) statusFilter.addEventListener('change', loadEmailLogs);
+
+  const testForm = $('#email-test-form');
+  if (testForm) {
+    testForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const template = ($('#email-test-template') || {}).value || 'welcome';
+      const recipient = ($('#email-test-recipient') || {}).value || '';
+      if (!recipient) { showToast('Enter a recipient email.', 'error'); return; }
+      try {
+        // Render the template first
+        const tplData = await apiPost('admin-email-templates', { template });
+        // Send via campaign endpoint as test
+        await apiPost('admin-send-campaign', {
+          subject: tplData.subject,
+          html: tplData.html,
+          testEmail: recipient
+        });
+        showToast(`Test email (${template}) sent to ${recipient}.`);
+        loadEmailLogs();
+      } catch { /* toast shown */ }
+    });
+  }
+}
+
 // ── Tracking Link Generator ────────────────────────────
 function initTracking() {
   const form = $('#tracking-form');
@@ -360,6 +485,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTabs();
   initLogout();
   initNewsletter();
+  initEmail();
   initCampaigns();
   initTracking();
   loadDashboard();
