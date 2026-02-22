@@ -391,13 +391,9 @@ function initEmail() {
       const recipient = ($('#email-test-recipient') || {}).value || '';
       if (!recipient) { showToast('Enter a recipient email.', 'error'); return; }
       try {
-        // Render the template first
-        const tplData = await apiPost('admin-email-templates', { template });
-        // Send via campaign endpoint as test
-        const result = await apiPost('admin-send-campaign', {
-          subject: tplData.subject,
-          html: tplData.html,
-          testEmail: recipient
+        const result = await apiPost('send-test-email', {
+          to: recipient,
+          templateId: template
         });
         if (result.warning === 'log_insert_failed') {
           showToast(`Test email sent to ${recipient}. (Logs unavailable — run migration)`);
