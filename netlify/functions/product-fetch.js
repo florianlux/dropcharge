@@ -101,7 +101,7 @@ function resolveRedirects(urlStr, redirectsLeft = MAX_REDIRECTS) {
     req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
     req.on('error', () => {
       // HEAD may fail, fall back to GET-based resolve
-      resolve(fetchUrl(urlStr, redirectsLeft).then(r => r.finalUrl));
+      fetchUrl(urlStr, redirectsLeft).then(r => resolve(r.finalUrl)).catch(reject);
     });
     req.end();
   });
@@ -152,6 +152,7 @@ async function fetchFromPAAPI(asin) {
   const partnerTag = process.env.AMAZON_PAAPI_PARTNER_TAG;
   const host = process.env.AMAZON_PAAPI_HOST || 'webservices.amazon.de';
   const region = process.env.AMAZON_PAAPI_REGION || 'eu-west-1';
+  const amzTarget = 'com.amazon.paapi5.v1.ProductAdvertisingAPIv1.GetItems';
 
   const payload = JSON.stringify({
     ItemIds: [asin],
@@ -172,7 +173,7 @@ async function fetchFromPAAPI(asin) {
   const endpoint = '/paapi5/getitems';
   const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
 
-  const canonicalHeaders = `content-encoding:amz-1.0\ncontent-type:application/json; charset=utf-8\nhost:${host}\nx-amz-date:${amzDate}\nx-amz-target:com.amazon.paapi5.v1.ProductAdvertisingAPIv1.GetItems\n`;
+  const canonicalHeaders = `content-encoding:amz-1.0\ncontent-type:application/json; charset=utf-8\nhost:${host}\nx-amz-date:${amzDate}\nx-amz-target:${amzTarget}\n`;
   const signedHeaders = 'content-encoding;content-type;host;x-amz-date;x-amz-target';
   const payloadHash = crypto.createHash('sha256').update(payload).digest('hex');
   const canonicalRequest = `POST\n${endpoint}\n\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
@@ -192,7 +193,7 @@ async function fetchFromPAAPI(asin) {
         'content-type': 'application/json; charset=utf-8',
         'host': host,
         'x-amz-date': amzDate,
-        'x-amz-target': 'com.amazon.paapi5.v1.ProductAdvertisingAPIv1.GetItems',
+        'x-amz-target': amzTarget,
         'Authorization': authHeader
       }
     }, (res) => {
@@ -231,9 +232,15 @@ async function fetchFromPAAPI(asin) {
 }
 
 /* ── HTML meta-tag parser ────────────────────────── */
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function getContent(html, attr, val) {
-  const re = new RegExp(`<meta[^>]+(?:${attr})\\s*=\\s*["']${val}["'][^>]+content\\s*=\\s*["']([^"']+)["']`, 'i');
-  const re2 = new RegExp(`<meta[^>]+content\\s*=\\s*["']([^"']+)["'][^>]+(?:${attr})\\s*=\\s*["']${val}["']`, 'i');
+  const a = escapeRegex(attr);
+  const v = escapeRegex(val);
+  const re = new RegExp(`<meta[^>]+(?:${a})\\s*=\\s*["']${v}["'][^>]+content\\s*=\\s*["']([^"']+)["']`, 'i');
+  const re2 = new RegExp(`<meta[^>]+content\\s*=\\s*["']([^"']+)["'][^>]+(?:${a})\\s*=\\s*["']${v}["']`, 'i');
   const m = html.match(re) || html.match(re2);
   return m ? m[1].trim() : null;
 }

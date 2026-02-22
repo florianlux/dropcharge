@@ -980,6 +980,7 @@ function populateSpotlightForm(item) {
   setVal('spotlight-cta', item.cta_text);
   setVal('spotlight-logo-url', item.logo_url);
   setVal('spotlight-hero-url', item.hero_url);
+  setVal('spotlight-theme', item.theme);
   if (item.gradient) {
     const gradientSelect = $('#spotlight-gradient');
     if (gradientSelect) {
@@ -1020,6 +1021,8 @@ function resetSpotlightForm() {
   const form = $('#spotlight-form');
   if (form) form.reset();
   $('#spotlight-edit-id').value = '';
+  const themeEl = $('#spotlight-theme');
+  if (themeEl) themeEl.value = '';
   const formTitle = $('#spotlight-form-title');
   if (formTitle) formTitle.textContent = '➕ Create Spotlight Page';
   const saveBtn = $('#spotlight-save-btn');
