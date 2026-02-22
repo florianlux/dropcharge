@@ -101,6 +101,7 @@ function onTabActivate(tab) {
   if (tab === 'newsletter') loadSubscribers();
   if (tab === 'email') loadEmailTab();
   if (tab === 'drops') loadDrops();
+  if (tab === 'spotlight') loadSpotlights();
   if (tab === 'analytics') loadAnalytics();
 }
 
@@ -850,6 +851,223 @@ function initDrops() {
   }
 }
 
+// ── Spotlight Manager ───────────────────────────────────
+let spotlightItems = [];
+
+async function loadSpotlights() {
+  const rows = $('#spotlight-rows');
+  if (!rows) return;
+  rows.innerHTML = '<p class="empty">Loading…</p>';
+  try {
+    const data = await apiGet('spotlight-create');
+    spotlightItems = data.items || [];
+    updateSpotlightStats();
+    if (spotlightItems.length === 0) {
+      rows.innerHTML = '<p class="empty">No spotlight pages yet.</p>';
+      return;
+    }
+    rows.innerHTML = spotlightItems.map(s => {
+      const activeClass = s.is_active ? 'status-active' : 'status-unsubscribed';
+      const activeLabel = s.is_active ? 'Yes' : 'No';
+      return `<div class="table-row">
+        <span><strong>${escapeHtml(s.title)}</strong></span>
+        <span>${escapeHtml(s.brand || '–')}</span>
+        <span style="font-size:.8rem;">${escapeHtml(s.slug)}</span>
+        <span><strong>${s.clicks || 0}</strong></span>
+        <span class="${activeClass}">${activeLabel}</span>
+        <span>
+          <button class="btn mini ghost" data-edit-spotlight="${escapeHtml(s.id)}">Edit</button>
+          <button class="btn mini ghost" data-toggle-spotlight="${escapeHtml(s.id)}" data-active="${s.is_active}">
+            ${s.is_active ? 'Disable' : 'Enable'}
+          </button>
+          <button class="btn mini ghost" data-copy-spotlight="${escapeHtml(s.slug)}">Copy URL</button>
+          <button class="btn mini ghost" data-preview-spotlight="${escapeHtml(s.slug)}">Preview</button>
+          <button class="btn mini ghost" data-delete-spotlight="${escapeHtml(s.id)}">Delete</button>
+        </span>
+      </div>`;
+    }).join('');
+
+    // Bind edit buttons
+    rows.querySelectorAll('[data-edit-spotlight]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const item = spotlightItems.find(s => s.id === btn.dataset.editSpotlight);
+        if (item) populateSpotlightForm(item);
+      });
+    });
+    // Bind toggle buttons
+    rows.querySelectorAll('[data-toggle-spotlight]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const isActive = btn.dataset.active === 'true';
+        const item = spotlightItems.find(s => s.id === btn.dataset.toggleSpotlight);
+        if (!item) return;
+        try {
+          await apiPost('spotlight-create', {
+            id: item.id,
+            title: item.title,
+            affiliate_url: item.affiliate_url,
+            slug: item.slug,
+            is_active: !isActive
+          });
+          showToast(`Spotlight "${item.title}" ${!isActive ? 'enabled' : 'disabled'}.`);
+          loadSpotlights();
+        } catch { /* toast shown */ }
+      });
+    });
+    // Bind copy URL buttons
+    rows.querySelectorAll('[data-copy-spotlight]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const url = `${window.location.origin}/spotlight/${btn.dataset.copySpotlight}`;
+        navigator.clipboard.writeText(url).then(
+          () => showToast('Spotlight URL copied!'),
+          () => showToast('Copy failed.', 'error')
+        );
+      });
+    });
+    // Bind preview buttons
+    rows.querySelectorAll('[data-preview-spotlight]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        window.open(`/spotlight/${btn.dataset.previewSpotlight}`, '_blank');
+      });
+    });
+    // Bind delete buttons
+    rows.querySelectorAll('[data-delete-spotlight]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Delete this spotlight page?')) return;
+        try {
+          await api('spotlight-create', {
+            method: 'DELETE',
+            body: JSON.stringify({ id: btn.dataset.deleteSpotlight })
+          });
+          showToast('Spotlight deleted.');
+          loadSpotlights();
+        } catch { /* toast shown */ }
+      });
+    });
+  } catch {
+    rows.innerHTML = '<p class="empty">Failed to load spotlights.</p>';
+  }
+}
+
+function updateSpotlightStats() {
+  const totalEl = $('#spotlight-stat-total');
+  const activeEl = $('#spotlight-stat-active');
+  const clicksEl = $('#spotlight-stat-clicks');
+  if (totalEl) totalEl.textContent = spotlightItems.length;
+  if (activeEl) activeEl.textContent = spotlightItems.filter(s => s.is_active).length;
+  if (clicksEl) clicksEl.textContent = spotlightItems.reduce((sum, s) => sum + (s.clicks || 0), 0);
+}
+
+function populateSpotlightForm(item) {
+  const setVal = (id, val) => { const el = $(`#${id}`); if (el) el.value = val ?? ''; };
+  $('#spotlight-edit-id').value = item.id || '';
+  setVal('spotlight-title', item.title);
+  setVal('spotlight-slug', item.slug);
+  setVal('spotlight-subtitle', item.subtitle);
+  setVal('spotlight-brand', item.brand);
+  setVal('spotlight-badge', item.badge_text);
+  setVal('spotlight-affiliate-url', item.affiliate_url);
+  setVal('spotlight-coupon', item.coupon_code);
+  setVal('spotlight-cta', item.cta_text);
+  setVal('spotlight-logo-url', item.logo_url);
+  setVal('spotlight-hero-url', item.hero_url);
+  if (item.gradient) {
+    const gradientSelect = $('#spotlight-gradient');
+    if (gradientSelect) {
+      // Try to find the matching option, otherwise keep default
+      const opts = gradientSelect.options;
+      for (let i = 0; i < opts.length; i++) {
+        if (opts[i].value === item.gradient) {
+          gradientSelect.selectedIndex = i;
+          break;
+        }
+      }
+    }
+  }
+  if (item.countdown_date) {
+    const cdEl = $('#spotlight-countdown');
+    if (cdEl) {
+      // Convert ISO to datetime-local format
+      const d = new Date(item.countdown_date);
+      cdEl.value = d.toISOString().slice(0, 16);
+    }
+  }
+  const activeEl = $('#spotlight-active');
+  if (activeEl) activeEl.checked = item.is_active !== false;
+
+  // Update form title and button
+  const formTitle = $('#spotlight-form-title');
+  if (formTitle) formTitle.textContent = '✏️ Edit Spotlight Page';
+  const saveBtn = $('#spotlight-save-btn');
+  if (saveBtn) saveBtn.textContent = 'Update Spotlight';
+  const previewBtn = $('#spotlight-preview-btn');
+  if (previewBtn && item.slug) {
+    previewBtn.style.display = 'inline-flex';
+    previewBtn.onclick = () => window.open(`/spotlight/${item.slug}`, '_blank');
+  }
+}
+
+function resetSpotlightForm() {
+  const form = $('#spotlight-form');
+  if (form) form.reset();
+  $('#spotlight-edit-id').value = '';
+  const formTitle = $('#spotlight-form-title');
+  if (formTitle) formTitle.textContent = '➕ Create Spotlight Page';
+  const saveBtn = $('#spotlight-save-btn');
+  if (saveBtn) saveBtn.textContent = 'Create Spotlight';
+  const previewBtn = $('#spotlight-preview-btn');
+  if (previewBtn) previewBtn.style.display = 'none';
+}
+
+function initSpotlight() {
+  const form = $('#spotlight-form');
+  const resetBtn = $('#spotlight-reset');
+
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const editId = ($('#spotlight-edit-id') || {}).value || '';
+      const title = ($('#spotlight-title') || {}).value || '';
+      const slug = ($('#spotlight-slug') || {}).value || '';
+      const subtitle = ($('#spotlight-subtitle') || {}).value || '';
+      const brand = ($('#spotlight-brand') || {}).value || '';
+      const badge_text = ($('#spotlight-badge') || {}).value || '';
+      const affiliate_url = ($('#spotlight-affiliate-url') || {}).value || '';
+      const coupon_code = ($('#spotlight-coupon') || {}).value || '';
+      const cta_text = ($('#spotlight-cta') || {}).value || '';
+      const logo_url = ($('#spotlight-logo-url') || {}).value || '';
+      const hero_url = ($('#spotlight-hero-url') || {}).value || '';
+      const gradient = ($('#spotlight-gradient') || {}).value || '';
+      const countdown_raw = ($('#spotlight-countdown') || {}).value || '';
+      const is_active = ($('#spotlight-active') || {}).checked !== false;
+
+      if (!title || !affiliate_url) {
+        showToast('Title and Affiliate URL are required.', 'error');
+        return;
+      }
+
+      const payload = {
+        title, subtitle, brand, affiliate_url, coupon_code,
+        gradient, logo_url, hero_url, badge_text, cta_text, is_active
+      };
+      if (slug) payload.slug = slug;
+      if (editId) payload.id = editId;
+      if (countdown_raw) payload.countdown_date = new Date(countdown_raw).toISOString();
+      else payload.countdown_date = null;
+
+      try {
+        const result = await apiPost('spotlight-create', payload);
+        showToast(editId ? 'Spotlight updated!' : `Spotlight "${title}" created!`);
+        resetSpotlightForm();
+        loadSpotlights();
+      } catch { /* toast shown */ }
+    });
+  }
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', resetSpotlightForm);
+  }
+}
+
 // ── Init ───────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   initTabs();
@@ -859,6 +1077,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initCampaigns();
   initDeals();
   initDrops();
+  initSpotlight();
   initTracking();
   initBannerSettings();
   loadDashboard();

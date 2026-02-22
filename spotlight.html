@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DropCharge Spotlight</title>
+  <meta name="robots" content="index, follow" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="DropCharge Spotlight" id="og-title" />
+  <meta property="og:description" content="Exclusive deal – grab it before it's gone!" id="og-desc" />
+  <meta property="og:image" content="" id="og-image" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Space Grotesk',system-ui,sans-serif;background:#050505;color:#f5f5f5;min-height:100vh;overflow-x:hidden}
+
+    /* Loading state */
+    .sp-loading{display:flex;align-items:center;justify-content:center;min-height:100vh;font-size:1.1rem;color:#888}
+    .sp-error{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:1rem;text-align:center;padding:2rem}
+    .sp-error h1{font-size:2rem;background:linear-gradient(135deg,#7c3aed,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .sp-error a{color:#a78bfa;text-decoration:none;border-bottom:1px solid rgba(167,139,250,.3)}
+
+    /* Hero */
+    .sp-hero{position:relative;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem 1.5rem;overflow:hidden}
+    .sp-hero-bg{position:absolute;inset:0;opacity:.35;background-size:cover;background-position:center;transition:transform 0.3s ease}
+    .sp-hero-overlay{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(5,5,5,.2) 0%,rgba(5,5,5,.85) 70%,#050505 100%)}
+    .sp-glow{position:absolute;width:500px;height:500px;border-radius:50%;filter:blur(120px);opacity:.25;pointer-events:none;animation:glowFloat 6s ease-in-out infinite alternate}
+    .sp-glow-1{top:-100px;left:-100px;background:#7c3aed}
+    .sp-glow-2{bottom:-100px;right:-100px;background:#06b6d4}
+    @keyframes glowFloat{0%{transform:translate(0,0)}100%{transform:translate(30px,20px)}}
+
+    .sp-content{position:relative;z-index:2;max-width:640px;width:100%}
+
+    /* Badge */
+    .sp-badge{display:inline-block;padding:.4rem 1rem;border-radius:999px;font-size:.8rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:linear-gradient(135deg,#7c3aed,#06b6d4);color:#fff;margin-bottom:1.5rem;animation:badgePulse 2s ease-in-out infinite;box-shadow:0 0 20px rgba(124,58,237,.4)}
+    @keyframes badgePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+
+    /* Logo */
+    .sp-logo{max-height:60px;max-width:200px;object-fit:contain;margin-bottom:1.5rem;filter:drop-shadow(0 0 12px rgba(255,255,255,.2))}
+
+    /* Title */
+    .sp-title{font-size:clamp(2rem,6vw,3.5rem);font-weight:800;line-height:1.1;margin-bottom:.75rem;background:linear-gradient(135deg,#fff 30%,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .sp-subtitle{font-size:clamp(1rem,2.5vw,1.25rem);color:rgba(255,255,255,.7);line-height:1.4;margin-bottom:2rem}
+
+    /* Coupon */
+    .sp-coupon{display:inline-flex;align-items:center;gap:.75rem;padding:.65rem 1.2rem;border-radius:10px;border:1px dashed rgba(167,139,250,.4);background:rgba(124,58,237,.08);margin-bottom:1.5rem;font-size:.95rem}
+    .sp-coupon code{font-weight:700;color:#a78bfa;font-size:1.05rem;letter-spacing:.06em}
+    .sp-coupon-copy{background:none;border:none;color:#06b6d4;cursor:pointer;font-size:.85rem;font-weight:600;padding:.2rem .5rem;border-radius:4px;transition:background .15s}
+    .sp-coupon-copy:hover{background:rgba(6,182,212,.1)}
+
+    /* CTA */
+    .sp-cta{display:inline-flex;align-items:center;gap:.5rem;padding:.9rem 2.2rem;border-radius:999px;font-size:1.1rem;font-weight:700;color:#fff;text-decoration:none;background:linear-gradient(135deg,#7c3aed,#06b6d4);border:none;cursor:pointer;transition:transform .2s,box-shadow .2s;box-shadow:0 0 30px rgba(124,58,237,.4),0 0 60px rgba(6,182,212,.2);position:relative;overflow:hidden}
+    .sp-cta:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 0 40px rgba(124,58,237,.6),0 0 80px rgba(6,182,212,.3)}
+    .sp-cta::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);transform:translateX(-100%);animation:ctaShine 3s ease-in-out infinite}
+    @keyframes ctaShine{0%{transform:translateX(-100%)}40%,100%{transform:translateX(100%)}}
+    .sp-cta-arrow{font-size:1.2rem;transition:transform .2s}
+    .sp-cta:hover .sp-cta-arrow{transform:translateX(4px)}
+
+    /* Countdown */
+    .sp-countdown{margin-top:2rem;display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap}
+    .sp-cd-unit{display:flex;flex-direction:column;align-items:center;min-width:64px;padding:.6rem .8rem;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+    .sp-cd-val{font-size:1.6rem;font-weight:700;font-variant-numeric:tabular-nums;background:linear-gradient(135deg,#a78bfa,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .sp-cd-label{font-size:.65rem;text-transform:uppercase;letter-spacing:.1em;color:rgba(255,255,255,.4);margin-top:.15rem}
+
+    /* Expired overlay */
+    .sp-expired-overlay{position:fixed;inset:0;z-index:100;background:rgba(5,5,5,.92);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;backdrop-filter:blur(8px)}
+    .sp-expired-overlay h2{font-size:2rem;margin-bottom:.5rem;color:#a78bfa}
+    .sp-expired-overlay p{color:rgba(255,255,255,.6);margin-bottom:1.5rem}
+    .sp-expired-overlay a{color:#06b6d4;text-decoration:none;border-bottom:1px solid rgba(6,182,212,.3)}
+
+    /* Brand */
+    .sp-brand{font-size:.8rem;color:rgba(255,255,255,.3);margin-top:2.5rem;letter-spacing:.05em}
+    .sp-brand a{color:rgba(255,255,255,.4);text-decoration:none}
+
+    /* Hero image */
+    .sp-hero-img{max-width:320px;width:100%;border-radius:16px;margin-bottom:2rem;box-shadow:0 8px 40px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.06)}
+
+    @media(max-width:480px){
+      .sp-countdown{gap:.4rem}
+      .sp-cd-unit{min-width:52px;padding:.5rem .6rem}
+      .sp-cd-val{font-size:1.3rem}
+    }
+  </style>
+</head>
+<body>
+  <div id="sp-root">
+    <div class="sp-loading" id="sp-loading">Loading spotlight…</div>
+  </div>
+
+  <script>
+    (function() {
+      const API_BASE = window.location.origin;
+      const root = document.getElementById('sp-root');
+
+      // Extract slug from /spotlight/{slug}
+      const pathParts = window.location.pathname.replace(/\/$/, '').split('/');
+      const slug = pathParts[pathParts.length - 1];
+
+      if (!slug || slug === 'spotlight') {
+        showError('No spotlight specified.', 'Please check the URL.');
+        return;
+      }
+
+      fetchSpotlight(slug);
+
+      async function fetchSpotlight(s) {
+        try {
+          const res = await fetch(API_BASE + '/.netlify/functions/spotlight-get?slug=' + encodeURIComponent(s));
+          const data = await res.json();
+
+          if (!res.ok || !data.ok || !data.item) {
+            showError('Spotlight not found', 'This deal may have been removed or is no longer available.');
+            return;
+          }
+
+          renderSpotlight(data.item);
+        } catch (err) {
+          showError('Connection error', 'Could not load the spotlight. Please try again.');
+        }
+      }
+
+      function renderSpotlight(item) {
+        // Update OG tags
+        const ogTitle = document.getElementById('og-title');
+        const ogDesc = document.getElementById('og-desc');
+        const ogImg = document.getElementById('og-image');
+        if (ogTitle) ogTitle.setAttribute('content', item.title + ' – DropCharge');
+        if (ogDesc) ogDesc.setAttribute('content', item.subtitle || 'Exclusive deal on DropCharge');
+        if (ogImg && item.hero_url) ogImg.setAttribute('content', item.hero_url);
+        document.title = item.title + ' – DropCharge Spotlight';
+
+        const gradient = item.gradient || 'linear-gradient(135deg, #7c3aed, #06b6d4)';
+
+        let html = '<div class="sp-hero">';
+
+        // Background hero image — set via DOM to avoid CSS injection
+        if (item.hero_url) {
+          html += '<div class="sp-hero-bg" id="sp-parallax"></div>';
+        }
+        html += '<div class="sp-hero-overlay"></div>';
+        html += '<div class="sp-glow sp-glow-1"></div>';
+        html += '<div class="sp-glow sp-glow-2"></div>';
+
+        html += '<div class="sp-content">';
+
+        // Badge
+        if (item.badge_text) {
+          html += '<div class="sp-badge">' + escapeHtml(item.badge_text) + '</div><br>';
+        }
+
+        // Logo
+        if (item.logo_url) {
+          html += '<img class="sp-logo" src="' + escapeAttr(item.logo_url) + '" alt="' + escapeAttr(item.brand || 'Brand') + '" /><br>';
+        }
+
+        // Hero image (as content image, not background)
+        if (item.hero_url) {
+          html += '<img class="sp-hero-img" src="' + escapeAttr(item.hero_url) + '" alt="' + escapeAttr(item.title) + '" />';
+        }
+
+        // Title + Subtitle
+        html += '<h1 class="sp-title">' + escapeHtml(item.title) + '</h1>';
+        if (item.subtitle) {
+          html += '<p class="sp-subtitle">' + escapeHtml(item.subtitle) + '</p>';
+        }
+
+        // Coupon
+        if (item.coupon_code) {
+          html += '<div class="sp-coupon">';
+          html += '<span>Code:</span> <code id="coupon-code">' + escapeHtml(item.coupon_code) + '</code>';
+          html += '<button class="sp-coupon-copy" id="copy-coupon" title="Copy code">Copy</button>';
+          html += '</div><br>';
+        }
+
+        // CTA
+        html += '<a class="sp-cta" id="sp-cta-btn" href="' + escapeAttr(item.affiliate_url) + '" target="_blank" rel="noopener noreferrer">';
+        html += escapeHtml(item.cta_text || 'Jetzt sichern');
+        html += ' <span class="sp-cta-arrow">→</span>';
+        html += '</a>';
+
+        // Countdown
+        if (item.countdown_date) {
+          html += '<div class="sp-countdown" id="sp-countdown">';
+          html += cdUnit('--', 'Days') + cdUnit('--', 'Hours') + cdUnit('--', 'Min') + cdUnit('--', 'Sec');
+          html += '</div>';
+        }
+
+        // Brand footer
+        html += '<p class="sp-brand">Powered by <a href="/">DropCharge</a></p>';
+
+        html += '</div></div>';
+
+        root.innerHTML = html;
+
+        // Bind events
+        bindCTA(item);
+        if (item.coupon_code) bindCopyButton();
+        if (item.countdown_date) startCountdown(item.countdown_date);
+        if (item.hero_url) {
+          // Set background-image via DOM to prevent CSS injection
+          var bgEl = document.getElementById('sp-parallax');
+          if (bgEl) bgEl.style.backgroundImage = 'url(' + item.hero_url + ')';
+          initParallax();
+        }
+      }
+
+      function bindCTA(item) {
+        const btn = document.getElementById('sp-cta-btn');
+        if (!btn) return;
+        btn.addEventListener('click', function(e) {
+          // Log the click asynchronously
+          try {
+            fetch(API_BASE + '/.netlify/functions/spotlight-click', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ slug: item.slug })
+            }).catch(function() {});
+          } catch (err) { /* fire and forget */ }
+        });
+      }
+
+      function bindCopyButton() {
+        var btn = document.getElementById('copy-coupon');
+        var code = document.getElementById('coupon-code');
+        if (!btn || !code) return;
+        btn.addEventListener('click', function() {
+          var text = code.textContent;
+          if (navigator.clipboard) {
+            navigator.clipboard.writeText(text).then(function() {
+              btn.textContent = 'Copied!';
+              setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
+            });
+          }
+        });
+      }
+
+      function startCountdown(dateStr) {
+        var target = new Date(dateStr).getTime();
+        var container = document.getElementById('sp-countdown');
+        if (!container) return;
+
+        function update() {
+          var now = Date.now();
+          var diff = target - now;
+          if (diff <= 0) {
+            showExpired();
+            return;
+          }
+          var d = Math.floor(diff / 86400000);
+          var h = Math.floor((diff % 86400000) / 3600000);
+          var m = Math.floor((diff % 3600000) / 60000);
+          var s = Math.floor((diff % 60000) / 1000);
+          var units = container.querySelectorAll('.sp-cd-val');
+          if (units[0]) units[0].textContent = pad(d);
+          if (units[1]) units[1].textContent = pad(h);
+          if (units[2]) units[2].textContent = pad(m);
+          if (units[3]) units[3].textContent = pad(s);
+        }
+        update();
+        setInterval(update, 1000);
+      }
+
+      function showExpired() {
+        var overlay = document.createElement('div');
+        overlay.className = 'sp-expired-overlay';
+        overlay.innerHTML = '<h2>Deal Expired</h2><p>This spotlight deal has ended.</p><a href="/">Back to DropCharge</a>';
+        document.body.appendChild(overlay);
+      }
+
+      function initParallax() {
+        var el = document.getElementById('sp-parallax');
+        if (!el) return;
+        var ticking = false;
+        window.addEventListener('mousemove', function(e) {
+          if (ticking) return;
+          ticking = true;
+          requestAnimationFrame(function() {
+            var x = (e.clientX / window.innerWidth - 0.5) * 20;
+            var y = (e.clientY / window.innerHeight - 0.5) * 20;
+            el.style.transform = 'translate(' + x + 'px,' + y + 'px) scale(1.05)';
+            ticking = false;
+          });
+        });
+      }
+
+      function showError(title, message) {
+        root.innerHTML = '<div class="sp-error"><h1>' + escapeHtml(title) + '</h1><p>' + escapeHtml(message) + '</p><a href="/">← Back to DropCharge</a></div>';
+      }
+
+      function cdUnit(val, label) {
+        return '<div class="sp-cd-unit"><span class="sp-cd-val">' + val + '</span><span class="sp-cd-label">' + label + '</span></div>';
+      }
+
+      function pad(n) { return n < 10 ? '0' + n : String(n); }
+
+      function escapeHtml(str) {
+        var div = document.createElement('div');
+        div.textContent = str || '';
+        return div.innerHTML;
+      }
+
+      function escapeAttr(str) {
+        return (str || '').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+    })();
+  </script>
+</body>
+</html>
