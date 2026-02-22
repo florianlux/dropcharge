@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const path = require('path');
 const geoip = require('geoip-lite');
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { fetchSettings, extractFlags } = require('./_lib/settings');
@@ -66,6 +67,57 @@ const offers = {
   'nintendo-50': { url: 'https://www.g2a.com/n/nintendo15_lux', platform: 'Nintendo', amount: '50€' }
 };
 
+/**
+ * Load drops from the local drops.json fallback.
+ * Returns a map of { id: { url, platform, amount } }.
+ */
+function loadLocalDrops() {
+  try {
+    const dropsPath = path.resolve(__dirname, '../../drops.json');
+    const drops = require(dropsPath);
+    const map = {};
+    for (const d of drops) {
+      if (d.active !== false) {
+        map[d.id] = {
+          url: d.destination_url,
+          platform: d.platform,
+          amount: d.title || `${d.value_eur}€`
+        };
+      }
+    }
+    return map;
+  } catch (err) {
+    console.log('drops.json load failed', err.message);
+    return {};
+  }
+}
+
+const localDrops = loadLocalDrops();
+
+/**
+ * Try to load a drop from the Supabase `drops` table.
+ */
+async function loadDropFromDB(dropId) {
+  if (!hasSupabase || !supabase) return null;
+  try {
+    const { data, error } = await supabase
+      .from('drops')
+      .select('id, title, platform, value_eur, destination_url, active')
+      .eq('id', dropId)
+      .eq('active', true)
+      .maybeSingle();
+    if (error || !data) return null;
+    return {
+      url: data.destination_url,
+      platform: data.platform,
+      amount: data.title || `${data.value_eur}€`
+    };
+  } catch (err) {
+    console.log('drops DB lookup failed', err.message);
+    return null;
+  }
+}
+
 async function getFlags() {
   try {
     const map = await fetchSettings(['flags', 'banner_message']);
@@ -99,10 +151,19 @@ async function loadDynamicOffer(slug) {
 }
 
 async function handler(event) {
-  const slug = event.path.replace('/go/', '').replace(/^\//, '');
-  let offer = await loadDynamicOffer(slug);
+  const params = event.queryStringParameters || {};
+  // Support ?id= query param or path-based slug
+  const slug = params.id || event.path.replace('/go/', '').replace(/^\//, '');
+  // Resolve: Supabase drops table → local drops.json → legacy offers → spotlights
+  let offer = await loadDropFromDB(slug);
+  if (!offer) {
+    offer = localDrops[slug];
+  }
   if (!offer) {
     offer = offers[slug];
+  }
+  if (!offer) {
+    offer = await loadDynamicOffer(slug);
   }
   if (!offer) {
     return { statusCode: 404, body: 'Unknown link' };
@@ -118,7 +179,6 @@ async function handler(event) {
     };
   }
 
-  const params = event.queryStringParameters || {};
   const headers = event.headers || {};
   const userAgent = headers['user-agent'] || '';
   const ipRaw = getClientIp(headers);

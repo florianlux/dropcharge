@@ -118,9 +118,9 @@ function resolveSlugFromLink(link) {
 function loadClicks() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : { psn: 0, xbox: 0, nintendo: 0 };
+    return raw ? JSON.parse(raw) : { psn: 0, xbox: 0, nintendo: 0, steam: 0 };
   } catch {
-    return { psn: 0, xbox: 0, nintendo: 0 };
+    return { psn: 0, xbox: 0, nintendo: 0, steam: 0 };
   }
 }
 
@@ -160,6 +160,10 @@ if (sticky) {
 
 // intercept buttons to increment local counts
 const slugMap = new Map([
+  ['nintendo15', 'nintendo'],
+  ['psn20', 'psn'],
+  ['xbox3m', 'xbox'],
+  ['steam20', 'steam'],
   ['psn-10', 'psn'],
   ['psn-20', 'psn'],
   ['psn-50', 'psn'],
