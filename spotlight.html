@@ -325,17 +325,8 @@
         return { rating: rating, reviews: reviewsStr, purchases: purchases, stars: stars };
       }
 
-      /* ── G2A-themed layout renderer ──────────────────── */
-      function renderG2A(item) {
-        // OG tags
-        var ogTitle = document.getElementById('og-title');
-        var ogDesc = document.getElementById('og-desc');
-        var ogImg = document.getElementById('og-image');
-        if (ogTitle) ogTitle.setAttribute('content', (item.title || 'Deal') + ' – DropCharge');
-        if (ogDesc) ogDesc.setAttribute('content', item.subtitle || 'Digital key deal on DropCharge');
-        if (ogImg && (item.hero_url || item.product_image_url)) ogImg.setAttribute('content', item.hero_url || item.product_image_url);
-        document.title = (item.title || 'Deal') + ' – DropCharge Spotlight';
-
+      /* ── Temu-themed layout renderer ──────────────────── */
+      function renderTemuSpotlight(item) {
         var img = item.hero_url || item.product_image_url || '';
         var title = item.product_title || item.title || 'Deal';
         var desc = item.product_description || 'Limited-time key deal. Prices may change. Click to check availability.';
@@ -445,32 +436,12 @@
           if (bgEl) bgEl.style.backgroundImage = 'url(' + img + ')';
         }
       }
-      }
 
-      function renderSpotlight(item) {
-        // Theme-based layout switch
-        if (item.theme === 'g2a') { renderG2A(item); return; }
+      function renderDefaultSpotlight(item) {
+        var themeClass = item.theme ? ' sp-theme-' + item.theme : '';
+        var heroImage = item.hero_url || item.product_image_url || null;
 
-        // Update OG tags
-        const ogTitle = document.getElementById('og-title');
-        const ogDesc = document.getElementById('og-desc');
-        const ogImg = document.getElementById('og-image');
-        if (ogTitle) ogTitle.setAttribute('content', item.title + ' – DropCharge');
-        if (ogDesc) ogDesc.setAttribute('content', item.subtitle || 'Exclusive deal on DropCharge');
-        if (ogImg && (item.hero_url || item.product_image_url)) ogImg.setAttribute('content', item.hero_url || item.product_image_url);
-        document.title = item.title + ' – DropCharge Spotlight';
-
-        // Use G2A enhanced layout when theme is g2a
-        if (item.theme === 'g2a') {
-          renderG2A(item);
-          return;
-        }
-
-        const gradient = item.gradient || 'linear-gradient(135deg, #7c3aed, #06b6d4)';
-        const themeClass = item.theme ? ' sp-theme-' + item.theme : '';
-        const heroImage = item.hero_url || item.product_image_url || null;
-
-        let html = '<div class="sp-hero' + themeClass + '">';
+        var html = '<div class="sp-hero' + themeClass + '">';
 
         // Background hero image — set via DOM to avoid CSS injection
         if (heroImage) {
@@ -553,6 +524,28 @@
           var bgEl = document.getElementById('sp-parallax');
           if (bgEl) bgEl.style.backgroundImage = 'url(' + heroImage + ')';
           initParallax();
+        }
+      }
+
+      function renderSpotlight(item) {
+        var ogTitle = document.getElementById('og-title');
+        var ogDesc = document.getElementById('og-desc');
+        var ogImg = document.getElementById('og-image');
+        if (ogTitle) ogTitle.setAttribute('content', (item.title || 'Deal') + ' – DropCharge');
+        if (ogDesc) ogDesc.setAttribute('content', item.subtitle || 'Exclusive deal on DropCharge');
+        if (ogImg && (item.hero_url || item.product_image_url)) ogImg.setAttribute('content', item.hero_url || item.product_image_url);
+        document.title = (item.title || 'Deal') + ' – DropCharge Spotlight';
+
+        try {
+          if (item.theme === 'g2a') { renderG2A(item); return; }
+          if (item.theme === 'temu') { renderTemuSpotlight(item); return; }
+          renderDefaultSpotlight(item);
+        } catch (err) {
+          console.error('[Spotlight] renderer threw, falling back to default', err);
+          try { renderDefaultSpotlight(item); } catch (e2) {
+            console.error('[Spotlight] fallback renderer also threw', e2);
+            showError('Display error', 'Could not render this spotlight. Please try again.');
+          }
         }
       }
 
