@@ -10,6 +10,7 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
+const { getTimestampColumn } = require('./_lib/ts-column');
 
 function sinceDate(range) {
   const hours = range === '24h' ? 24 : range === '30d' ? 720 : 168;
@@ -38,12 +39,13 @@ exports.handler = withCors(async (event) => {
   const params = event.queryStringParameters || {};
   const range = params.range || '7d';
   const since = sinceDate(range);
+  const tsCol = await getTimestampColumn(supabase);
 
   const [landing, spotlightViews, ctaClicks, newsletterSuccess] = await Promise.all([
-    safeCount(supabase.from('events').select('id', { count: 'exact', head: true }).eq('event_name', 'page_view').gte('ts', since)),
-    safeCount(supabase.from('events').select('id', { count: 'exact', head: true }).eq('event_name', 'spotlight_view').gte('ts', since)),
-    safeCount(supabase.from('events').select('id', { count: 'exact', head: true }).eq('event_name', 'cta_click').gte('ts', since)),
-    safeCount(supabase.from('events').select('id', { count: 'exact', head: true }).eq('event_name', 'newsletter_success').gte('ts', since))
+    safeCount(supabase.from('events').select('id', { count: 'exact', head: true }).eq('event_name', 'page_view').gte(tsCol, since)),
+    safeCount(supabase.from('events').select('id', { count: 'exact', head: true }).eq('event_name', 'spotlight_view').gte(tsCol, since)),
+    safeCount(supabase.from('events').select('id', { count: 'exact', head: true }).eq('event_name', 'cta_click').gte(tsCol, since)),
+    safeCount(supabase.from('events').select('id', { count: 'exact', head: true }).eq('event_name', 'newsletter_success').gte(tsCol, since))
   ]);
 
   function pct(num, denom) {
