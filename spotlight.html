@@ -297,6 +297,10 @@
         return 'GLOBAL';
       }
 
+      function platformChipClass(platform) {
+        return 'sp-g2a-chip--' + (platform || 'pc').toLowerCase().replace(/\s+/g, '-');
+      }
+
       /* Seeded PRNG for deterministic social proof per slug */
       function seededRandom(seed) {
         var h = 0;
@@ -325,128 +329,6 @@
         return { rating: rating, reviews: reviewsStr, purchases: purchases, stars: stars };
       }
 
-      /* ── G2A-themed layout renderer ──────────────────── */
-      function renderG2A(item) {
-        // OG tags
-        var ogTitle = document.getElementById('og-title');
-        var ogDesc = document.getElementById('og-desc');
-        var ogImg = document.getElementById('og-image');
-        if (ogTitle) ogTitle.setAttribute('content', (item.title || 'Deal') + ' – DropCharge');
-        if (ogDesc) ogDesc.setAttribute('content', item.subtitle || 'Digital key deal on DropCharge');
-        if (ogImg && (item.hero_url || item.product_image_url)) ogImg.setAttribute('content', item.hero_url || item.product_image_url);
-        document.title = (item.title || 'Deal') + ' – DropCharge Spotlight';
-
-        var img = item.hero_url || item.product_image_url || '';
-        var title = item.product_title || item.title || 'Deal';
-        var desc = item.product_description || 'Limited-time key deal. Prices may change. Click to check availability.';
-        var price = item.product_price;
-        var currency = item.product_currency || 'EUR';
-
-        var platform = detectPlatform(title);
-        var region = detectRegion(title);
-
-        var social = generateSocialProof(item.slug || title);
-
-        // Determine redeem text
-        var redeemPlatform = 'Redeem on platform';
-        if (platform === 'Steam') redeemPlatform = 'Redeem on Steam';
-        else if (platform.indexOf('Xbox') === 0) redeemPlatform = 'Redeem on Xbox';
-        else if (platform.indexOf('PS') === 0) redeemPlatform = 'Redeem on PlayStation';
-        else if (platform === 'Nintendo Switch') redeemPlatform = 'Redeem on Nintendo eShop';
-
-        var h = '';
-
-        h += '<div class="g2a-layout">';
-        h += '<div class="g2a-nav">';
-        h += '<div class="g2a-nav-brand"><span>Drop</span>Charge Deals</div>';
-        h += '<div class="g2a-nav-chips">';
-        h += '<span class="g2a-trust-chip"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Instant Delivery</span>';
-        h += '<span class="g2a-trust-chip"><svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Secure checkout</span>';
-        h += '</div></div>';
-
-        // Hero
-        h += '<div class="g2a-hero">';
-        if (img) h += '<div class="g2a-hero-bg" id="g2a-hero-bg"></div>';
-        h += '<div class="g2a-hero-inner">';
-        if (img) h += '<img class="g2a-product-img" src="' + escapeAttr(img) + '" alt="' + escapeAttr(title) + '" />';
-        h += '<div class="g2a-product-title">' + escapeHtml(title) + '</div>';
-        h += '<div class="g2a-chips">';
-        h += '<span class="g2a-chip">' + escapeHtml(platform) + '</span>';
-        h += '<span class="g2a-chip">' + escapeHtml(region) + '</span>';
-        h += '<span class="g2a-chip g2a-chip--accent">Digital Key</span>';
-        h += '</div>';
-        h += '<p class="g2a-product-desc">' + escapeHtml(desc) + '</p>';
-        h += '</div></div>';
-
-        // Deal card
-        h += '<div class="g2a-deal-card">';
-        h += '<div class="g2a-price-row">';
-        if (price != null) {
-          h += '<span class="g2a-price-big">' + escapeHtml(String(price)) + '<span class="g2a-price-curr"> ' + escapeHtml(currency) + '</span></span>';
-          h += '<span class="g2a-price-label">Best price today</span>';
-        } else {
-          h += '<span class="g2a-price-check">Check price</span>';
-        }
-        if (item.badge_text) h += '<span class="g2a-discount-pill">' + escapeHtml(item.badge_text) + '</span>';
-        h += '</div>';
-        h += '<div class="g2a-stock-line"><span class="g2a-stock-dot"></span> In stock • instant delivery</div>';
-
-        if (item.coupon_code) {
-          h += '<div class="g2a-coupon">';
-          h += '<span>Use code:</span> <code id="coupon-code">' + escapeHtml(item.coupon_code) + '</code>';
-          h += '<button class="g2a-coupon-btn" id="copy-coupon" title="Copy code">Copy</button>';
-          h += '</div>';
-        }
-        h += '</div>';
-
-        // Reviews / social proof
-        h += '<div class="g2a-reviews">';
-        h += '<div class="g2a-stars">' + escapeHtml(social.stars || '★★★★★') + '</div>';
-        h += '<div class="g2a-rating-text">' + escapeHtml(social.rating) + ' / 5 — Community rating (' + escapeHtml(social.reviews) + ')</div>';
-        h += '<div class="g2a-ticker"><span>🔥 ' + escapeHtml(String(social.purchases)) + ' purchases in the last 24h • Instant delivery • 🔥 ' + escapeHtml(String(social.purchases)) + ' purchases in the last 24h</span></div>';
-        h += '</div>';
-
-        // Steps
-        h += '<div class="g2a-steps">';
-        h += '<div class="g2a-steps-title">How to redeem</div>';
-        var steps = ['Open deal', 'Purchase key', redeemPlatform];
-        for (var si = 0; si < steps.length; si++) {
-          h += '<div class="g2a-step"><span class="g2a-step-num">' + (si + 1) + '</span><span class="g2a-step-text">' + escapeHtml(steps[si]) + '</span></div>';
-        }
-        h += '</div>';
-
-        // Countdown
-        if (item.countdown_date) {
-          h += '<div class="g2a-countdown sp-countdown" id="sp-countdown">';
-          h += cdUnit('--', 'Days') + cdUnit('--', 'Hours') + cdUnit('--', 'Min') + cdUnit('--', 'Sec');
-          h += '</div>';
-        }
-
-        // Sticky bottom bar
-        h += '<div class="g2a-sticky">';
-        if (price != null) {
-          h += '<span class="g2a-sticky-price">' + escapeHtml(String(price)) + ' <span class="g2a-price-curr">' + escapeHtml(currency) + '</span></span>';
-        } else {
-          h += '<span class="g2a-sticky-price"><span class="g2a-price-check">Check price</span></span>';
-        }
-        h += '<a class="g2a-sticky-cta" id="sp-cta-btn" href="' + escapeAttr(item.affiliate_url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(item.cta_text || 'Key sichern →') + '</a>';
-        h += '</div>';
-
-        h += '<p class="g2a-footer">Powered by <a href="/">DropCharge</a></p>';
-        h += '</div>';
-
-        root.innerHTML = h;
-
-        bindCTA(item);
-        if (item.coupon_code) bindCopyButton();
-        if (item.countdown_date) startCountdown(item.countdown_date);
-        if (img) {
-          var bgEl = document.getElementById('g2a-hero-bg');
-          if (bgEl) bgEl.style.backgroundImage = 'url(' + img + ')';
-        }
-      }
-      }
-
       function renderSpotlight(item) {
         // Theme-based layout switch
         if (item.theme === 'g2a') { renderG2A(item); return; }
@@ -459,12 +341,6 @@
         if (ogDesc) ogDesc.setAttribute('content', item.subtitle || 'Exclusive deal on DropCharge');
         if (ogImg && (item.hero_url || item.product_image_url)) ogImg.setAttribute('content', item.hero_url || item.product_image_url);
         document.title = item.title + ' – DropCharge Spotlight';
-
-        // Use G2A enhanced layout when theme is g2a
-        if (item.theme === 'g2a') {
-          renderG2A(item);
-          return;
-        }
 
         const gradient = item.gradient || 'linear-gradient(135deg, #7c3aed, #06b6d4)';
         const themeClass = item.theme ? ' sp-theme-' + item.theme : '';
