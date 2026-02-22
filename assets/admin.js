@@ -1111,7 +1111,7 @@ async function handleSpotlightAutofill(evt) {
     const result = await apiPost('spotlight-autofill', { url });
     if (!result.ok || !result.data) throw new Error(result.error || 'No data');
 
-    const filled = _applyAutofillData(result.data, hasValues && (forceOverwrite || true));
+    const filled = _applyAutofillData(result.data, hasValues);
     const confidence = (result.debug && result.debug.confidence) || 'low';
 
     // Show confidence + undo
@@ -1131,7 +1131,7 @@ async function handleSpotlightAutofill(evt) {
     }
     showToast(`Auto-filled ${filled.length} field(s) (${confidence} confidence).`);
   } catch (err) {
-    if (statusEl) { statusEl.innerHTML = '⚠️ Could not fetch metadata.'; }
+    if (statusEl) { statusEl.innerHTML = '⚠️ Could not fetch metadata.' + (err.message ? ' ' + err.message : ''); }
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Auto-Fill from Link'; }
   }
