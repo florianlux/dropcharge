@@ -246,10 +246,7 @@ function initCampaigns() {
         }
         logEvent('campaign_sent', { subject, segment });
       } catch (err) {
-        // apiPost already shows toast, but let's ensure details are visible
-        if (err.message && err.message.includes('resend_failed')) {
-          showToast(`Send failed: ${err.message}`, 'error');
-        }
+        // api() already shows error toast with details
       }
     });
   }
@@ -271,9 +268,7 @@ function initCampaigns() {
           showToast(`Test email sent to ${testEmail}.`);
         }
       } catch (err) {
-        if (err.message && err.message.includes('resend_failed')) {
-          showToast(`Send failed: ${err.message}`, 'error');
-        }
+        // api() already shows error toast with details
       }
     });
   }

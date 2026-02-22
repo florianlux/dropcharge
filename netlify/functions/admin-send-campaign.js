@@ -93,7 +93,7 @@ async function sendEmail({ to, subject, html }) {
 
   console.log('EMAIL PAYLOAD:', {
     from,
-    to,
+    to: to.replace(/^[^@]+/, '***'),
     subjectLength: subject.length,
     htmlLength: html.length
   });
@@ -120,7 +120,7 @@ async function sendEmail({ to, subject, html }) {
   }
 
   console.log('RESEND SUCCESS:', resBody);
-  const messageId = (resBody && resBody.id) || null;
+  const messageId = resBody?.id ?? null;
   return { messageId };
 }
 

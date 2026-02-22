@@ -142,7 +142,7 @@ async function handler(event) {
 
       console.log('EMAIL PAYLOAD:', {
         from: senderFrom,
-        to: email,
+        to: email.replace(/^[^@]+/, '***'),
         subjectLength: tpl.subject.length,
         htmlLength: tpl.html.length
       });
