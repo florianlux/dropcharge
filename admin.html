@@ -383,11 +383,28 @@
           </div>
         </div>
 
+        <!-- 1-Click Templates -->
+        <div class="card">
+          <h3>🎨 1-Click Templates</h3>
+          <p style="color:rgba(255,255,255,.5);font-size:.85rem;margin-bottom:.75rem;">Apply to empty fields. Hold <kbd style="background:rgba(255,255,255,.1);padding:.1rem .4rem;border-radius:4px;font-size:.8rem;">Alt/Option</kbd> + click to overwrite existing values.</p>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.75rem;" id="spotlight-template-buttons">
+            <button type="button" class="btn mini" data-template="temu" style="background:linear-gradient(135deg,#f97316,#a855f7);color:#fff;">Temu Viral</button>
+            <button type="button" class="btn mini" data-template="amazon" style="background:linear-gradient(135deg,#f59e0b,#06b6d4);color:#fff;">Amazon Prime Deal</button>
+            <button type="button" class="btn mini" data-template="g2a" style="background:linear-gradient(135deg,#3b82f6,#a855f7);color:#fff;">G2A Gaming Key</button>
+            <button type="button" class="btn mini ghost" data-template="neutral">Neutral (DropCharge)</button>
+          </div>
+          <label class="form-field inline" style="align-items:center;gap:.5rem;">
+            <input type="checkbox" id="spotlight-auto-template" />
+            <span style="font-size:.85rem;">Auto-apply template based on URL domain</span>
+          </label>
+        </div>
+
         <!-- Create / Edit Form -->
         <div class="card">
           <h3 id="spotlight-form-title">➕ Create Spotlight Page</h3>
           <form id="spotlight-form" class="card-form" style="border:none;padding:0;">
             <input type="hidden" id="spotlight-edit-id" />
+            <input type="hidden" id="spotlight-theme" value="" />
             <div class="form-row">
               <label class="form-field">
                 <span>Title (H1)</span>
@@ -446,6 +463,9 @@
                 <span>Background Gradient</span>
                 <select id="spotlight-gradient">
                   <option value="linear-gradient(135deg, #7c3aed, #06b6d4)">Violet → Cyan (Default)</option>
+                  <option value="linear-gradient(135deg, #f97316, #a855f7)">Orange → Violet Neon (Temu Pulse)</option>
+                  <option value="linear-gradient(135deg, #f59e0b, #06b6d4)">Amber → Cyan (Prime Glow)</option>
+                  <option value="linear-gradient(135deg, #3b82f6, #a855f7)">Electric Blue → Violet (Gaming Neon)</option>
                   <option value="linear-gradient(135deg, #f97316, #ef4444)">Orange → Red (Temu)</option>
                   <option value="linear-gradient(135deg, #f59e0b, #f97316)">Gold → Orange (Amazon)</option>
                   <option value="linear-gradient(135deg, #1b2838, #2a475e)">Dark Blue (Steam)</option>
