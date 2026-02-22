@@ -44,5 +44,9 @@ assert('extra spaces before bracket', sanitizeFrom('DropCharge   <noreply@dropch
 // Email without name in brackets
 assert('email in brackets no name', sanitizeFrom('<noreply@dropcharge.de>'), 'noreply@dropcharge.de');
 
+// TLD too short (single char) should be rejected
+assert('single char TLD rejected', sanitizeFrom('user@domain.c'), null);
+assert('single char TLD in name format rejected', sanitizeFrom('Name <user@domain.c>'), null);
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);
