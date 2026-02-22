@@ -1,4 +1,4 @@
-const { supabase, hasSupabase, isSchemaError, schemaMismatchResponse } = require('./_lib/supabase');
+const { supabase, hasSupabase, isSchemaError } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
 
@@ -42,12 +42,27 @@ exports.handler = withCors(async (event) => {
       body: JSON.stringify({ ok: true, items: data || [], total: count ?? 0 })
     };
   } catch (err) {
-    if (isSchemaError(err)) return schemaMismatchResponse(err);
-    console.error('admin-email-logs error', err.message);
+    const msg = (err && (err.message || err.details || '')) || '';
+    if (isSchemaError(err)) {
+      console.error('admin-email-logs schema error', msg);
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+        body: JSON.stringify({
+          ok: true,
+          items: [],
+          total: 0,
+          warning: 'schema_missing',
+          table: 'email_logs',
+          hint: 'Run migration 004_email_logs.sql in your Supabase SQL editor to create the email_logs table.'
+        })
+      };
+    }
+    console.error('admin-email-logs error', msg);
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
-      body: JSON.stringify({ ok: false, error: err.message })
+      body: JSON.stringify({ ok: false, error: msg || 'unknown_error' })
     };
   }
 });
