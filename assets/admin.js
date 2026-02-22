@@ -304,7 +304,7 @@ async function previewTemplate(key) {
     const data = await apiPost('admin-email-templates', { template: key });
     if (nameEl) nameEl.textContent = key;
     card.style.display = 'block';
-    frame.innerHTML = data.html;
+    frame.srcdoc = data.html;
   } catch { /* toast shown */ }
 }
 
