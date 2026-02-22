@@ -116,6 +116,7 @@ async function handler(event) {
 
   // --- Send welcome email via Resend ---
   let emailSent = false;
+  const welcomeSubject = welcomeEmail({ email, unsubscribeUrl: '#' }).subject;
   if (EMAIL_API_KEY && EMAIL_FROM) {
     try {
       const tpl = welcomeEmail({ email, unsubscribeUrl });
@@ -142,7 +143,7 @@ async function handler(event) {
       await logEmailSend({ email, template: 'welcome', subject: tpl.subject, status: 'sent' });
     } catch (err) {
       console.error('Welcome email failed (non-fatal):', err.message);
-      await logEmailSend({ email, template: 'welcome', subject: 'Willkommen bei DropCharge 🚀', status: 'failed', error: err.message });
+      await logEmailSend({ email, template: 'welcome', subject: welcomeSubject, status: 'failed', error: err.message });
     }
   }
 
