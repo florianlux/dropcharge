@@ -14,10 +14,10 @@ Defined in `supabase-schema.sql`:
 
 ## Required ENV (Netlify)
 - `SUPABASE_URL`
-- `SUPABASE_SERVICE_KEY` (service role)
+- `SUPABASE_SERVICE_ROLE_KEY` (service role)
 - `RESEND_API_KEY`
-- `EMAIL_FROM` (e.g. `DropCharge <news@dropcharge.io>`)
-- `PUBLIC_BASE_URL` (e.g. `https://dropcharge.io`)
+- `RESEND_FROM` (e.g. `DropCharge <news@dropcharge.io>`)
+- `PUBLIC_SITE_URL` (e.g. `https://dropcharge.io`)
 - `ADMIN_TOKEN` (existing admin auth header)
 
 ## Admin API

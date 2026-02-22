@@ -2,10 +2,18 @@ const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
 
-const EMAIL_API_KEY = process.env.RESEND_API_KEY || process.env.EMAIL_API_KEY;
-const EMAIL_FROM = process.env.EMAIL_FROM;
+console.log("ENV CHECK:", {
+  hasResendKey: !!process.env.RESEND_API_KEY,
+  hasFrom: !!process.env.RESEND_FROM,
+  hasSupabaseUrl: !!process.env.SUPABASE_URL,
+  hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+});
+
+const EMAIL_API_KEY = process.env.RESEND_API_KEY;
+const EMAIL_FROM = process.env.RESEND_FROM;
+const EMAIL_FALLBACK_FROM = process.env.RESEND_FALLBACK_FROM || undefined;
 const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || undefined;
-const BASE_URL = (process.env.APP_BASE_URL || process.env.BASE_URL || 'https://dropcharge.netlify.app').replace(/\/$/, '');
+const BASE_URL = (process.env.PUBLIC_SITE_URL || 'https://dropcharge.netlify.app').replace(/\/$/, '');
 const BATCH_SIZE = Number(process.env.CAMPAIGN_BATCH_SIZE || 50);
 const BATCH_DELAY_MS = Number(process.env.CAMPAIGN_BATCH_DELAY || 750);
 const RATE_LIMIT_MS = 5 * 60 * 1000; // 5 minutes
@@ -64,15 +72,32 @@ async function logCampaign(payload) {
 }
 
 async function sendEmail({ to, subject, html }) {
-  if (!EMAIL_API_KEY) throw new Error('email_api_key_missing');
-  if (!EMAIL_FROM) throw new Error('email_from_missing');
+  const from = EMAIL_FROM || EMAIL_FALLBACK_FROM;
+  if (!from || !to || !subject || !html) {
+    const detail = [
+      !from && 'from',
+      !to && 'to',
+      !subject && 'subject',
+      !html && 'html'
+    ].filter(Boolean).join(', ');
+    throw new Error(`invalid_email_payload: missing ${detail}`);
+  }
+
   const body = {
-    from: EMAIL_FROM,
+    from,
     to,
     subject,
     html,
     ...(EMAIL_REPLY_TO ? { reply_to: EMAIL_REPLY_TO } : {})
   };
+
+  console.log('EMAIL PAYLOAD:', {
+    from,
+    to: to.replace(/^[^@]+/, '***'),
+    subjectLength: subject.length,
+    htmlLength: html.length
+  });
+
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -81,11 +106,22 @@ async function sendEmail({ to, subject, html }) {
     },
     body: JSON.stringify(body)
   });
+
+  let resBody;
+  try { resBody = await res.json(); } catch { resBody = await res.text().catch(() => ''); }
+
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`email_provider_error:${res.status}:${text}`);
+    console.error('RESEND ERROR FULL:', {
+      status: res.status,
+      response: resBody
+    });
+    const detail = typeof resBody === 'object' ? JSON.stringify(resBody) : String(resBody);
+    throw new Error(`resend_error:${res.status}:${detail}`);
   }
-  return true;
+
+  console.log('RESEND SUCCESS:', resBody);
+  const messageId = resBody?.id ?? null;
+  return { messageId };
 }
 
 function chunk(array, size) {
@@ -96,9 +132,32 @@ function chunk(array, size) {
   return result;
 }
 
+async function logEmailSend({ email, template, subject, status, error: errMsg }) {
+  if (!hasSupabase || !supabase) return { logged: false, reason: 'supabase_not_configured' };
+  try {
+    const { error } = await supabase.from('email_logs').insert({
+      recipient: email,
+      template: template || 'campaign',
+      subject,
+      status,
+      error: errMsg || null,
+      sent_at: status === 'sent' ? new Date().toISOString() : null
+    });
+    if (error) {
+      console.error('email_log insert error:', error.message);
+      return { logged: false, reason: error.message };
+    }
+    return { logged: true };
+  } catch (err) {
+    console.error('email_log insert error:', err.message);
+    return { logged: false, reason: err.message };
+  }
+}
+
 async function sendCampaign({ recipients, subject, html, context }) {
   let sent = 0;
   const failed = [];
+  let logWarnings = 0;
   const batches = chunk(recipients, BATCH_SIZE);
   for (let i = 0; i < batches.length; i += 1) {
     const batch = batches[i];
@@ -108,16 +167,20 @@ async function sendCampaign({ recipients, subject, html, context }) {
       try {
         await sendEmail({ to: email, subject, html: htmlWithUnsub });
         sent += 1;
+        const logResult = await logEmailSend({ email, subject, status: 'sent' });
+        if (!logResult.logged) logWarnings += 1;
       } catch (err) {
         console.log('email send failed', email, err.message);
         failed.push(email);
+        const logResult = await logEmailSend({ email, subject, status: 'failed', error: err.message });
+        if (!logResult.logged) logWarnings += 1;
       }
     }));
     if (i < batches.length - 1) {
       await sleep(BATCH_DELAY_MS);
     }
   }
-  return { sent, failed };
+  return { sent, failed, logWarnings };
 }
 
 async function handler(event) {
@@ -141,20 +204,31 @@ async function handler(event) {
   const segment = typeof payload.segment === 'string' && payload.segment.trim() ? payload.segment.trim() : null;
 
   if (!subject || !rawHtml.trim()) {
-    return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'subject_required' }) };
+    return {
+      statusCode: 400,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: false, error: 'invalid_template_payload', details: 'subject and html are required' })
+    };
   }
 
-  if (!EMAIL_API_KEY || !EMAIL_FROM) {
-    const missing = [];
-    if (!EMAIL_API_KEY) missing.push('RESEND_API_KEY');
-    if (!EMAIL_FROM) missing.push('EMAIL_FROM');
+  const required = {
+    RESEND_API_KEY: !!process.env.RESEND_API_KEY,
+    RESEND_FROM: !!(process.env.RESEND_FROM || process.env.RESEND_FALLBACK_FROM),
+    SUPABASE_URL: !!process.env.SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+  };
+  const missing = Object.entries(required)
+    .filter(([k, v]) => !v)
+    .map(([k]) => k);
+
+  if (missing.length) {
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ok: false,
         error: 'email_env_missing',
-        message: `Missing required env: ${missing.join(', ')}. Set these in Netlify → Site settings → Environment variables.`
+        missing
       })
     };
   }
@@ -204,13 +278,19 @@ async function handler(event) {
       });
     }
 
+    const response = { ok: true, ...result, test: Boolean(testEmail) };
+    if (result.logWarnings > 0) {
+      response.warning = 'log_insert_failed';
+      response.details = `${result.logWarnings} email log(s) could not be saved. Run migration 004_email_logs.sql.`;
+    }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ok: true, ...result, test: Boolean(testEmail) })
+      body: JSON.stringify(response)
     };
   } catch (err) {
-    console.log('campaign send failed', err.message);
+    console.error('campaign send failed', err.message);
     if (!testEmail) {
       await logCampaign({
         subject,
@@ -227,7 +307,7 @@ async function handler(event) {
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ok: false, error: err.message })
+      body: JSON.stringify({ ok: false, error: 'resend_failed', details: err.message })
     };
   }
 }

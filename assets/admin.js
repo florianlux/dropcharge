@@ -44,6 +44,23 @@ function apiPost(path, data) {
   return api(path, { method: 'POST', body: JSON.stringify(data) });
 }
 
+// Silent GET — no error toast on failure; returns null instead
+async function apiGetSilent(path) {
+  const url = `${API_BASE}/.netlify/functions/${path}`;
+  const headers = {
+    'Content-Type': 'application/json',
+    'x-admin-token': getToken()
+  };
+  try {
+    const res = await fetch(url, { method: 'GET', headers });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) return null;
+    return body;
+  } catch {
+    return null;
+  }
+}
+
 // ── Toast ──────────────────────────────────────────────
 const toastEl = document.getElementById('toast');
 let toastTimer = null;
@@ -80,6 +97,7 @@ function initTabs() {
 function onTabActivate(tab) {
   if (tab === 'dashboard') loadDashboard();
   if (tab === 'newsletter') loadSubscribers();
+  if (tab === 'email') loadEmailTab();
   if (tab === 'analytics') loadAnalytics();
 }
 
@@ -199,18 +217,37 @@ async function exportSubscribers() {
 function initCampaigns() {
   const form = $('#campaign-form');
   const testBtn = $('#campaign-test');
+  const segmentSelect = $('#campaign-segment');
+  const sendBtn = $('#campaign-send');
+
+  if (segmentSelect && sendBtn) {
+    segmentSelect.addEventListener('change', () => {
+      const label = segmentSelect.options[segmentSelect.selectedIndex].text;
+      sendBtn.textContent = `Send to ${label}`;
+    });
+  }
+
   if (form) {
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(form);
       const subject = fd.get('subject');
       const html = fd.get('html');
+      const segment = fd.get('segment') || undefined;
       if (!subject || !html) { showToast('Subject and HTML required.', 'error'); return; }
+      const segmentLabel = segmentSelect ? segmentSelect.options[segmentSelect.selectedIndex].text : 'All Active';
+      if (!confirm(`Send campaign to "${segmentLabel}"?`)) return;
       try {
-        const result = await apiPost('admin-send-campaign', { subject, html });
-        showToast(`Campaign sent! ${result.sent || 0} delivered.`);
-        logEvent('campaign_sent', { subject });
-      } catch { /* toast shown */ }
+        const result = await apiPost('admin-send-campaign', { subject, html, segment });
+        if (result.warning) {
+          showToast(`Campaign sent (${result.sent || 0} delivered). Warning: ${result.details || result.warning}`);
+        } else {
+          showToast(`Campaign sent! ${result.sent || 0} delivered.`);
+        }
+        logEvent('campaign_sent', { subject, segment });
+      } catch (err) {
+        // api() already shows error toast with details
+      }
     });
   }
   if (testBtn) {
@@ -220,11 +257,154 @@ function initCampaigns() {
       const subject = fd.get('subject');
       const html = fd.get('html');
       const testEmail = fd.get('testEmail');
+      const segment = fd.get('segment') || undefined;
       if (!subject || !html) { showToast('Subject and HTML required.', 'error'); return; }
       if (!testEmail) { showToast('Enter a test email address.', 'error'); return; }
       try {
-        await apiPost('admin-send-campaign', { subject, html, testEmail });
-        showToast(`Test email sent to ${testEmail}.`);
+        const result = await apiPost('admin-send-campaign', { subject, html, testEmail, segment });
+        if (result.warning) {
+          showToast(`Test email sent to ${testEmail}. Warning: ${result.details || result.warning}`);
+        } else {
+          showToast(`Test email sent to ${testEmail}.`);
+        }
+      } catch (err) {
+        // api() already shows error toast with details
+      }
+    });
+  }
+}
+
+// ── Email Hub ──────────────────────────────────────────
+async function loadEmailTab() {
+  loadEmailAudience();
+  loadEmailTemplates();
+  loadEmailLogs();
+}
+
+async function loadEmailAudience() {
+  try {
+    const [activeData, unsubData] = await Promise.all([
+      apiGet('admin-list-subscribers?limit=1&status=active').catch(() => null),
+      apiGet('admin-list-subscribers?limit=1&status=unsubscribed').catch(() => null)
+    ]);
+    // Logs stats are fetched silently — failures do not trigger error toast
+    const [sentData, failedData] = await Promise.all([
+      apiGetSilent('admin-email-logs?limit=1&status=sent'),
+      apiGetSilent('admin-email-logs?limit=1&status=failed')
+    ]);
+    const setVal = (id, data) => {
+      const el = $(`#${id}`);
+      if (el && data) el.textContent = data.total ?? '–';
+    };
+    setVal('email-stat-active', activeData);
+    setVal('email-stat-unsub', unsubData);
+    setVal('email-stat-sent', sentData);
+    setVal('email-stat-failed', failedData);
+  } catch { /* errors shown via toast */ }
+}
+
+async function loadEmailTemplates() {
+  const container = $('#email-templates-list');
+  if (!container) return;
+  try {
+    const data = await apiGet('admin-email-templates');
+    if (!data.templates || data.templates.length === 0) {
+      container.innerHTML = '<p class="empty">No templates found.</p>';
+      return;
+    }
+    container.innerHTML = data.templates.map(tpl =>
+      `<div class="template-card" data-template="${escapeHtml(tpl.key)}">
+        <strong>${escapeHtml(tpl.name)}</strong>
+        <p class="template-desc">${escapeHtml(tpl.description)}</p>
+        <button class="btn mini ghost" data-preview="${escapeHtml(tpl.key)}">Preview</button>
+      </div>`
+    ).join('');
+    container.querySelectorAll('[data-preview]').forEach(btn => {
+      btn.addEventListener('click', () => previewTemplate(btn.dataset.preview));
+    });
+  } catch {
+    container.innerHTML = '<p class="empty">Failed to load templates.</p>';
+  }
+}
+
+async function previewTemplate(key) {
+  const card = $('#email-template-preview-card');
+  const nameEl = $('#email-preview-name');
+  const frame = $('#email-preview-frame');
+  if (!card || !frame) return;
+  try {
+    const data = await apiPost('admin-email-templates', { template: key });
+    if (nameEl) nameEl.textContent = key;
+    card.style.display = 'block';
+    frame.srcdoc = data.html;
+  } catch { /* toast shown */ }
+}
+
+async function loadEmailLogs() {
+  const rows = $('#email-log-rows');
+  if (!rows) return;
+  rows.innerHTML = '<p class="empty">Loading…</p>';
+  const status = ($('#email-log-status-filter') || {}).value || '';
+  try {
+    const params = new URLSearchParams({ limit: '50' });
+    if (status) params.set('status', status);
+    const data = await apiGetSilent(`admin-email-logs?${params}`);
+    if (!data) {
+      rows.innerHTML = '<p class="empty warning">Logs unavailable. Check connection or run migration.</p>';
+      return;
+    }
+    if (data.warning === 'schema_missing') {
+      rows.innerHTML = `<p class="empty warning">No logs yet or table missing. ${escapeHtml(data.hint || 'Run migration 004_email_logs.sql.')}</p>`;
+      return;
+    }
+    if (!data.items || data.items.length === 0) {
+      rows.innerHTML = '<p class="empty">No email logs found.</p>';
+      return;
+    }
+    rows.innerHTML = data.items.map(log => {
+      const time = log.created_at ? new Date(log.created_at).toLocaleString() : '–';
+      const statusClass = log.status === 'sent' ? 'status-active' : log.status === 'failed' ? 'status-bounced' : '';
+      return `<div class="table-row">
+        <span>${escapeHtml(log.recipient)}</span>
+        <span>${escapeHtml(log.template || '–')}</span>
+        <span>${escapeHtml(log.subject || '–')}</span>
+        <span class="${statusClass}">${escapeHtml(log.status || '–')}</span>
+        <span>${time}</span>
+      </div>`;
+    }).join('');
+  } catch {
+    rows.innerHTML = '<p class="empty warning">Logs unavailable. Check connection or run migration.</p>';
+  }
+}
+
+function initEmail() {
+  const refreshBtn = $('#email-log-refresh');
+  if (refreshBtn) refreshBtn.addEventListener('click', loadEmailLogs);
+  const statusFilter = $('#email-log-status-filter');
+  if (statusFilter) statusFilter.addEventListener('change', loadEmailLogs);
+
+  const testForm = $('#email-test-form');
+  if (testForm) {
+    testForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const template = ($('#email-test-template') || {}).value || 'welcome';
+      const recipient = ($('#email-test-recipient') || {}).value || '';
+      if (!recipient) { showToast('Enter a recipient email.', 'error'); return; }
+      try {
+        // Render the template first
+        const tplData = await apiPost('admin-email-templates', { template });
+        // Send via campaign endpoint as test
+        const result = await apiPost('admin-send-campaign', {
+          subject: tplData.subject,
+          html: tplData.html,
+          testEmail: recipient
+        });
+        if (result.warning === 'log_insert_failed') {
+          showToast(`Test email sent to ${recipient}. (Logs unavailable — run migration)`);
+        } else {
+          showToast(`Test email (${template}) sent to ${recipient}.`);
+        }
+        loadEmailLogs();
       } catch { /* toast shown */ }
     });
   }
@@ -346,6 +526,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initTabs();
   initLogout();
   initNewsletter();
+  initEmail();
   initCampaigns();
   initTracking();
   loadDashboard();

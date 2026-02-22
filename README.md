@@ -13,7 +13,7 @@ High-conversion gaming-credit dropsite: TikTok-ready UI, Netlify Functions, Supa
 2. Run [`supabase-schema.sql`](./supabase-schema.sql) to create tables.
 3. Grab **Project URL** + **service_role key** → set as Netlify env vars:
    - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY` (also accepts legacy `SUPABASE_SERVICE_KEY`)
+   - `SUPABASE_SERVICE_ROLE_KEY`
 4. Optional envs:
    - `RESEND_API_KEY` (optional – enables welcome email on newsletter signup; signup works without it)
    - `ADMIN_PASSWORD_HASH` (bcrypt hash via `node scripts/hash-password.js "pass"`)
@@ -102,9 +102,15 @@ Set these in **Netlify → Site settings → Environment variables** (scope: _Al
 | `SUPABASE_URL` | **Yes** | Your Supabase project URL (e.g. `https://xyz.supabase.co`). |
 | `SUPABASE_SERVICE_ROLE_KEY` | **Yes** | Supabase service-role key (not the anon key). |
 | `RESEND_API_KEY` | **Yes** (for email) | Resend API key for sending campaigns and welcome emails. |
-| `EMAIL_FROM` | **Yes** (for email) | Sender address (e.g. `DropCharge <noreply@dropcharge.de>`). Must be verified in Resend. |
-| `APP_BASE_URL` | Optional | Base URL for unsubscribe links etc. Defaults to `https://dropcharge.netlify.app`. |
+| `RESEND_FROM` | **Yes** (for email) | Sender address (e.g. `DropCharge <noreply@dropcharge.de>`). Must be verified in Resend. |
+| `PUBLIC_SITE_URL` | Optional | Base URL for unsubscribe links etc. Defaults to `https://dropcharge.netlify.app`. |
 | `EMAIL_REPLY_TO` | Optional | Reply-to address for campaign emails. |
+| `RESEND_FALLBACK_FROM` | Optional | Fallback sender address used if `RESEND_FROM` is not set (useful for testing before domain verification). |
+
+### Email Diagnostics
+
+- **`GET /.netlify/functions/email-health`** – Returns env/DB status (no auth required).
+- **`GET /.netlify/functions/email-debug`** – Returns current sender config and sample payload (admin auth required).
 
 ### Admin Login
 
@@ -118,6 +124,21 @@ Run the SQL files in `supabase/migrations/` in order against your Supabase proje
 
 1. `001_safe_schema_sync.sql` – adds `source`, `last_sent_at` columns, settings table
 2. `002_campaigns_and_columns.sql` – adds `newsletter_campaigns` table, `unsubscribed_at` column, ensures click/event columns
+3. `003_spin_wheel_newsletter.sql` – spin wheel feature integration
+4. `004_email_logs.sql` – creates `email_logs` table for tracking all outbound email events
+
+**Required tables:**
+
+| Table | Purpose |
+|---|---|
+| `newsletter_subscribers` | Subscriber list (email, status, source) |
+| `newsletter_campaigns` | Campaign send history |
+| `email_logs` | Per-email delivery log (recipient, status, template, errors) |
+| `clicks` | Tracking link click log |
+| `events` | Custom event log (page views, scrolls, etc.) |
+
+To apply migrations, open your **Supabase SQL Editor** and run each file in order.
+If the `email_logs` table is missing, the admin Email Logs section will show a warning with instructions.
 
 ### Testing (curl)
 

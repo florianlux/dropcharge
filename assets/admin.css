@@ -337,3 +337,45 @@ textarea { resize: vertical; }
   .admin-shell { grid-template-columns: 1fr; }
   .admin-sidebar { position: static; height: auto; }
 }
+
+/* Email templates grid */
+.email-templates-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+}
+.template-card {
+  background: var(--admin-bg);
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+}
+.template-card strong {
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 0.95rem;
+}
+.template-desc {
+  font-size: 0.82rem;
+  color: var(--admin-muted);
+  margin: 0 0 0.75rem;
+}
+
+/* Email preview iframe */
+.email-preview-frame-wrap {
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0d0d12;
+}
+.email-preview-frame {
+  width: 100%;
+  height: 480px;
+  border: none;
+}
+
+/* Email log table */
+.table-head.email-log-head,
+#email-log-rows .table-row {
+  grid-template-columns: 2fr 1fr 2fr 80px 140px;
+}
