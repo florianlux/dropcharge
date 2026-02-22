@@ -15,6 +15,7 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
+const { getTimestampColumn } = require('./_lib/ts-column');
 
 function sinceDate(range) {
   const hours = range === '24h' ? 24 : range === '30d' ? 720 : 168;
@@ -40,11 +41,16 @@ exports.handler = withCors(async (event) => {
   const since = sinceDate(range);
 
   try {
+    const tsCol = await getTimestampColumn(supabase);
+    const selectCols = tsCol === 'ts'
+      ? 'id,ts,created_at,event_name,name,type,slug,path,utm_source,utm_medium,utm_campaign,session_key,user_id,device_type,device_hint,country,props,meta'
+      : 'id,created_at,event_name,name,type,slug,path,utm_source,utm_medium,utm_campaign,session_key,user_id,device_type,device_hint,country,props,meta';
+
     let query = supabase
       .from('events')
-      .select('id,ts,created_at,event_name,name,type,slug,path,utm_source,utm_medium,utm_campaign,session_key,user_id,device_type,device_hint,country,props,meta')
-      .gte('ts', since)
-      .order('ts', { ascending: false })
+      .select(selectCols)
+      .gte(tsCol, since)
+      .order(tsCol, { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (p.event_name) query = query.eq('event_name', p.event_name);

@@ -9,6 +9,7 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
+const { getTimestampColumn } = require('./_lib/ts-column');
 
 function sinceDate(range) {
   const hours = range === '24h' ? 24 : range === '30d' ? 720 : 168; // default 7d
@@ -44,6 +45,7 @@ exports.handler = withCors(async (event) => {
   const params = event.queryStringParameters || {};
   const range = params.range || '7d';
   const since = sinceDate(range);
+  const tsCol = await getTimestampColumn(supabase);
 
   const [
     pageviews,
@@ -53,11 +55,11 @@ exports.handler = withCors(async (event) => {
     newsletterSuccess,
     consentedSessions
   ] = await Promise.all([
-    safeCount(supabase.from('events').select('id', { count: 'exact', head: true }).eq('event_name', 'page_view').gte('ts', since)),
+    safeCount(supabase.from('events').select('id', { count: 'exact', head: true }).eq('event_name', 'page_view').gte(tsCol, since)),
     safeCount(supabase.from('sessions').select('id', { count: 'exact', head: true }).gte('first_seen', since)),
-    safeCount(supabase.from('events').select('id', { count: 'exact', head: true }).eq('event_name', 'cta_click').gte('ts', since)),
-    safeCount(supabase.from('events').select('id', { count: 'exact', head: true }).eq('event_name', 'spotlight_view').gte('ts', since)),
-    safeCount(supabase.from('events').select('id', { count: 'exact', head: true }).eq('event_name', 'newsletter_success').gte('ts', since)),
+    safeCount(supabase.from('events').select('id', { count: 'exact', head: true }).eq('event_name', 'cta_click').gte(tsCol, since)),
+    safeCount(supabase.from('events').select('id', { count: 'exact', head: true }).eq('event_name', 'spotlight_view').gte(tsCol, since)),
+    safeCount(supabase.from('events').select('id', { count: 'exact', head: true }).eq('event_name', 'newsletter_success').gte(tsCol, since)),
     safeCount(supabase.from('sessions').select('id', { count: 'exact', head: true }).eq('consent_analytics', true).gte('first_seen', since))
   ]);
 
@@ -106,7 +108,7 @@ exports.handler = withCors(async (event) => {
 
   // Top spotlights by cta_click
   const spotlightRows = await safeRows(
-    supabase.from('events').select('slug').eq('event_name', 'cta_click').not('slug', 'is', null).gte('ts', since).limit(2000)
+    supabase.from('events').select('slug').eq('event_name', 'cta_click').not('slug', 'is', null).gte(tsCol, since).limit(2000)
   );
   const spotlightCounts = {};
   spotlightRows.forEach(r => { spotlightCounts[r.slug] = (spotlightCounts[r.slug] || 0) + 1; });
