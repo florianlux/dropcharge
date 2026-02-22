@@ -163,6 +163,10 @@
         <!-- Template Preview -->
         <div class="card" id="email-template-preview-card" style="display:none;">
           <h3>Preview: <span id="email-preview-name"></span></h3>
+          <div class="email-preview-actions" style="margin-bottom:0.75rem;">
+            <button class="btn mini ghost" id="email-copy-html">Copy HTML</button>
+            <button class="btn mini ghost" id="email-download-html">Download .html</button>
+          </div>
           <div class="email-preview-frame-wrap">
             <iframe id="email-preview-frame" class="email-preview-frame"></iframe>
           </div>
@@ -178,6 +182,9 @@
                 <select id="email-test-template">
                   <option value="welcome">Welcome Email</option>
                   <option value="flash_deal">Flash Deal</option>
+                  <option value="weekly_digest">Weekly Digest</option>
+                  <option value="price_drop">Price Drop Alert</option>
+                  <option value="gaming_drop">Gaming Drop</option>
                 </select>
               </label>
               <label class="form-field">

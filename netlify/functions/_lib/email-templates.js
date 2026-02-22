@@ -105,6 +105,114 @@ function flashDealEmail({ title, subtitle, price, originalPrice, dealUrl, imageU
   };
 }
 
+/* ── Weekly Digest Email ─────────────────────────────── */
+function weeklyDigestEmail({ first_name, calendar_week, deal_1_title, deal_1_platform, deal_1_price, deal_1_original_price, deal_1_url, deal_2_title, deal_2_platform, deal_2_price, deal_2_original_price, deal_2_url, deal_3_title, deal_3_platform, deal_3_price, deal_3_original_price, deal_3_url, all_deals_url, unsubscribeUrl }) {
+  function dealRow(title, platform, price, originalPrice, url) {
+    return `<tr><td style="padding:8px 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a2e;border-radius:10px;border:1px solid #25253a;">
+        <tr><td style="padding:16px 20px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="vertical-align:top;">
+                <p style="margin:0 0 4px;font-size:15px;font-weight:700;color:#fff;">${title}</p>
+                <p style="margin:0 0 8px;font-size:12px;color:#7c7c96;">${platform}</p>
+                ${originalPrice ? `<span style="font-size:13px;color:#55556a;text-decoration:line-through;">${originalPrice}</span>` : ''}
+                <span style="font-size:18px;font-weight:800;color:#22c55e;padding-left:6px;">${price}</span>
+              </td>
+              <td style="vertical-align:middle;text-align:right;width:100px;">
+                <a href="${url}" style="display:inline-block;padding:10px 16px;background:#6c5ce7;color:#fff;font-size:13px;font-weight:700;text-decoration:none;border-radius:6px;">Zum Deal</a>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+      </table>
+    </td></tr>`;
+  }
+  const content = `
+    <tr><td style="padding:36px 32px 20px;text-align:center;">
+      <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#fff;">Hey ${first_name || 'Gamer'}, deine Top-Deals der Woche 🔥</h1>
+      <p style="margin:0;font-size:14px;color:#a0a0b8;">KW ${calendar_week || '–'} – handverlesen für dich.</p>
+    </td></tr>
+    <tr><td style="padding:0 32px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${dealRow(deal_1_title, deal_1_platform, deal_1_price, deal_1_original_price, deal_1_url)}
+        ${dealRow(deal_2_title, deal_2_platform, deal_2_price, deal_2_original_price, deal_2_url)}
+        ${dealRow(deal_3_title, deal_3_platform, deal_3_price, deal_3_original_price, deal_3_url)}
+      </table>
+    </td></tr>
+    <tr><td style="padding:24px 32px;text-align:center;">
+      <a href="${all_deals_url || BASE_URL}" style="display:inline-block;padding:12px 32px;background:#6c5ce7;color:#fff;font-size:14px;font-weight:700;text-decoration:none;border-radius:8px;">Alle Deals ansehen →</a>
+    </td></tr>`;
+  return { subject: `Dein Weekly Digest KW ${calendar_week || '–'} 🔥`, html: wrap(content, { unsubscribeUrl }) };
+}
+
+/* ── Price Drop Email ───────────────────────────────── */
+function priceDropEmail({ first_name, deal_title, price, original_price, discount, deal_url, price_date, unsubscribeUrl }) {
+  const content = `
+    <tr><td style="padding:32px 32px 12px;text-align:center;">
+      <span style="display:inline-block;padding:6px 18px;background:#06b6d4;color:#0a0a12;font-size:12px;font-weight:700;border-radius:20px;text-transform:uppercase;letter-spacing:0.08em;">📈 Preisalarm</span>
+    </td></tr>
+    <tr><td style="padding:16px 32px;text-align:center;">
+      <h1 style="margin:0 0 8px;font-size:26px;font-weight:700;color:#fff;">Preissturz: ${deal_title}</h1>
+      <p style="margin:0;font-size:14px;color:#a0a0b8;">Hey ${first_name || 'Gamer'}, ein Produkt auf deiner Liste ist günstiger geworden!</p>
+    </td></tr>
+    <tr><td style="padding:16px 32px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a2e;border-radius:10px;border:1px solid #25253a;">
+        <tr><td style="padding:24px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr><td style="padding:0 0 12px;font-size:13px;color:#7c7c96;">Vorheriger Preis</td><td style="padding:0 0 12px;text-align:right;font-size:18px;color:#55556a;text-decoration:line-through;">${original_price}</td></tr>
+            <tr><td style="padding:0 0 12px;font-size:13px;color:#7c7c96;">Neuer Preis</td><td style="padding:0 0 12px;text-align:right;font-size:24px;font-weight:800;color:#22c55e;">${price}</td></tr>
+            <tr><td style="padding:12px 0 0;border-top:1px solid #25253a;font-size:13px;color:#7c7c96;">Du sparst</td><td style="padding:12px 0 0;border-top:1px solid #25253a;text-align:right;"><span style="display:inline-block;padding:4px 12px;background:#06b6d4;color:#0a0a12;font-size:14px;font-weight:700;border-radius:20px;">${discount}</span></td></tr>
+          </table>
+        </td></tr>
+      </table>
+    </td></tr>
+    <tr><td style="padding:24px 32px;text-align:center;">
+      <a href="${deal_url || BASE_URL}" style="display:inline-block;padding:14px 40px;background:#06b6d4;color:#0a0a12;font-size:15px;font-weight:700;text-decoration:none;border-radius:8px;">Zum reduzierten Preis →</a>
+      <p style="margin:12px 0 0;font-size:12px;color:#55556a;">Stand: ${price_date || 'heute'}</p>
+    </td></tr>`;
+  return { subject: `📉 Preissturz: ${deal_title} – jetzt ${price}`, html: wrap(content, { unsubscribeUrl }) };
+}
+
+/* ── Gaming Drop Email ──────────────────────────────── */
+function gamingDropEmail({ first_name, steam_title, steam_price, steam_url, psn_title, psn_price, psn_url, xbox_title, xbox_price, xbox_url, nintendo_title, nintendo_price, nintendo_url, all_deals_url, unsubscribeUrl }) {
+  function platformRow(emoji, title, platform, price, url) {
+    return `<tr><td style="padding:8px 0;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#1a1a2e;border-radius:10px;border:1px solid #25253a;">
+        <tr>
+          <td style="padding:14px 16px;width:36px;vertical-align:middle;text-align:center;font-size:24px;">${emoji}</td>
+          <td style="padding:14px 0;vertical-align:middle;">
+            <p style="margin:0;font-size:14px;font-weight:700;color:#fff;">${title}</p>
+            <p style="margin:2px 0 0;font-size:12px;color:#7c7c96;">${platform}</p>
+          </td>
+          <td style="padding:14px 8px;vertical-align:middle;text-align:center;width:72px;font-size:16px;font-weight:800;color:#22c55e;">${price}</td>
+          <td style="padding:14px 16px 14px 0;vertical-align:middle;text-align:right;width:80px;">
+            <a href="${url}" style="display:inline-block;padding:8px 14px;background:#6c5ce7;color:#fff;font-size:12px;font-weight:700;text-decoration:none;border-radius:6px;">Holen</a>
+          </td>
+        </tr>
+      </table>
+    </td></tr>`;
+  }
+  const content = `
+    <tr><td style="padding:36px 32px 20px;text-align:center;">
+      <div style="font-size:48px;line-height:1;margin-bottom:12px;">🎮</div>
+      <h1 style="margin:0 0 8px;font-size:24px;font-weight:700;color:#fff;">Neuer Gaming Drop, ${first_name || 'Gamer'}!</h1>
+      <p style="margin:0;font-size:14px;color:#a0a0b8;">Frische Deals für Steam, PSN, Xbox & Nintendo.</p>
+    </td></tr>
+    <tr><td style="padding:0 32px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${platformRow('♟️', steam_title, 'Steam', steam_price, steam_url)}
+        ${platformRow('🎮', psn_title, 'PlayStation', psn_price, psn_url)}
+        ${platformRow('🟢', xbox_title, 'Xbox', xbox_price, xbox_url)}
+        ${platformRow('🍃', nintendo_title, 'Nintendo', nintendo_price, nintendo_url)}
+      </table>
+    </td></tr>
+    <tr><td style="padding:24px 32px;text-align:center;">
+      <a href="${all_deals_url || BASE_URL}" style="display:inline-block;padding:12px 32px;background:#6c5ce7;color:#fff;font-size:14px;font-weight:700;text-decoration:none;border-radius:8px;">Alle Gaming Drops →</a>
+    </td></tr>`;
+  return { subject: '🎮 Neuer Gaming Drop – Steam, PSN, Xbox & Nintendo', html: wrap(content, { unsubscribeUrl }) };
+}
+
 /* ── Template registry for admin preview ────────────── */
 const TEMPLATES = {
   welcome: {
@@ -129,6 +237,49 @@ const TEMPLATES = {
       imageUrl: '',
       unsubscribeUrl: '#'
     }
+  },
+  weekly_digest: {
+    name: 'Weekly Digest',
+    description: 'Wöchentlicher Überblick mit Top-Deals',
+    render: weeklyDigestEmail,
+    sampleData: {
+      first_name: 'Gamer',
+      calendar_week: '08',
+      deal_1_title: 'Xbox Game Pass Ultimate 3 Mon.', deal_1_platform: 'Xbox', deal_1_price: '29,99 €', deal_1_original_price: '44,99 €', deal_1_url: '#',
+      deal_2_title: 'Steam Wallet 50 €', deal_2_platform: 'Steam', deal_2_price: '43,49 €', deal_2_original_price: '50,00 €', deal_2_url: '#',
+      deal_3_title: 'PS Plus Premium 12 Mon.', deal_3_platform: 'PlayStation', deal_3_price: '89,99 €', deal_3_original_price: '119,99 €', deal_3_url: '#',
+      all_deals_url: '#',
+      unsubscribeUrl: '#'
+    }
+  },
+  price_drop: {
+    name: 'Price Drop Alert',
+    description: 'Preisalarm wenn ein Produkt günstiger wird',
+    render: priceDropEmail,
+    sampleData: {
+      first_name: 'Gamer',
+      deal_title: 'Nintendo eShop 50 €',
+      price: '41,99 €',
+      original_price: '50,00 €',
+      discount: '-16 %',
+      deal_url: '#',
+      price_date: '22.02.2026',
+      unsubscribeUrl: '#'
+    }
+  },
+  gaming_drop: {
+    name: 'Gaming Drop',
+    description: 'Gaming-Credits Drop: Steam, PSN, Xbox & Nintendo',
+    render: gamingDropEmail,
+    sampleData: {
+      first_name: 'Gamer',
+      steam_title: 'Steam Wallet 20 €', steam_price: '17,49 €', steam_url: '#',
+      psn_title: 'PSN Guthaben 25 €', psn_price: '21,99 €', psn_url: '#',
+      xbox_title: 'Xbox Gift Card 15 €', xbox_price: '12,99 €', xbox_url: '#',
+      nintendo_title: 'Nintendo eShop 15 €', nintendo_price: '12,49 €', nintendo_url: '#',
+      all_deals_url: '#',
+      unsubscribeUrl: '#'
+    }
   }
 };
 
@@ -144,4 +295,4 @@ function getTemplate(templateId, vars) {
   return { templateId, subject: rendered.subject || tpl.name || templateId, html: rendered.html };
 }
 
-module.exports = { welcomeEmail, flashDealEmail, wrap, TEMPLATES, BASE_URL, getTemplate };
+module.exports = { welcomeEmail, flashDealEmail, weeklyDigestEmail, priceDropEmail, gamingDropEmail, wrap, TEMPLATES, BASE_URL, getTemplate };
