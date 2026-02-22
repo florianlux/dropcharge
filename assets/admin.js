@@ -547,17 +547,18 @@ function renderBanner(text) {
   }
   textEl.textContent = trimmed;
   banner.style.display = 'block';
-  // Determine if scrolling is needed: check text width vs container
-  requestAnimationFrame(() => {
+  // Double rAF ensures layout recalc so scrollWidth is accurate
+  requestAnimationFrame(() => { requestAnimationFrame(() => {
     const track = banner.querySelector('.neon-banner-track');
     if (!track) return;
     const needsScroll = textEl.scrollWidth > track.clientWidth;
     textEl.classList.toggle('scrolling', needsScroll);
     if (needsScroll) {
+      // ~0.25s per character, minimum 10s for comfortable reading speed
       const duration = Math.max(10, trimmed.length * 0.25);
       textEl.style.setProperty('--ticker-duration', duration + 's');
     }
-  });
+  }); });
 }
 
 function initBannerSettings() {
