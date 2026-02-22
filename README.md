@@ -152,6 +152,10 @@ curl -X POST -H "x-admin-token: YOUR_TOKEN" -H "Content-Type: application/json" 
   -d '{"subject":"Test","html":"<h1>Hello</h1>","testEmail":"you@example.com"}' \
   https://YOUR-SITE.netlify.app/.netlify/functions/admin-send-campaign
 
+# Email logs (smoke test)
+curl -i -H "x-admin-token: YOUR_TOKEN" \
+  https://YOUR-SITE.netlify.app/.netlify/functions/admin-email-logs
+
 # Analytics
 curl -H "x-admin-token: YOUR_TOKEN" \
   https://YOUR-SITE.netlify.app/.netlify/functions/admin-analytics

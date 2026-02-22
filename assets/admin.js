@@ -353,12 +353,12 @@ async function loadEmailLogs() {
       rows.innerHTML = '<p class="empty warning">Logs unavailable. Check connection or run migration.</p>';
       return;
     }
-    if (data.warning === 'schema_missing') {
-      rows.innerHTML = `<p class="empty warning">No logs yet or table missing. ${escapeHtml(data.hint || 'Run migration 004_email_logs.sql.')}</p>`;
+    if (data.error === 'email_logs_missing') {
+      rows.innerHTML = `<p class="empty warning">Table missing. ${escapeHtml(data.hint || 'Run migration 004_email_logs.sql.')}</p>`;
       return;
     }
     if (!data.items || data.items.length === 0) {
-      rows.innerHTML = '<p class="empty">No email logs found.</p>';
+      rows.innerHTML = '<p class="empty">No logs yet.</p>';
       return;
     }
     rows.innerHTML = data.items.map(log => {

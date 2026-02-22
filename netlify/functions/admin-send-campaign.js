@@ -132,7 +132,7 @@ function chunk(array, size) {
   return result;
 }
 
-async function logEmailSend({ email, template, subject, status, error: errMsg }) {
+async function logEmailSend({ email, template, subject, status, error: errMsg, messageId }) {
   if (!hasSupabase || !supabase) return { logged: false, reason: 'supabase_not_configured' };
   try {
     const { error } = await supabase.from('email_logs').insert({
@@ -140,6 +140,7 @@ async function logEmailSend({ email, template, subject, status, error: errMsg })
       template: template || 'campaign',
       subject,
       status,
+      message_id: messageId || null,
       error: errMsg || null,
       sent_at: status === 'sent' ? new Date().toISOString() : null
     });
@@ -165,9 +166,9 @@ async function sendCampaign({ recipients, subject, html, context }) {
       const unsubscribe = `${BASE_URL}/unsubscribe?email=${encodeURIComponent(email)}`;
       const htmlWithUnsub = html.replace(/__UNSUB__/g, unsubscribe);
       try {
-        await sendEmail({ to: email, subject, html: htmlWithUnsub });
+        const { messageId } = await sendEmail({ to: email, subject, html: htmlWithUnsub });
         sent += 1;
-        const logResult = await logEmailSend({ email, subject, status: 'sent' });
+        const logResult = await logEmailSend({ email, subject, status: 'sent', messageId });
         if (!logResult.logged) logWarnings += 1;
       } catch (err) {
         console.log('email send failed', email, err.message);
