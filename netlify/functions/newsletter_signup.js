@@ -1,6 +1,7 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { withCors } = require('./_lib/cors');
 const { welcomeEmail, BASE_URL } = require('./_lib/email-templates');
+const { sanitizeFrom } = require('./_lib/email-from');
 const crypto = require('crypto');
 
 const EMAIL_API_KEY = process.env.RESEND_API_KEY;
@@ -119,7 +120,7 @@ async function handler(event) {
   // --- Send welcome email via Resend ---
   let emailSent = false;
   const welcomeSubject = welcomeEmail({ email, unsubscribeUrl: '#' }).subject;
-  const senderFrom = EMAIL_FROM || EMAIL_FALLBACK_FROM;
+  const senderFrom = sanitizeFrom(EMAIL_FROM) || sanitizeFrom(EMAIL_FALLBACK_FROM);
   if (EMAIL_API_KEY && senderFrom) {
     try {
       const tpl = welcomeEmail({ email, unsubscribeUrl });

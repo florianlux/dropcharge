@@ -1,6 +1,7 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
+const { sanitizeFrom } = require('./_lib/email-from');
 
 console.log("ENV CHECK:", {
   hasResendKey: !!process.env.RESEND_API_KEY,
@@ -72,7 +73,7 @@ async function logCampaign(payload) {
 }
 
 async function sendEmail({ to, subject, html }) {
-  const from = EMAIL_FROM || EMAIL_FALLBACK_FROM;
+  const from = sanitizeFrom(EMAIL_FROM) || sanitizeFrom(EMAIL_FALLBACK_FROM);
   if (!from || !to || !subject || !html) {
     const detail = [
       !from && 'from',

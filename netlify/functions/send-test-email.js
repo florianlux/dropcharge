@@ -2,9 +2,10 @@ const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
 const { getTemplate, TEMPLATES } = require('./_lib/email-templates');
 const { supabase, hasSupabase } = require('./_lib/supabase');
+const { sanitizeFrom } = require('./_lib/email-from');
 
 const EMAIL_API_KEY = process.env.RESEND_API_KEY;
-const EMAIL_FROM = process.env.RESEND_FROM || process.env.RESEND_FALLBACK_FROM;
+const EMAIL_FROM = sanitizeFrom(process.env.RESEND_FROM) || sanitizeFrom(process.env.RESEND_FALLBACK_FROM);
 const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || undefined;
 
 function isValidEmail(email) {
