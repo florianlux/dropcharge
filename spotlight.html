@@ -345,11 +345,12 @@
       /* ── Temu-inspired layout renderer ─────────────────── */
       function renderTemuSpotlight(item) {
         document.body.style.background = '#f5f5f5';
-        var heroImage = item.hero_url || item.product_image_url || '';
+        var productImage = item.hero_url || item.product_image_url || '';
         var ctaText = item.cta_text || 'Jetzt sichern';
         var affiliateUrl = escapeAttr(item.affiliate_url);
+        var brandName = item.brand || 'Shop';
 
-        // Generate plausible review data
+        // Placeholder review data (labeled as illustrative)
         var rating = '4.6';
         var reviewCount = '12.4k';
         var starsHtml = '★★★★★';
@@ -363,7 +364,7 @@
             priceHtml += ' <span class="tm-price-old">' + escapeHtml(String(item.product_list_price)) + ' ' + escapeHtml(item.product_currency || 'EUR') + '</span>';
           }
         } else {
-          priceHtml = '<span class="tm-price-label">Preis auf Temu pr\u00fcfen</span>';
+          priceHtml = '<span class="tm-price-label">Preis bei ' + escapeHtml(brandName) + ' pr\u00fcfen</span>';
         }
 
         var stickyPriceHtml = '';
@@ -390,8 +391,8 @@
 
         // B) Product block card
         html += '<div class="tm-card">';
-        if (heroImage) {
-          html += '<img class="tm-product-img" src="' + escapeAttr(heroImage) + '" alt="' + escapeAttr(item.title) + '" />';
+        if (productImage) {
+          html += '<img class="tm-product-img" src="' + escapeAttr(productImage) + '" alt="' + escapeAttr(item.title) + '" />';
         }
         html += '<div class="tm-card-body">';
         html += '<h1 class="tm-product-title">' + escapeHtml(item.title) + '</h1>';
@@ -405,7 +406,7 @@
         html += '<div class="tm-rating">';
         html += '<span class="tm-stars">' + starsHtml + '</span>';
         html += '<span class="tm-rating-num">' + rating + '</span>';
-        html += '<span>' + reviewCount + ' reviews &middot; community rating</span>';
+        html += '<span>' + reviewCount + ' reviews &middot; illustrative rating</span>';
         html += '</div>';
 
         // Price row
@@ -501,30 +502,21 @@
       }
 
       function bindCTA(item) {
+        function trackClick() {
+          try {
+            fetch(API_BASE + '/.netlify/functions/spotlight-click', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ slug: item.slug })
+            }).catch(function() {});
+          } catch (err) { /* fire and forget */ }
+        }
         var btns = document.querySelectorAll('[data-cta-track]');
-        btns.forEach(function(btn) {
-          btn.addEventListener('click', function(e) {
-            try {
-              fetch(API_BASE + '/.netlify/functions/spotlight-click', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ slug: item.slug })
-              }).catch(function() {});
-            } catch (err) { /* fire and forget */ }
-          });
-        });
-        // Legacy single-button binding
+        btns.forEach(function(btn) { btn.addEventListener('click', trackClick); });
+        // Legacy single-button binding (default neon layout)
         var single = document.getElementById('sp-cta-btn');
         if (single && !single.hasAttribute('data-cta-track')) {
-          single.addEventListener('click', function(e) {
-            try {
-              fetch(API_BASE + '/.netlify/functions/spotlight-click', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ slug: item.slug })
-              }).catch(function() {});
-            } catch (err) { /* fire and forget */ }
-          });
+          single.addEventListener('click', trackClick);
         }
       }
 
