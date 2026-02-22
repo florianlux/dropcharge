@@ -256,8 +256,12 @@
         if (/switch|nintendo/i.test(titleLower)) platforms.push('Switch');
         if (platforms.length === 0) platforms.push('PC');
 
-        // Determine redeem text
-        var redeemPlatform = platforms.indexOf('Steam') !== -1 ? 'Redeem on Steam' : 'Redeem on platform';
+        // Determine redeem text based on detected platform
+        var redeemPlatform = 'Redeem on platform';
+        if (platforms.indexOf('Steam') !== -1) redeemPlatform = 'Redeem on Steam';
+        else if (platforms.indexOf('Xbox') !== -1) redeemPlatform = 'Redeem on Xbox';
+        else if (platforms.indexOf('PlayStation') !== -1) redeemPlatform = 'Redeem on PlayStation';
+        else if (platforms.indexOf('Switch') !== -1) redeemPlatform = 'Redeem on Nintendo eShop';
 
         var h = '';
 
