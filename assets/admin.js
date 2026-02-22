@@ -27,7 +27,9 @@ async function api(path, options = {}) {
     const res = await fetch(url, { ...options, headers });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
-      throw new Error(body.error || `HTTP ${res.status}`);
+      const errMsg = body.error || `HTTP ${res.status}`;
+      const detail = body.details ? `: ${body.details}` : '';
+      throw new Error(`${errMsg}${detail}`);
     }
     return body;
   } catch (err) {
@@ -401,7 +403,7 @@ function initEmail() {
           showToast(`Test email (${template}) sent to ${recipient}.`);
         }
         loadEmailLogs();
-      } catch { /* toast shown */ }
+      } catch { /* toast shown by api() */ }
     });
   }
 }

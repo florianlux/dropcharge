@@ -1,13 +1,6 @@
-const { supabase, hasSupabase, isSchemaError } = require('./_lib/supabase');
+const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
-
-console.log("ENV CHECK:", {
-  hasResendKey: !!process.env.RESEND_API_KEY,
-  hasFrom: !!process.env.RESEND_FROM,
-  hasSupabaseUrl: !!process.env.SUPABASE_URL,
-  hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
-});
 
 exports.handler = withCors(async (event) => {
   const authError = requireAdmin(event.headers || {});
@@ -43,8 +36,14 @@ exports.handler = withCors(async (event) => {
     };
   } catch (err) {
     const msg = (err && (err.message || err.details || '')) || '';
-    if (isSchemaError(err)) {
-      console.error('admin-email-logs schema error', msg);
+
+    // Only report "table missing" when the error specifically mentions the
+    // email_logs relation / table not existing.  Other schema or transient
+    // errors should surface as generic failures so they are not confused with
+    // a missing migration.
+    const EMAIL_LOGS_MISSING_RE = /relation "?(?:public\.)?email_logs"? does not exist/i;
+    if (EMAIL_LOGS_MISSING_RE.test(msg)) {
+      console.error('admin-email-logs: table missing', msg);
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
@@ -55,6 +54,7 @@ exports.handler = withCors(async (event) => {
         })
       };
     }
+
     console.error('admin-email-logs error', msg);
     return {
       statusCode: 500,

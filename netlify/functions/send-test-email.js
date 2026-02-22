@@ -1,6 +1,6 @@
 const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
-const { TEMPLATES } = require('./_lib/email-templates');
+const { getTemplate, TEMPLATES } = require('./_lib/email-templates');
 const { supabase, hasSupabase } = require('./_lib/supabase');
 
 const EMAIL_API_KEY = process.env.RESEND_API_KEY;
@@ -11,7 +11,7 @@ function isValidEmail(email) {
   return typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-async function logEmailSend({ email, template, subject, status, error: errMsg }) {
+async function logEmailSend({ email, template, subject, status, error: errMsg, messageId }) {
   if (!hasSupabase || !supabase) return { logged: false, reason: 'supabase_not_configured' };
   try {
     const { error } = await supabase.from('email_logs').insert({
@@ -19,6 +19,7 @@ async function logEmailSend({ email, template, subject, status, error: errMsg })
       template: template || 'test',
       subject,
       status,
+      message_id: messageId || null,
       error: errMsg || null,
       sent_at: status === 'sent' ? new Date().toISOString() : null
     });
@@ -49,7 +50,7 @@ async function handler(event) {
   }
 
   const to = (payload.to || '').trim().toLowerCase();
-  const templateId = payload.templateId || '';
+  const templateId = payload.templateId || 'welcome';
   const vars = payload.vars || {};
 
   if (!isValidEmail(to)) {
@@ -60,7 +61,7 @@ async function handler(event) {
     };
   }
 
-  if (!templateId || !TEMPLATES[templateId]) {
+  if (!TEMPLATES[templateId]) {
     return {
       statusCode: 400,
       headers: { 'Content-Type': 'application/json' },
@@ -77,11 +78,16 @@ async function handler(event) {
     };
   }
 
-  const tpl = TEMPLATES[templateId];
-  const data = { ...tpl.sampleData, ...vars };
-  const rendered = tpl.render(data);
+  const rendered = getTemplate(templateId, vars);
+  if (!rendered || !rendered.html) {
+    return {
+      statusCode: 500,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: false, error: 'template_render_failed', template: templateId })
+    };
+  }
 
-  const subject = rendered.subject || tpl.name || templateId;
+  const subject = rendered.subject || templateId;
   const html = rendered.html;
 
   const emailBody = {
@@ -107,7 +113,7 @@ async function handler(event) {
 
     if (!res.ok) {
       console.error('RESEND ERROR:', { status: res.status, response: resBody });
-      const detail = typeof resBody === 'object' ? JSON.stringify(resBody) : String(resBody);
+      const detail = typeof resBody === 'object' ? (resBody.message || JSON.stringify(resBody)) : String(resBody);
       const logResult = await logEmailSend({ email: to, template: templateId, subject, status: 'failed', error: `resend_error:${res.status}:${detail}` });
       return {
         statusCode: 502,
@@ -116,9 +122,10 @@ async function handler(event) {
       };
     }
 
-    const logResult = await logEmailSend({ email: to, template: templateId, subject, status: 'sent' });
+    const resendId = resBody?.id ?? null;
+    const logResult = await logEmailSend({ email: to, template: templateId, subject, status: 'sent', messageId: resendId });
 
-    const response = { ok: true, messageId: resBody?.id ?? null, template: templateId, to };
+    const response = { ok: true, messageId: resendId, template: templateId, to };
     if (!logResult.logged) {
       response.warning = 'log_insert_failed';
       response.details = logResult.reason || 'Email log could not be saved. Run migration 004_email_logs.sql.';
