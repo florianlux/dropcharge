@@ -13,7 +13,7 @@ High-conversion gaming-credit dropsite: TikTok-ready UI, Netlify Functions, Supa
 2. Run [`supabase-schema.sql`](./supabase-schema.sql) to create tables.
 3. Grab **Project URL** + **service_role key** → set as Netlify env vars:
    - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_ROLE_KEY` (also accepts legacy `SUPABASE_SERVICE_KEY`)
+   - `SUPABASE_SERVICE_ROLE_KEY`
 4. Optional envs:
    - `RESEND_API_KEY` (optional – enables welcome email on newsletter signup; signup works without it)
    - `ADMIN_PASSWORD_HASH` (bcrypt hash via `node scripts/hash-password.js "pass"`)
@@ -102,8 +102,8 @@ Set these in **Netlify → Site settings → Environment variables** (scope: _Al
 | `SUPABASE_URL` | **Yes** | Your Supabase project URL (e.g. `https://xyz.supabase.co`). |
 | `SUPABASE_SERVICE_ROLE_KEY` | **Yes** | Supabase service-role key (not the anon key). |
 | `RESEND_API_KEY` | **Yes** (for email) | Resend API key for sending campaigns and welcome emails. |
-| `EMAIL_FROM` | **Yes** (for email) | Sender address (e.g. `DropCharge <noreply@dropcharge.de>`). Must be verified in Resend. |
-| `APP_BASE_URL` | Optional | Base URL for unsubscribe links etc. Defaults to `https://dropcharge.netlify.app`. |
+| `RESEND_FROM` | **Yes** (for email) | Sender address (e.g. `DropCharge <noreply@dropcharge.de>`). Must be verified in Resend. |
+| `PUBLIC_SITE_URL` | Optional | Base URL for unsubscribe links etc. Defaults to `https://dropcharge.netlify.app`. |
 | `EMAIL_REPLY_TO` | Optional | Reply-to address for campaign emails. |
 
 ### Admin Login
