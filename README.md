@@ -103,7 +103,7 @@ Set these in **Netlify → Site settings → Environment variables** (scope: _Al
 | `SUPABASE_SERVICE_ROLE_KEY` | **Yes** | Supabase service-role key (not the anon key). |
 | `RESEND_API_KEY` | **Yes** (for email) | Resend API key for sending campaigns and welcome emails. |
 | `RESEND_FROM` | **Yes** (for email) | Sender address (e.g. `DropCharge <noreply@dropcharge.de>`). Must be verified in Resend. |
-| `PUBLIC_SITE_URL` | Optional | Base URL for unsubscribe links etc. Defaults to `https://dropcharge.netlify.app`. |
+| `PUBLIC_SITE_URL` | Optional | Base URL for unsubscribe links etc. Defaults to `https://dropcharge.io`. |
 | `EMAIL_REPLY_TO` | Optional | Reply-to address for campaign emails. |
 | `RESEND_FALLBACK_FROM` | Optional | Fallback sender address used if `RESEND_FROM` is not set (useful for testing before domain verification). |
 

@@ -9,13 +9,21 @@ function getHeader(headers = {}, name) {
   return null;
 }
 
-const authEnabled = Boolean(process.env.ADMIN_TOKEN);
+function getExpectedAdminToken() {
+  return process.env.ADMIN_TOKEN
+    || process.env.ADMIN_API_TOKEN
+    || process.env.DASHBOARD_TOKEN
+    || process.env.ADMIN_SECRET
+    || '';
+}
+
+const authEnabled = Boolean(getExpectedAdminToken());
 
 function isAdminAuthorized(headers) {
   if (!authEnabled) {
     return true;
   }
-  const expected = process.env.ADMIN_TOKEN || '';
+  const expected = getExpectedAdminToken().trim();
   const provided = (getHeader(headers, 'x-admin-token') || '').trim();
   return provided === expected;
 }

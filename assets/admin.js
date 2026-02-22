@@ -350,13 +350,27 @@ async function loadEmailLogs() {
   try {
     const params = new URLSearchParams({ limit: '50' });
     if (status) params.set('status', status);
-    const data = await apiGetSilent(`admin-email-logs?${params}`);
-    if (!data) {
-      rows.innerHTML = '<p class="empty warning">Logs unavailable. Check connection or run migration.</p>';
+    const url = `${API_BASE}/.netlify/functions/admin-email-logs?${params}`;
+    const headers = {
+      'Content-Type': 'application/json',
+      'x-admin-token': getToken()
+    };
+    const res = await fetch(url, { method: 'GET', headers });
+    if (res.status === 401) {
+      rows.innerHTML = '<p class="empty warning">Unauthorized (admin token missing/invalid).</p>';
       return;
     }
-    if (data.error === 'email_logs_missing') {
-      rows.innerHTML = `<p class="empty warning">Table missing. ${escapeHtml(data.hint || 'Run migration 004_email_logs.sql.')}</p>`;
+    const data = await res.json().catch(() => ({}));
+    if (res.status >= 500) {
+      rows.innerHTML = `<p class="empty warning">Server error: ${escapeHtml(data.error || 'unknown')}</p>`;
+      return;
+    }
+    if (!data || !data.ok) {
+      if (data && data.error === 'email_logs_missing') {
+        rows.innerHTML = `<p class="empty warning">Table missing. ${escapeHtml(data.hint || 'Run migration 004_email_logs.sql.')}</p>`;
+        return;
+      }
+      rows.innerHTML = '<p class="empty warning">Logs unavailable. Check connection or run migration.</p>';
       return;
     }
     if (!data.items || data.items.length === 0) {

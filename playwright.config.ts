@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'https://dropchargeadmin.netlify.app';
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'https://dropcharge.io';
 
 export default defineConfig({
   testDir: './tests',
