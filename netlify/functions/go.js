@@ -3,6 +3,7 @@ const geoip = require('geoip-lite');
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { fetchSettings, extractFlags } = require('./_lib/settings');
 const { withCors } = require('./_lib/cors');
+const { normalizeG2AReflink } = require('./_lib/affiliates');
 
 const germanStates = {
   BW: 'Baden-Württemberg',
@@ -154,9 +155,15 @@ async function handler(event) {
     console.log('Supabase not configured – skipping click log');
   }
 
+  let redirectUrl = offer.url;
+  // Apply G2A reflink tag if configured
+  if (process.env.G2A_GTAG) {
+    redirectUrl = normalizeG2AReflink(redirectUrl, process.env.G2A_GTAG);
+  }
+
   return {
     statusCode: 302,
-    headers: { Location: offer.url },
+    headers: { Location: redirectUrl },
     body: ''
   };
 };

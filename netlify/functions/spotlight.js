@@ -1,6 +1,7 @@
 const { supabase, hasSupabase, isSchemaError, schemaMismatchResponse } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
+const { normalizeDealUrlByProvider } = require('./_lib/affiliates');
 
 function slugify(value) {
   return (value || '')
@@ -9,6 +10,10 @@ function slugify(value) {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)/g, '')
     .slice(0, 64) || null;
+}
+
+function normalizeUrl(url) {
+  return url ? normalizeDealUrlByProvider(url, null, process.env) : null;
 }
 
 function sanitizePayload(payload = {}) {
@@ -21,12 +26,12 @@ function sanitizePayload(payload = {}) {
     slug: payload.slug || slugify(payload.title),
     price: payload.price || null,
     price_cents: typeof payload.price_cents === 'number' ? payload.price_cents : null,
-    affiliate_url: payload.affiliate_url || null,
+    affiliate_url: normalizeUrl(payload.affiliate_url),
     code_label: payload.code_label || null,
-    code_url: payload.code_url || null,
+    code_url: normalizeUrl(payload.code_url),
     cover_url: payload.cover_url || null,
-    amazon_url: payload.amazon_url || null,
-    g2g_url: payload.g2g_url || null,
+    amazon_url: normalizeUrl(payload.amazon_url),
+    g2g_url: normalizeUrl(payload.g2g_url),
     release_date: payload.release_date || null,
     active: typeof payload.active === 'boolean' ? payload.active : true,
     starts_at: payload.starts_at || null,

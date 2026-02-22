@@ -24,6 +24,7 @@
         <button class="nav-link" data-tab="newsletter">Newsletter</button>
         <button class="nav-link" data-tab="email">Email</button>
         <button class="nav-link" data-tab="campaigns">Campaigns</button>
+        <button class="nav-link" data-tab="deals">Deals</button>
         <button class="nav-link" data-tab="tracking">Tracking Links</button>
         <button class="nav-link" data-tab="analytics">Analytics</button>
       </nav>
@@ -247,6 +248,22 @@
             <button type="submit" class="btn primary" id="campaign-send">Send to All Active</button>
           </div>
         </form>
+      </section>
+
+      <!-- Deals Management -->
+      <section class="tab-panel" data-panel="deals">
+        <div class="panel-head">
+          <h2>Deals / Spotlights</h2>
+        </div>
+        <div class="card">
+          <h3>🔗 G2A Reflink Repair</h3>
+          <p style="margin:0 0 1rem;opacity:.7;font-size:.9rem;">Scan all spotlights and ensure every G2A URL contains your affiliate <code>gtag</code> parameter.</p>
+          <button class="btn primary" id="g2a-fix-btn">Fix G2A Links</button>
+          <div id="g2a-fix-result" style="display:none;margin-top:1rem;">
+            <div class="stats-row" id="g2a-fix-stats"></div>
+            <div id="g2a-fix-examples" style="margin-top:.75rem;"></div>
+          </div>
+        </div>
       </section>
 
       <!-- Tracking Link Generator -->

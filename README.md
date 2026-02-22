@@ -106,6 +106,7 @@ Set these in **Netlify → Site settings → Environment variables** (scope: _Al
 | `PUBLIC_SITE_URL` | Optional | Base URL for unsubscribe links etc. Defaults to `https://dropcharge.io`. |
 | `EMAIL_REPLY_TO` | Optional | Reply-to address for campaign emails. |
 | `RESEND_FALLBACK_FROM` | Optional | Fallback sender address used if `RESEND_FROM` is not set (useful for testing before domain verification). |
+| `G2A_GTAG` | Optional | G2A affiliate tag (e.g. `e5d2fce463`). When set, all G2A URLs are automatically normalised to include `?gtag=<value>`. |
 
 ### Email Diagnostics
 
@@ -159,6 +160,10 @@ curl -i -H "x-admin-token: YOUR_TOKEN" \
 # Analytics
 curl -H "x-admin-token: YOUR_TOKEN" \
   https://YOUR-SITE.netlify.app/.netlify/functions/admin-analytics
+
+# Fix G2A reflinks (bulk repair)
+curl -X POST -H "x-admin-token: YOUR_TOKEN" \
+  https://YOUR-SITE.netlify.app/.netlify/functions/admin-fix-g2a-links
 ```
 
 ## TODO Ideas
