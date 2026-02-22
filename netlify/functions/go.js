@@ -64,7 +64,7 @@ const offers = {
   'nintendo-15': { url: 'https://www.g2a.com/n/nintendo15_lux', platform: 'Nintendo', amount: '15€' },
   'nintendo-25': { url: 'https://www.g2a.com/n/nintendo15_lux', platform: 'Nintendo', amount: '25€' },
   'nintendo-50': { url: 'https://www.g2a.com/n/nintendo15_lux', platform: 'Nintendo', amount: '50€' },
-  // Drops-compatible IDs (same as seeded in drops table)
+  // Drops-compatible IDs — emergency fallback if drops table is unavailable
   'nintendo15': { url: 'https://www.g2a.com/n/nintendo15_lux', platform: 'Nintendo', amount: '15€' },
   'psn20': { url: 'https://www.g2a.com/n/psn5_lux', platform: 'PSN', amount: '20€' },
   'xbox3m': { url: 'https://www.g2a.com/n/xbox_lux1', platform: 'Xbox', amount: '3 Monate' },

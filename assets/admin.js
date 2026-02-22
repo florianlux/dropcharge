@@ -710,7 +710,7 @@ async function loadDrops() {
         <span>${d.sort_order ?? 0}</span>
         <span>
           <button class="btn mini ghost" data-edit-drop="${escapeHtml(d.id)}">Edit</button>
-          <button class="btn mini ghost" data-toggle-drop="${escapeHtml(d.id)}" data-active="${d.active}">${d.active ? 'Disable' : 'Enable'}</button>
+          <button class="btn mini ghost" data-toggle-drop="${escapeHtml(d.id)}" data-active="${escapeHtml(String(d.active))}">${d.active ? 'Disable' : 'Enable'}</button>
         </span>
       </div>`;
     }).join('');

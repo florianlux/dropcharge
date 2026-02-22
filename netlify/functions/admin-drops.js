@@ -53,7 +53,7 @@ async function handler(event) {
       };
     }
 
-    const id = (payload.id || '').trim().toLowerCase();
+    const id = (payload.id || '').trim();
     if (!id) {
       return {
         statusCode: 400,
