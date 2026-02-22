@@ -42,7 +42,10 @@ delete process.env.SUPABASE_SERVICE_KEY;
 delete process.env.SUPABASE_SECRET_KEY;
 delete process.env.SUPABASE_SERVICE_ROLE;
 // Disable admin auth so we can test other paths
-process.env.ADMIN_TOKEN = '';
+delete process.env.ADMIN_TOKEN;
+delete process.env.ADMIN_API_TOKEN;
+delete process.env.DASHBOARD_TOKEN;
+delete process.env.ADMIN_SECRET;
 
 // We need fresh requires so the supabase module picks up the missing env
 delete require.cache[require.resolve('../netlify/functions/_lib/supabase')];

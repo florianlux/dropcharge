@@ -36,7 +36,7 @@ async function handler(event) {
   if (authError) return authError;
 
   if (!hasSupabase || !supabase) {
-    return json(500, { ok: false, error: 'supabase_not_configured', details: { hint: 'Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY env vars' } });
+    return json(500, { ok: false, error: 'supabase_not_configured', details: { hint: 'Database is not configured — check environment variables' } });
   }
 
   const method = event.httpMethod;
