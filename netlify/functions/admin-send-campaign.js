@@ -3,7 +3,7 @@ const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
 
 const EMAIL_API_KEY = process.env.RESEND_API_KEY || process.env.EMAIL_API_KEY;
-const EMAIL_FROM = process.env.EMAIL_FROM || process.env.NEWSLETTER_FROM;
+const EMAIL_FROM = process.env.EMAIL_FROM || process.env.RESEND_FROM || process.env.NEWSLETTER_FROM;
 const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || undefined;
 const BASE_URL = (process.env.APP_BASE_URL || process.env.BASE_URL || 'https://dropcharge.netlify.app').replace(/\/$/, '');
 const BATCH_SIZE = Number(process.env.CAMPAIGN_BATCH_SIZE || 50);
@@ -96,6 +96,22 @@ function chunk(array, size) {
   return result;
 }
 
+async function logEmailSend({ email, template, subject, status, error: errMsg }) {
+  if (!hasSupabase || !supabase) return;
+  try {
+    await supabase.from('email_logs').insert({
+      recipient: email,
+      template: template || 'campaign',
+      subject,
+      status,
+      error: errMsg || null,
+      sent_at: status === 'sent' ? new Date().toISOString() : null
+    });
+  } catch (err) {
+    console.error('email_log insert error:', err.message);
+  }
+}
+
 async function sendCampaign({ recipients, subject, html, context }) {
   let sent = 0;
   const failed = [];
@@ -108,9 +124,11 @@ async function sendCampaign({ recipients, subject, html, context }) {
       try {
         await sendEmail({ to: email, subject, html: htmlWithUnsub });
         sent += 1;
+        await logEmailSend({ email, subject, status: 'sent' });
       } catch (err) {
         console.log('email send failed', email, err.message);
         failed.push(email);
+        await logEmailSend({ email, subject, status: 'failed', error: err.message });
       }
     }));
     if (i < batches.length - 1) {
