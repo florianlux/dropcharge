@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS drops (
   id          TEXT PRIMARY KEY,
   title       TEXT NOT NULL,
   platform    TEXT NOT NULL,
-  value_eur   NUMERIC(10,2),
+  value_eur   NUMERIC(10,2) NOT NULL,
   destination_url TEXT NOT NULL,
   active      BOOLEAN NOT NULL DEFAULT true,
   featured    BOOLEAN NOT NULL DEFAULT false,
