@@ -1,0 +1,37 @@
+[
+  {
+    "id": "welcome",
+    "name": "Welcome Email",
+    "description": "Willkommens-E-Mail nach Newsletter-Signup",
+    "file": "welcome.html",
+    "tags": ["onboarding", "transactional"]
+  },
+  {
+    "id": "flash-deal",
+    "name": "Flash Deal",
+    "description": "Zeitlimitierter Deal mit Countdown-Block",
+    "file": "flash-deal.html",
+    "tags": ["promotion", "urgency"]
+  },
+  {
+    "id": "weekly-digest",
+    "name": "Weekly Digest",
+    "description": "Wöchentlicher Überblick mit 3–6 Top-Deals",
+    "file": "weekly-digest.html",
+    "tags": ["digest", "weekly"]
+  },
+  {
+    "id": "price-drop",
+    "name": "Price Drop Alert",
+    "description": "Preisalarm wenn ein Produkt günstiger wird",
+    "file": "price-drop.html",
+    "tags": ["alert", "price"]
+  },
+  {
+    "id": "gaming-drop",
+    "name": "Gaming Drop",
+    "description": "Gaming-Credits Drop: Steam, PSN, Xbox & Nintendo",
+    "file": "gaming-drop.html",
+    "tags": ["gaming", "drop"]
+  }
+]

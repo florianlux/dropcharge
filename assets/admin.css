@@ -360,6 +360,15 @@ textarea { resize: vertical; }
   color: var(--admin-muted);
   margin: 0 0 0.75rem;
 }
+.template-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.email-preview-actions {
+  display: flex;
+  gap: 0.5rem;
+}
 
 /* Email preview iframe */
 .email-preview-frame-wrap {

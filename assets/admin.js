@@ -278,6 +278,9 @@ function initCampaigns() {
 }
 
 // ── Email Hub ──────────────────────────────────────────
+let _currentPreviewHtml = '';
+let _currentPreviewKey = '';
+
 async function loadEmailTab() {
   loadEmailAudience();
   loadEmailTemplates();
@@ -319,11 +322,21 @@ async function loadEmailTemplates() {
       `<div class="template-card" data-template="${escapeHtml(tpl.key)}">
         <strong>${escapeHtml(tpl.name)}</strong>
         <p class="template-desc">${escapeHtml(tpl.description)}</p>
-        <button class="btn mini ghost" data-preview="${escapeHtml(tpl.key)}">Preview</button>
+        <div class="template-actions">
+          <button class="btn mini primary" data-preview="${escapeHtml(tpl.key)}">Preview</button>
+          <button class="btn mini ghost" data-copy="${escapeHtml(tpl.key)}">Copy HTML</button>
+          <button class="btn mini ghost" data-download="${escapeHtml(tpl.key)}">Download</button>
+        </div>
       </div>`
     ).join('');
     container.querySelectorAll('[data-preview]').forEach(btn => {
       btn.addEventListener('click', () => previewTemplate(btn.dataset.preview));
+    });
+    container.querySelectorAll('[data-copy]').forEach(btn => {
+      btn.addEventListener('click', () => copyTemplateHtml(btn.dataset.copy));
+    });
+    container.querySelectorAll('[data-download]').forEach(btn => {
+      btn.addEventListener('click', () => downloadTemplateHtml(btn.dataset.download));
     });
   } catch {
     container.innerHTML = '<p class="empty">Failed to load templates.</p>';
@@ -338,9 +351,43 @@ async function previewTemplate(key) {
   try {
     const data = await apiPost('admin-email-templates', { template: key });
     if (nameEl) nameEl.textContent = key;
+    _currentPreviewHtml = data.html || '';
+    _currentPreviewKey = key;
     card.style.display = 'block';
     frame.srcdoc = data.html;
   } catch { /* toast shown */ }
+}
+
+async function fetchTemplateHtml(key) {
+  if (_currentPreviewKey === key && _currentPreviewHtml) return _currentPreviewHtml;
+  const data = await apiPost('admin-email-templates', { template: key });
+  return data.html || '';
+}
+
+async function copyTemplateHtml(key) {
+  try {
+    const html = await fetchTemplateHtml(key);
+    if (!html) { showToast('No HTML to copy.', 'error'); return; }
+    await navigator.clipboard.writeText(html);
+    showToast('HTML copied to clipboard!');
+  } catch { showToast('Copy failed.', 'error'); }
+}
+
+async function downloadTemplateHtml(key) {
+  try {
+    const html = await fetchTemplateHtml(key);
+    if (!html) { showToast('No HTML to download.', 'error'); return; }
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${key}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`Downloaded ${key}.html`);
+  } catch { showToast('Download failed.', 'error'); }
 }
 
 async function loadEmailLogs() {
@@ -399,6 +446,31 @@ function initEmail() {
   if (refreshBtn) refreshBtn.addEventListener('click', loadEmailLogs);
   const statusFilter = $('#email-log-status-filter');
   if (statusFilter) statusFilter.addEventListener('change', loadEmailLogs);
+
+  const copyBtn = $('#email-copy-html');
+  if (copyBtn) copyBtn.addEventListener('click', () => {
+    if (_currentPreviewHtml) {
+      navigator.clipboard.writeText(_currentPreviewHtml).then(
+        () => showToast('HTML copied to clipboard!'),
+        () => showToast('Copy failed.', 'error')
+      );
+    }
+  });
+  const downloadBtn = $('#email-download-html');
+  if (downloadBtn) downloadBtn.addEventListener('click', () => {
+    if (_currentPreviewHtml) {
+      const blob = new Blob([_currentPreviewHtml], { type: 'text/html;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${_currentPreviewKey || 'template'}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast(`Downloaded ${_currentPreviewKey || 'template'}.html`);
+    }
+  });
 
   const testForm = $('#email-test-form');
   if (testForm) {
