@@ -11,6 +11,7 @@ console.log("ENV CHECK:", {
 
 const EMAIL_API_KEY = process.env.RESEND_API_KEY;
 const EMAIL_FROM = process.env.RESEND_FROM;
+const EMAIL_FALLBACK_FROM = process.env.RESEND_FALLBACK_FROM || undefined;
 const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || undefined;
 const BASE_URL = (process.env.PUBLIC_SITE_URL || 'https://dropcharge.netlify.app').replace(/\/$/, '');
 const BATCH_SIZE = Number(process.env.CAMPAIGN_BATCH_SIZE || 50);
@@ -71,13 +72,32 @@ async function logCampaign(payload) {
 }
 
 async function sendEmail({ to, subject, html }) {
+  const from = EMAIL_FROM || EMAIL_FALLBACK_FROM;
+  if (!from || !to || !subject || !html) {
+    const detail = [
+      !from && 'from',
+      !to && 'to',
+      !subject && 'subject',
+      !html && 'html'
+    ].filter(Boolean).join(', ');
+    throw new Error(`invalid_email_payload: missing ${detail}`);
+  }
+
   const body = {
-    from: EMAIL_FROM,
+    from,
     to,
     subject,
     html,
     ...(EMAIL_REPLY_TO ? { reply_to: EMAIL_REPLY_TO } : {})
   };
+
+  console.log('EMAIL PAYLOAD:', {
+    from,
+    to,
+    subjectLength: subject.length,
+    htmlLength: html.length
+  });
+
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
@@ -86,11 +106,22 @@ async function sendEmail({ to, subject, html }) {
     },
     body: JSON.stringify(body)
   });
+
+  let resBody;
+  try { resBody = await res.json(); } catch { resBody = await res.text().catch(() => ''); }
+
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`email_provider_error:${res.status}:${text}`);
+    console.error('RESEND ERROR FULL:', {
+      status: res.status,
+      response: resBody
+    });
+    const detail = typeof resBody === 'object' ? JSON.stringify(resBody) : String(resBody);
+    throw new Error(`resend_error:${res.status}:${detail}`);
   }
-  return true;
+
+  console.log('RESEND SUCCESS:', resBody);
+  const messageId = (resBody && resBody.id) || null;
+  return { messageId };
 }
 
 function chunk(array, size) {
@@ -173,12 +204,16 @@ async function handler(event) {
   const segment = typeof payload.segment === 'string' && payload.segment.trim() ? payload.segment.trim() : null;
 
   if (!subject || !rawHtml.trim()) {
-    return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'subject_required' }) };
+    return {
+      statusCode: 400,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ok: false, error: 'invalid_template_payload', details: 'subject and html are required' })
+    };
   }
 
   const required = {
     RESEND_API_KEY: !!process.env.RESEND_API_KEY,
-    RESEND_FROM: !!process.env.RESEND_FROM,
+    RESEND_FROM: !!(process.env.RESEND_FROM || process.env.RESEND_FALLBACK_FROM),
     SUPABASE_URL: !!process.env.SUPABASE_URL,
     SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY
   };

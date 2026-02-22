@@ -239,9 +239,18 @@ function initCampaigns() {
       if (!confirm(`Send campaign to "${segmentLabel}"?`)) return;
       try {
         const result = await apiPost('admin-send-campaign', { subject, html, segment });
-        showToast(`Campaign sent! ${result.sent || 0} delivered.`);
+        if (result.warning) {
+          showToast(`Campaign sent (${result.sent || 0} delivered). Warning: ${result.details || result.warning}`);
+        } else {
+          showToast(`Campaign sent! ${result.sent || 0} delivered.`);
+        }
         logEvent('campaign_sent', { subject, segment });
-      } catch { /* toast shown */ }
+      } catch (err) {
+        // apiPost already shows toast, but let's ensure details are visible
+        if (err.message && err.message.includes('resend_failed')) {
+          showToast(`Send failed: ${err.message}`, 'error');
+        }
+      }
     });
   }
   if (testBtn) {
@@ -255,9 +264,17 @@ function initCampaigns() {
       if (!subject || !html) { showToast('Subject and HTML required.', 'error'); return; }
       if (!testEmail) { showToast('Enter a test email address.', 'error'); return; }
       try {
-        await apiPost('admin-send-campaign', { subject, html, testEmail, segment });
-        showToast(`Test email sent to ${testEmail}.`);
-      } catch { /* toast shown */ }
+        const result = await apiPost('admin-send-campaign', { subject, html, testEmail, segment });
+        if (result.warning) {
+          showToast(`Test email sent to ${testEmail}. Warning: ${result.details || result.warning}`);
+        } else {
+          showToast(`Test email sent to ${testEmail}.`);
+        }
+      } catch (err) {
+        if (err.message && err.message.includes('resend_failed')) {
+          showToast(`Send failed: ${err.message}`, 'error');
+        }
+      }
     });
   }
 }

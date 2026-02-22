@@ -12,6 +12,7 @@ console.log("ENV CHECK:", {
 
 const EMAIL_API_KEY = process.env.RESEND_API_KEY;
 const EMAIL_FROM = process.env.RESEND_FROM;
+const EMAIL_FALLBACK_FROM = process.env.RESEND_FALLBACK_FROM || undefined;
 const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || undefined;
 
 function isValidEmail(email) {
@@ -124,16 +125,28 @@ async function handler(event) {
   // --- Send welcome email via Resend ---
   let emailSent = false;
   const welcomeSubject = welcomeEmail({ email, unsubscribeUrl: '#' }).subject;
-  if (EMAIL_API_KEY && EMAIL_FROM) {
+  const senderFrom = EMAIL_FROM || EMAIL_FALLBACK_FROM;
+  if (EMAIL_API_KEY && senderFrom) {
     try {
       const tpl = welcomeEmail({ email, unsubscribeUrl });
+      if (!tpl.subject || !tpl.html) {
+        throw new Error('invalid_template_payload: welcome template produced empty subject or html');
+      }
       const body = {
-        from: EMAIL_FROM,
+        from: senderFrom,
         to: email,
         subject: tpl.subject,
         html: tpl.html,
         ...(EMAIL_REPLY_TO ? { reply_to: EMAIL_REPLY_TO } : {})
       };
+
+      console.log('EMAIL PAYLOAD:', {
+        from: senderFrom,
+        to: email,
+        subjectLength: tpl.subject.length,
+        htmlLength: tpl.html.length
+      });
+
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -142,10 +155,19 @@ async function handler(event) {
         },
         body: JSON.stringify(body)
       });
+
+      let resBody;
+      try { resBody = await res.json(); } catch { resBody = await res.text().catch(() => ''); }
+
       if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`resend_error:${res.status}:${text}`);
+        console.error('RESEND ERROR FULL:', {
+          status: res.status,
+          response: resBody
+        });
+        const detail = typeof resBody === 'object' ? JSON.stringify(resBody) : String(resBody);
+        throw new Error(`resend_error:${res.status}:${detail}`);
       }
+      console.log('RESEND SUCCESS:', resBody);
       emailSent = true;
       await logEmailSend({ email, template: 'welcome', subject: tpl.subject, status: 'sent' });
     } catch (err) {

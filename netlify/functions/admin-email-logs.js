@@ -1,4 +1,4 @@
-const { supabase, hasSupabase, isSchemaError, schemaMismatchResponse } = require('./_lib/supabase');
+const { supabase, hasSupabase, isSchemaError } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
 
