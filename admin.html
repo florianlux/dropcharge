@@ -26,6 +26,7 @@
         <button class="nav-link" data-tab="campaigns">Campaigns</button>
         <button class="nav-link" data-tab="deals">Deals</button>
         <button class="nav-link" data-tab="drops">Gaming Drops</button>
+        <button class="nav-link" data-tab="spotlight">Spotlight</button>
         <button class="nav-link" data-tab="tracking">Tracking Links</button>
         <button class="nav-link" data-tab="analytics">Analytics</button>
       </nav>
@@ -330,6 +331,134 @@
             <div class="form-actions">
               <button type="submit" class="btn primary">Save Drop</button>
               <button type="button" class="btn ghost" id="drop-reset">Reset Form</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- Spotlight Manager -->
+      <section class="tab-panel" data-panel="spotlight">
+        <div class="panel-head">
+          <h2>Spotlight Pages</h2>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-row" id="spotlight-stats">
+          <div class="stat-card">
+            <span class="stat-label">Total Pages</span>
+            <strong class="stat-value" id="spotlight-stat-total">–</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Active</span>
+            <strong class="stat-value" id="spotlight-stat-active">–</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Total Clicks</span>
+            <strong class="stat-value" id="spotlight-stat-clicks">–</strong>
+          </div>
+        </div>
+
+        <!-- Spotlight List -->
+        <div class="card">
+          <h3>📄 All Spotlight Pages</h3>
+          <div class="data-table" id="spotlight-table">
+            <div class="table-head spotlight-head">
+              <span>Title</span>
+              <span>Brand</span>
+              <span>Slug</span>
+              <span>Clicks</span>
+              <span>Active</span>
+              <span>Actions</span>
+            </div>
+            <div class="table-body" id="spotlight-rows">
+              <p class="empty">Loading spotlights…</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Create / Edit Form -->
+        <div class="card">
+          <h3 id="spotlight-form-title">➕ Create Spotlight Page</h3>
+          <form id="spotlight-form" class="card-form" style="border:none;padding:0;">
+            <input type="hidden" id="spotlight-edit-id" />
+            <div class="form-row">
+              <label class="form-field">
+                <span>Title (H1)</span>
+                <input type="text" id="spotlight-title" placeholder="Temu 50% Billiger" required />
+              </label>
+              <label class="form-field">
+                <span>Slug (URL path)</span>
+                <input type="text" id="spotlight-slug" placeholder="temu-50 (auto-generated)" />
+              </label>
+            </div>
+            <label class="form-field">
+              <span>Subtitle</span>
+              <input type="text" id="spotlight-subtitle" placeholder="Exclusive limited-time deal" />
+            </label>
+            <div class="form-row">
+              <label class="form-field">
+                <span>Brand Name</span>
+                <input type="text" id="spotlight-brand" placeholder="Temu, Amazon, Steam…" />
+              </label>
+              <label class="form-field">
+                <span>Badge Text</span>
+                <input type="text" id="spotlight-badge" placeholder="-50%, EXCLUSIVE, LIMITED" />
+              </label>
+            </div>
+            <label class="form-field">
+              <span>Affiliate URL</span>
+              <input type="url" id="spotlight-affiliate-url" placeholder="https://affiliate.example.com/…" required />
+            </label>
+            <div class="form-row">
+              <label class="form-field">
+                <span>Coupon Code (optional)</span>
+                <input type="text" id="spotlight-coupon" placeholder="SAVE50" />
+              </label>
+              <label class="form-field">
+                <span>CTA Button Text</span>
+                <input type="text" id="spotlight-cta" placeholder="Jetzt sichern" />
+              </label>
+            </div>
+            <div class="form-row">
+              <label class="form-field">
+                <span>Logo URL</span>
+                <input type="url" id="spotlight-logo-url" placeholder="https://…/logo.png" />
+              </label>
+              <label class="form-field">
+                <span>Hero Image URL</span>
+                <input type="url" id="spotlight-hero-url" placeholder="https://…/hero.jpg" />
+              </label>
+            </div>
+            <div class="form-row">
+              <label class="form-field">
+                <span>Background Gradient</span>
+                <select id="spotlight-gradient">
+                  <option value="linear-gradient(135deg, #7c3aed, #06b6d4)">Violet → Cyan (Default)</option>
+                  <option value="linear-gradient(135deg, #f97316, #ef4444)">Orange → Red (Temu)</option>
+                  <option value="linear-gradient(135deg, #f59e0b, #f97316)">Gold → Orange (Amazon)</option>
+                  <option value="linear-gradient(135deg, #1b2838, #2a475e)">Dark Blue (Steam)</option>
+                  <option value="linear-gradient(135deg, #e40012, #8b0000)">Red (Nintendo)</option>
+                  <option value="linear-gradient(135deg, #107c10, #0e6b0e)">Green (Xbox)</option>
+                  <option value="linear-gradient(135deg, #003087, #0070d1)">Blue (PlayStation)</option>
+                  <option value="linear-gradient(135deg, #ec4899, #8b5cf6)">Pink → Purple</option>
+                  <option value="linear-gradient(135deg, #10b981, #06b6d4)">Emerald → Cyan</option>
+                </select>
+              </label>
+              <label class="form-field">
+                <span>Countdown Date (optional)</span>
+                <input type="datetime-local" id="spotlight-countdown" />
+              </label>
+            </div>
+            <div class="form-row">
+              <label class="form-field inline" style="align-items:center;gap:.5rem;">
+                <input type="checkbox" id="spotlight-active" checked />
+                <span>Active</span>
+              </label>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn primary" id="spotlight-save-btn">Create Spotlight</button>
+              <button type="button" class="btn ghost" id="spotlight-reset">Reset Form</button>
+              <button type="button" class="btn ghost" id="spotlight-preview-btn" style="display:none;">Preview</button>
             </div>
           </form>
         </div>

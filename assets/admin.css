@@ -332,6 +332,18 @@ textarea { resize: vertical; }
   grid-template-columns: 1fr 1fr 140px;
 }
 
+/* Spotlight table */
+.table-head.spotlight-head,
+#spotlight-rows .table-row {
+  grid-template-columns: 2fr 1fr 1fr 80px 80px 1fr;
+}
+
+/* Drops table */
+.table-head.drops-head,
+#drops-rows .table-row {
+  grid-template-columns: 1fr 1.5fr 1fr 2fr 70px 60px 1fr;
+}
+
 /* Responsive */
 @media (max-width: 960px) {
   .admin-shell { grid-template-columns: 1fr; }
