@@ -90,9 +90,13 @@ async function handler(event) {
         }
         console.error('spin-enter insert error:', error.message);
       } else {
-        // Send welcome email (non-blocking, non-fatal)
-        const unsubscribeUrl = `${BASE_URL}/.netlify/functions/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`;
-        await sendWelcomeEmail({ email, unsubscribeUrl });
+        // Send welcome email (non-fatal – errors are caught and logged)
+        try {
+          const unsubscribeUrl = `${BASE_URL}/.netlify/functions/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`;
+          await sendWelcomeEmail({ email, unsubscribeUrl });
+        } catch (emailErr) {
+          console.error('spin-enter welcome email error:', emailErr.message);
+        }
       }
     } catch (err) {
       console.error('spin-enter db error:', err.message);

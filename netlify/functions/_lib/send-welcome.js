@@ -35,7 +35,7 @@ async function logEmailSend({ email, template, subject, status, error: errMsg, m
 async function sendWelcomeEmail({ email, unsubscribeUrl }) {
   const senderFrom = EMAIL_FROM || EMAIL_FALLBACK_FROM;
   if (!EMAIL_API_KEY || !senderFrom) {
-    return { sent: false, reason: 'email_not_configured' };
+    return { sent: false, error: 'email_not_configured' };
   }
 
   const welcomeSubject = welcomeEmail({ email, unsubscribeUrl: '#' }).subject;
