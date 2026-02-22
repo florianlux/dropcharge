@@ -170,7 +170,7 @@ async function handler(event) {
       }
       console.log('RESEND SUCCESS:', resBody);
       emailSent = true;
-      const resendId = (typeof resBody === 'object' && resBody !== null) ? resBody.id : null;
+      const resendId = resBody?.id ?? null;
       await logEmailSend({ email, template: 'welcome', subject: tpl.subject, status: 'sent', messageId: resendId });
     } catch (err) {
       console.error('Welcome email failed (non-fatal):', err.message);

@@ -166,9 +166,9 @@ async function sendCampaign({ recipients, subject, html, context }) {
       const unsubscribe = `${BASE_URL}/unsubscribe?email=${encodeURIComponent(email)}`;
       const htmlWithUnsub = html.replace(/__UNSUB__/g, unsubscribe);
       try {
-        const { messageId } = await sendEmail({ to: email, subject, html: htmlWithUnsub });
+        const { messageId } = await sendEmail({ to: email, subject, html: htmlWithUnsub }) || {};
         sent += 1;
-        const logResult = await logEmailSend({ email, subject, status: 'sent', messageId });
+        const logResult = await logEmailSend({ email, subject, status: 'sent', messageId: messageId || null });
         if (!logResult.logged) logWarnings += 1;
       } catch (err) {
         console.log('email send failed', email, err.message);
