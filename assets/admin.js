@@ -353,15 +353,15 @@ async function loadEmailLogs() {
       rows.innerHTML = '<p class="empty warning">Logs unavailable. Check connection or run migration.</p>';
       return;
     }
-    if (data.warning === 'schema_missing') {
+    if (data.warning === 'email_logs_missing') {
       rows.innerHTML = `<p class="empty warning">No logs yet or table missing. ${escapeHtml(data.hint || 'Run migration 004_email_logs.sql.')}</p>`;
       return;
     }
-    if (!data.items || data.items.length === 0) {
+    if (!data.logs || data.logs.length === 0) {
       rows.innerHTML = '<p class="empty">No email logs found.</p>';
       return;
     }
-    rows.innerHTML = data.items.map(log => {
+    rows.innerHTML = data.logs.map(log => {
       const time = log.created_at ? new Date(log.created_at).toLocaleString() : '–';
       const statusClass = log.status === 'sent' ? 'status-active' : log.status === 'failed' ? 'status-bounced' : '';
       return `<div class="table-row">
