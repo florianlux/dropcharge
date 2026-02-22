@@ -521,6 +521,77 @@ function downloadCsv(csv, filename) {
   URL.revokeObjectURL(url);
 }
 
+// ── Neon News Banner ───────────────────────────────────
+async function loadNewsBanner() {
+  try {
+    const data = await apiGetSilent('settings');
+    if (!data || !data.settings) return;
+    const text = (data.settings.news_banner_text != null)
+      ? String(data.settings.news_banner_text)
+      : '';
+    renderBanner(text);
+    // Populate admin input if present
+    const input = $('#banner-text-input');
+    if (input) input.value = text;
+  } catch { /* silent */ }
+}
+
+function renderBanner(text) {
+  const banner = $('#neon-news-banner');
+  const textEl = $('#neon-banner-text');
+  if (!banner || !textEl) return;
+  const trimmed = (text || '').trim();
+  if (!trimmed) {
+    banner.style.display = 'none';
+    return;
+  }
+  textEl.textContent = trimmed;
+  banner.style.display = 'block';
+  // Determine if scrolling is needed: check text width vs container
+  requestAnimationFrame(() => {
+    const track = banner.querySelector('.neon-banner-track');
+    if (!track) return;
+    const needsScroll = textEl.scrollWidth > track.clientWidth;
+    textEl.classList.toggle('scrolling', needsScroll);
+    if (needsScroll) {
+      const duration = Math.max(10, trimmed.length * 0.25);
+      textEl.style.setProperty('--ticker-duration', duration + 's');
+    }
+  });
+}
+
+function initBannerSettings() {
+  const form = $('#banner-settings-form');
+  const input = $('#banner-text-input');
+  const clearBtn = $('#banner-clear-btn');
+  if (form && input) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        await api('settings', {
+          method: 'PUT',
+          body: JSON.stringify({ news_banner_text: input.value.trim() })
+        });
+        renderBanner(input.value.trim());
+        showToast('Banner updated!');
+      } catch { /* toast shown by api() */ }
+    });
+  }
+  if (clearBtn && input) {
+    clearBtn.addEventListener('click', async () => {
+      try {
+        await api('settings', {
+          method: 'PUT',
+          body: JSON.stringify({ news_banner_text: '' })
+        });
+        input.value = '';
+        renderBanner('');
+        showToast('Banner cleared.');
+      } catch { /* toast shown by api() */ }
+    });
+  }
+}
+
 // ── Init ───────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   initTabs();
@@ -529,5 +600,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initEmail();
   initCampaigns();
   initTracking();
+  initBannerSettings();
   loadDashboard();
+  loadNewsBanner();
 });
