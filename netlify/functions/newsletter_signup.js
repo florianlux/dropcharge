@@ -1,12 +1,8 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { withCors } = require('./_lib/cors');
-const { welcomeEmail, BASE_URL } = require('./_lib/email-templates');
+const { BASE_URL } = require('./_lib/email-templates');
+const { sendWelcomeEmail } = require('./_lib/send-welcome');
 const crypto = require('crypto');
-
-const EMAIL_API_KEY = process.env.RESEND_API_KEY;
-const EMAIL_FROM = process.env.RESEND_FROM;
-const EMAIL_FALLBACK_FROM = process.env.RESEND_FALLBACK_FROM || undefined;
-const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || undefined;
 
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -14,23 +10,6 @@ function isValidEmail(email) {
 
 function generateToken() {
   return crypto.randomBytes(24).toString('hex');
-}
-
-async function logEmailSend({ email, template, subject, status, error: errMsg, messageId }) {
-  if (!hasSupabase || !supabase) return;
-  try {
-    await supabase.from('email_logs').insert({
-      recipient: email,
-      template,
-      subject,
-      status,
-      message_id: messageId || null,
-      error: errMsg || null,
-      sent_at: status === 'sent' ? new Date().toISOString() : null
-    });
-  } catch (err) {
-    console.error('email_log insert error:', err.message);
-  }
 }
 
 async function handler(event) {
@@ -117,59 +96,8 @@ async function handler(event) {
   const unsubscribeUrl = `${BASE_URL}/.netlify/functions/unsubscribe?token=${encodeURIComponent(token)}`;
 
   // --- Send welcome email via Resend ---
-  let emailSent = false;
-  const welcomeSubject = welcomeEmail({ email, unsubscribeUrl: '#' }).subject;
-  const senderFrom = EMAIL_FROM || EMAIL_FALLBACK_FROM;
-  if (EMAIL_API_KEY && senderFrom) {
-    try {
-      const tpl = welcomeEmail({ email, unsubscribeUrl });
-      if (!tpl.subject || !tpl.html) {
-        throw new Error('invalid_template_payload: welcome template produced empty subject or html');
-      }
-      const body = {
-        from: senderFrom,
-        to: email,
-        subject: tpl.subject,
-        html: tpl.html,
-        ...(EMAIL_REPLY_TO ? { reply_to: EMAIL_REPLY_TO } : {})
-      };
-
-      console.log('EMAIL PAYLOAD:', {
-        from: senderFrom,
-        to: email.replace(/^[^@]+/, '***'),
-        subjectLength: tpl.subject.length,
-        htmlLength: tpl.html.length
-      });
-
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${EMAIL_API_KEY}`
-        },
-        body: JSON.stringify(body)
-      });
-
-      let resBody;
-      try { resBody = await res.json(); } catch { resBody = await res.text().catch(() => ''); }
-
-      if (!res.ok) {
-        console.error('RESEND ERROR FULL:', {
-          status: res.status,
-          response: resBody
-        });
-        const detail = typeof resBody === 'object' ? JSON.stringify(resBody) : String(resBody);
-        throw new Error(`resend_error:${res.status}:${detail}`);
-      }
-      console.log('RESEND SUCCESS:', resBody);
-      emailSent = true;
-      const resendId = resBody?.id ?? null;
-      await logEmailSend({ email, template: 'welcome', subject: tpl.subject, status: 'sent', messageId: resendId });
-    } catch (err) {
-      console.error('Welcome email failed (non-fatal):', err.message);
-      await logEmailSend({ email, template: 'welcome', subject: welcomeSubject, status: 'failed', error: err.message });
-    }
-  }
+  const welcomeResult = await sendWelcomeEmail({ email, unsubscribeUrl });
+  const emailSent = welcomeResult.sent;
 
   return {
     statusCode: 200,

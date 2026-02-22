@@ -1,5 +1,8 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { withCors } = require('./_lib/cors');
+const { BASE_URL } = require('./_lib/email-templates');
+const { sendWelcomeEmail } = require('./_lib/send-welcome');
+const crypto = require('crypto');
 
 const PRIZES = [
   { label: '5% Discount', weight: 30 },
@@ -62,6 +65,7 @@ async function handler(event) {
   }
 
   const prizeLabel = pickPrize();
+  const unsubscribeToken = crypto.randomBytes(24).toString('hex');
 
   if (hasSupabase && supabase) {
     try {
@@ -71,6 +75,7 @@ async function handler(event) {
         source: 'spin_wheel',
         prize: prizeLabel,
         meta: { prize: prizeLabel },
+        unsubscribe_token: unsubscribeToken,
         created_at: new Date().toISOString(),
       });
 
@@ -84,6 +89,10 @@ async function handler(event) {
           };
         }
         console.error('spin-enter insert error:', error.message);
+      } else {
+        // Send welcome email (non-blocking, non-fatal)
+        const unsubscribeUrl = `${BASE_URL}/.netlify/functions/unsubscribe?token=${encodeURIComponent(unsubscribeToken)}`;
+        await sendWelcomeEmail({ email, unsubscribeUrl });
       }
     } catch (err) {
       console.error('spin-enter db error:', err.message);
