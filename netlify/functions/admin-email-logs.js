@@ -14,7 +14,7 @@ exports.handler = withCors(async (event) => {
   if (authError) return authError;
 
   if (!hasSupabase || !supabase) {
-    return { statusCode: 500, body: JSON.stringify({ ok: false, error: 'supabase_not_configured' }) };
+    return { statusCode: 500, body: JSON.stringify({ ok: false, error: 'missing_supabase_service_role_key' }) };
   }
 
   const params = event.queryStringParameters || {};
@@ -26,7 +26,7 @@ exports.handler = withCors(async (event) => {
   try {
     let query = supabase
       .from('email_logs')
-      .select('id,recipient,template,subject,status,error,created_at,sent_at', { count: 'exact' })
+      .select('id,recipient,template,subject,status,message_id,error,created_at,sent_at', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
@@ -49,11 +49,8 @@ exports.handler = withCors(async (event) => {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
         body: JSON.stringify({
-          ok: true,
-          items: [],
-          total: 0,
-          warning: 'schema_missing',
-          table: 'email_logs',
+          ok: false,
+          error: 'email_logs_missing',
           hint: 'Run migration 004_email_logs.sql in your Supabase SQL editor to create the email_logs table.'
         })
       };

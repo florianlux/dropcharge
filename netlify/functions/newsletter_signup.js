@@ -23,7 +23,7 @@ function generateToken() {
   return crypto.randomBytes(24).toString('hex');
 }
 
-async function logEmailSend({ email, template, subject, status, error: errMsg }) {
+async function logEmailSend({ email, template, subject, status, error: errMsg, messageId }) {
   if (!hasSupabase || !supabase) return;
   try {
     await supabase.from('email_logs').insert({
@@ -31,6 +31,7 @@ async function logEmailSend({ email, template, subject, status, error: errMsg })
       template,
       subject,
       status,
+      message_id: messageId || null,
       error: errMsg || null,
       sent_at: status === 'sent' ? new Date().toISOString() : null
     });
@@ -169,7 +170,8 @@ async function handler(event) {
       }
       console.log('RESEND SUCCESS:', resBody);
       emailSent = true;
-      await logEmailSend({ email, template: 'welcome', subject: tpl.subject, status: 'sent' });
+      const resendId = resBody?.id ?? null;
+      await logEmailSend({ email, template: 'welcome', subject: tpl.subject, status: 'sent', messageId: resendId });
     } catch (err) {
       console.error('Welcome email failed (non-fatal):', err.message);
       await logEmailSend({ email, template: 'welcome', subject: welcomeSubject, status: 'failed', error: err.message });
