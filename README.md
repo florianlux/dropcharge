@@ -107,6 +107,9 @@ Set these in **Netlify → Site settings → Environment variables** (scope: _Al
 | `EMAIL_REPLY_TO` | Optional | Reply-to address for campaign emails. |
 | `RESEND_FALLBACK_FROM` | Optional | Fallback sender address used if `RESEND_FROM` is not set (useful for testing before domain verification). |
 | `G2A_GTAG` | Optional | G2A affiliate tag (e.g. `e5d2fce463`). When set, all G2A URLs are automatically normalised to include `?gtag=<value>`. |
+| `AMAZON_CREATORS_CREDENTIAL_ID` | Optional | Amazon Creators API Credential ID. Obtain from **Amazon PartnerNet → Tools → Product Advertising API → Manage Credentials** (Creators type). |
+| `AMAZON_CREATORS_CREDENTIAL_SECRET` | Optional | Amazon Creators API Credential Secret (same page). |
+| `AMAZON_ASSOCIATE_TAG` | Optional | Amazon Associates store/tag (e.g. `imsk01-21`). Defaults to `imsk01-21`. |
 
 ### Email Diagnostics
 

@@ -67,12 +67,22 @@ async function apiGetSilent(path) {
 const toastEl = document.getElementById('toast');
 let toastTimer = null;
 
-function showToast(message, type = 'success') {
+function showToast(message, type = 'success', duration, actionLabel, actionCallback) {
   if (!toastEl) return;
-  toastEl.textContent = message;
+  toastEl.textContent = '';
   toastEl.className = 'toast visible' + (type === 'error' ? ' error' : '');
+  const span = document.createElement('span');
+  span.textContent = message;
+  toastEl.appendChild(span);
+  if (actionLabel && actionCallback) {
+    const btn = document.createElement('button');
+    btn.textContent = actionLabel;
+    btn.style.cssText = 'margin-left:.75rem;background:rgba(255,255,255,.15);border:none;color:inherit;padding:.2rem .6rem;border-radius:4px;cursor:pointer;font-size:.85rem;';
+    btn.addEventListener('click', () => { actionCallback(); toastEl.className = 'toast'; });
+    toastEl.appendChild(btn);
+  }
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => { toastEl.className = 'toast'; }, 3500);
+  toastTimer = setTimeout(() => { toastEl.className = 'toast'; }, duration || 3500);
 }
 
 // ── DOM refs ───────────────────────────────────────────
@@ -970,6 +980,7 @@ function populateSpotlightForm(item) {
   setVal('spotlight-cta', item.cta_text);
   setVal('spotlight-logo-url', item.logo_url);
   setVal('spotlight-hero-url', item.hero_url);
+  setVal('spotlight-theme', item.theme);
   if (item.gradient) {
     const gradientSelect = $('#spotlight-gradient');
     if (gradientSelect) {
@@ -1010,6 +1021,8 @@ function resetSpotlightForm() {
   const form = $('#spotlight-form');
   if (form) form.reset();
   $('#spotlight-edit-id').value = '';
+  const themeEl = $('#spotlight-theme');
+  if (themeEl) themeEl.value = '';
   const formTitle = $('#spotlight-form-title');
   if (formTitle) formTitle.textContent = '➕ Create Spotlight Page';
   const saveBtn = $('#spotlight-save-btn');
@@ -1022,6 +1035,101 @@ function resetSpotlightForm() {
 
 // ── Spotlight Auto-Fill ────────────────────────────────
 let _autofillUndoSnapshot = null;
+let _templateUndoSnapshot = null;
+
+/* ── 1-Click Template presets ───────────────────────── */
+const SPOTLIGHT_TEMPLATES = {
+  temu: {
+    theme: 'temu',
+    badge_text: 'LIMITED • DEAL',
+    cta_text: 'Jetzt sichern →',
+    subtitle: 'Viral Deal – nur kurz verfügbar. Link öffnen & Angebot checken.',
+    gradient: 'linear-gradient(135deg, #f97316, #a855f7)',
+  },
+  amazon: {
+    theme: 'amazon',
+    badge_text: 'Jetzt Preis prüfen',
+    cta_text: 'Auf Amazon ansehen →',
+    subtitle: 'Preis kann sich ändern. Schnell prüfen & sparen.',
+    gradient: 'linear-gradient(135deg, #f59e0b, #06b6d4)',
+  },
+  g2a: {
+    theme: 'g2a',
+    badge_text: 'CHEAP KEY • INSTANT',
+    cta_text: 'Key sichern →',
+    subtitle: 'Digital Key – sofort verfügbar. Preis checken & Code holen.',
+    gradient: 'linear-gradient(135deg, #3b82f6, #a855f7)',
+  },
+  neutral: {
+    theme: 'neutral',
+    badge_text: 'EXCLUSIVE',
+    cta_text: 'Jetzt Deal sichern →',
+    subtitle: 'Exklusiver Drop – Link öffnen und sparen.',
+    gradient: 'linear-gradient(135deg, #7c3aed, #06b6d4)',
+  }
+};
+
+function _applyTemplate(templateKey, forceOverwrite) {
+  const tpl = SPOTLIGHT_TEMPLATES[templateKey];
+  if (!tpl) return;
+
+  _templateUndoSnapshot = _spotlightFormSnapshot();
+
+  const fieldMap = {
+    badge_text: 'spotlight-badge',
+    cta_text: 'spotlight-cta',
+    subtitle: 'spotlight-subtitle',
+  };
+  const filled = [];
+  for (const [key, elId] of Object.entries(fieldMap)) {
+    if (!tpl[key]) continue;
+    const el = $(`#${elId}`);
+    if (!el) continue;
+    if (el.value && !forceOverwrite) continue;
+    el.value = tpl[key];
+    filled.push(key);
+  }
+  // Gradient
+  if (tpl.gradient) {
+    const sel = $('#spotlight-gradient');
+    if (sel && (!sel.value || forceOverwrite || sel.selectedIndex === 0)) {
+      for (let i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === tpl.gradient) {
+          sel.selectedIndex = i;
+          filled.push('gradient');
+          break;
+        }
+      }
+    }
+  }
+  // Theme hidden field
+  const themeEl = $('#spotlight-theme');
+  if (themeEl) themeEl.value = tpl.theme;
+
+  const snap = _templateUndoSnapshot;
+  showToast(
+    `Applied "${templateKey}" template (${filled.length} field(s)).`,
+    'success',
+    4000,
+    'Undo',
+    () => {
+      if (snap) _applyAutofillData(snap, true);
+      const thEl = $('#spotlight-theme');
+      if (thEl) thEl.value = '';
+      showToast('Template reverted.');
+    }
+  );
+}
+
+function _detectDomainTemplate(url) {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (host.includes('temu')) return 'temu';
+    if (host.includes('amazon') || host.includes('amzn')) return 'amazon';
+    if (host.includes('g2a')) return 'g2a';
+  } catch { /* ignore */ }
+  return null;
+}
 
 function _spotlightFormSnapshot() {
   return {
@@ -1179,6 +1287,8 @@ function initSpotlight() {
         title, subtitle, brand, affiliate_url, coupon_code,
         gradient, logo_url, hero_url, badge_text, cta_text, is_active
       };
+      const theme = ($('#spotlight-theme') || {}).value || '';
+      if (theme) payload.theme = theme;
       if (slug) payload.slug = slug;
       if (editId) payload.id = editId;
       if (countdown_raw) payload.countdown_date = new Date(countdown_raw).toISOString();
@@ -1206,6 +1316,29 @@ function initSpotlight() {
   const suggestSlugBtn = $('#spotlight-suggest-slug-btn');
   if (suggestSlugBtn) {
     suggestSlugBtn.addEventListener('click', handleSuggestSlug);
+  }
+
+  // 1-Click Template buttons
+  const templateContainer = $('#spotlight-template-buttons');
+  if (templateContainer) {
+    templateContainer.querySelectorAll('[data-template]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const key = btn.dataset.template;
+        const forceOverwrite = e.altKey || e.metaKey;
+        _applyTemplate(key, forceOverwrite);
+      });
+    });
+  }
+
+  // Auto-apply template on URL paste
+  const urlEl = $('#spotlight-affiliate-url');
+  if (urlEl) {
+    urlEl.addEventListener('input', () => {
+      const autoCheck = $('#spotlight-auto-template');
+      if (!autoCheck || !autoCheck.checked) return;
+      const tplKey = _detectDomainTemplate(urlEl.value);
+      if (tplKey) _applyTemplate(tplKey, false);
+    });
   }
 }
 

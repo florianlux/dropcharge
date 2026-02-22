@@ -99,6 +99,15 @@ async function handler(event) {
     if (payload.cta_text !== undefined) record.cta_text = payload.cta_text || 'Jetzt sichern';
     if (payload.countdown_date !== undefined) record.countdown_date = payload.countdown_date || null;
     if (payload.is_active !== undefined) record.is_active = Boolean(payload.is_active);
+    if (payload.theme !== undefined) record.theme = payload.theme;
+    if (payload.product_url !== undefined) record.product_url = payload.product_url;
+    if (payload.product_title !== undefined) record.product_title = payload.product_title;
+    if (payload.product_description !== undefined) record.product_description = payload.product_description;
+    if (payload.product_price !== undefined) record.product_price = payload.product_price;
+    if (payload.product_currency !== undefined) record.product_currency = payload.product_currency;
+    if (payload.product_image_url !== undefined) record.product_image_url = payload.product_image_url;
+    if (payload.product_source !== undefined) record.product_source = payload.product_source;
+    if (payload.product_last_fetched_at !== undefined) record.product_last_fetched_at = payload.product_last_fetched_at;
 
     try {
       const { data, error } = await supabase

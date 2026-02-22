@@ -77,6 +77,31 @@
     /* Hero image */
     .sp-hero-img{max-width:320px;width:100%;border-radius:16px;margin-bottom:2rem;box-shadow:0 8px 40px rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.06)}
 
+    /* Product price card */
+    .sp-price-card{display:inline-flex;align-items:baseline;gap:.4rem;padding:.5rem 1.2rem;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);margin-bottom:1.5rem;font-size:1rem}
+    .sp-price-amount{font-size:1.6rem;font-weight:800;background:linear-gradient(135deg,#a78bfa,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .sp-price-currency{font-size:.9rem;color:rgba(255,255,255,.5)}
+    .sp-product-desc{font-size:.9rem;color:rgba(255,255,255,.5);line-height:1.5;margin-bottom:1.5rem;max-width:500px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+
+    /* Theme accents */
+    .sp-theme-temu .sp-badge{background:linear-gradient(135deg,#f97316,#a855f7)}
+    .sp-theme-temu .sp-cta{background:linear-gradient(135deg,#f97316,#a855f7);box-shadow:0 0 30px rgba(249,115,22,.4),0 0 60px rgba(168,85,247,.2)}
+    .sp-theme-temu .sp-glow-1{background:#f97316}
+    .sp-theme-temu .sp-glow-2{background:#a855f7}
+    .sp-theme-temu .sp-price-amount{background:linear-gradient(135deg,#f97316,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+    .sp-theme-amazon .sp-badge{background:linear-gradient(135deg,#f59e0b,#06b6d4)}
+    .sp-theme-amazon .sp-cta{background:linear-gradient(135deg,#f59e0b,#06b6d4);box-shadow:0 0 30px rgba(245,158,11,.4),0 0 60px rgba(6,182,212,.2)}
+    .sp-theme-amazon .sp-glow-1{background:#f59e0b}
+    .sp-theme-amazon .sp-glow-2{background:#06b6d4}
+    .sp-theme-amazon .sp-price-amount{background:linear-gradient(135deg,#f59e0b,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+    .sp-theme-g2a .sp-badge{background:linear-gradient(135deg,#3b82f6,#a855f7)}
+    .sp-theme-g2a .sp-cta{background:linear-gradient(135deg,#3b82f6,#a855f7);box-shadow:0 0 30px rgba(59,130,246,.4),0 0 60px rgba(168,85,247,.2)}
+    .sp-theme-g2a .sp-glow-1{background:#3b82f6}
+    .sp-theme-g2a .sp-glow-2{background:#a855f7}
+    .sp-theme-g2a .sp-price-amount{background:linear-gradient(135deg,#3b82f6,#a855f7);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
     @media(max-width:480px){
       .sp-countdown{gap:.4rem}
       .sp-cd-unit{min-width:52px;padding:.5rem .6rem}
@@ -128,15 +153,17 @@
         const ogImg = document.getElementById('og-image');
         if (ogTitle) ogTitle.setAttribute('content', item.title + ' – DropCharge');
         if (ogDesc) ogDesc.setAttribute('content', item.subtitle || 'Exclusive deal on DropCharge');
-        if (ogImg && item.hero_url) ogImg.setAttribute('content', item.hero_url);
+        if (ogImg && (item.hero_url || item.product_image_url)) ogImg.setAttribute('content', item.hero_url || item.product_image_url);
         document.title = item.title + ' – DropCharge Spotlight';
 
         const gradient = item.gradient || 'linear-gradient(135deg, #7c3aed, #06b6d4)';
+        const themeClass = item.theme ? ' sp-theme-' + item.theme : '';
+        const heroImage = item.hero_url || item.product_image_url || null;
 
-        let html = '<div class="sp-hero">';
+        let html = '<div class="sp-hero' + themeClass + '">';
 
         // Background hero image — set via DOM to avoid CSS injection
-        if (item.hero_url) {
+        if (heroImage) {
           html += '<div class="sp-hero-bg" id="sp-parallax"></div>';
         }
         html += '<div class="sp-hero-overlay"></div>';
@@ -156,14 +183,27 @@
         }
 
         // Hero image (as content image, not background)
-        if (item.hero_url) {
-          html += '<img class="sp-hero-img" src="' + escapeAttr(item.hero_url) + '" alt="' + escapeAttr(item.title) + '" />';
+        if (heroImage) {
+          html += '<img class="sp-hero-img" src="' + escapeAttr(heroImage) + '" alt="' + escapeAttr(item.title) + '" />';
         }
 
         // Title + Subtitle
         html += '<h1 class="sp-title">' + escapeHtml(item.title) + '</h1>';
         if (item.subtitle) {
           html += '<p class="sp-subtitle">' + escapeHtml(item.subtitle) + '</p>';
+        }
+
+        // Product price card
+        if (item.product_price != null) {
+          html += '<div class="sp-price-card">';
+          html += '<span class="sp-price-amount">' + escapeHtml(String(item.product_price)) + '</span>';
+          html += '<span class="sp-price-currency">' + escapeHtml(item.product_currency || 'EUR') + '</span>';
+          html += '</div><br>';
+        }
+
+        // Product description (if different from subtitle)
+        if (item.product_description && item.product_description !== item.subtitle) {
+          html += '<p class="sp-product-desc">' + escapeHtml(item.product_description) + '</p>';
         }
 
         // Coupon
@@ -198,10 +238,10 @@
         bindCTA(item);
         if (item.coupon_code) bindCopyButton();
         if (item.countdown_date) startCountdown(item.countdown_date);
-        if (item.hero_url) {
+        if (heroImage) {
           // Set background-image via DOM to prevent CSS injection
           var bgEl = document.getElementById('sp-parallax');
-          if (bgEl) bgEl.style.backgroundImage = 'url(' + item.hero_url + ')';
+          if (bgEl) bgEl.style.backgroundImage = 'url(' + heroImage + ')';
           initParallax();
         }
       }
