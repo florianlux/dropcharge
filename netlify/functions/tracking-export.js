@@ -78,7 +78,9 @@ exports.handler = withCors(async (event) => {
 
     // Default: events CSV
     const EVENTS_COLUMNS = ['id', 'ts', 'event_name', 'slug', 'path', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'session_key', 'user_id', 'device_type', 'os', 'browser', 'country', 'referrer'];
-    const selectStr = EVENTS_COLUMNS.map(c => c === 'ts' ? tsCol : c).join(',').replace('event_name', 'event_name,name,device_hint');
+    // Build the Supabase select string: map ts→tsCol, then add extra columns for legacy compat
+    const mappedCols = EVENTS_COLUMNS.map(c => c === 'ts' ? tsCol : c);
+    const selectStr = mappedCols.join(',').replace('event_name', 'event_name,name,device_hint');
     const { data, error } = await supabase
       .from('events')
       .select(selectStr)

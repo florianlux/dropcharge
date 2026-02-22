@@ -32,7 +32,8 @@ async function getTimestampColumn(supabase) {
     } else {
       _cached = 'ts';
     }
-  } catch {
+  } catch (err) {
+    console.warn('ts-column probe failed, falling back to created_at:', err && err.message);
     _cached = 'created_at';
   }
 
