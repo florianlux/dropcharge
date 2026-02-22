@@ -4,7 +4,6 @@ const { withCors } = require('./_lib/cors');
 const https = require('https');
 const http = require('http');
 const { URL } = require('url');
-const crypto = require('crypto');
 
 /* ── Constants ──────────────────────────────────────── */
 const FETCH_TIMEOUT_MS = 6000;
@@ -116,119 +115,6 @@ function detectSource(url) {
     if (host.includes('g2a')) return 'g2a';
     return 'generic';
   } catch { return 'generic'; }
-}
-
-/* ── Extract ASIN from Amazon URL ───────────────────── */
-function extractASIN(url) {
-  const m = url.match(/\/(?:dp|gp\/product|gp\/aw\/d|exec\/obidos\/asin)\/([A-Z0-9]{10})/i)
-    || url.match(/(?:^|&|\?)asin=([A-Z0-9]{10})/i)
-    || url.match(/\/([A-Z0-9]{10})(?:[/?&#]|$)/);
-  return m ? m[1].toUpperCase() : null;
-}
-
-/* ── Amazon PA API ──────────────────────────────────── */
-function hasPAAPI() {
-  return Boolean(
-    process.env.AMAZON_PAAPI_ACCESS_KEY &&
-    process.env.AMAZON_PAAPI_SECRET_KEY &&
-    process.env.AMAZON_PAAPI_PARTNER_TAG
-  );
-}
-
-function sign(key, msg) {
-  return crypto.createHmac('sha256', key).update(msg).digest();
-}
-
-function getSignatureKey(key, dateStamp, regionName, serviceName) {
-  const kDate = sign(Buffer.from('AWS4' + key, 'utf-8'), dateStamp);
-  const kRegion = sign(kDate, regionName);
-  const kService = sign(kRegion, serviceName);
-  return sign(kService, 'aws4_request');
-}
-
-async function fetchFromPAAPI(asin) {
-  const accessKey = process.env.AMAZON_PAAPI_ACCESS_KEY;
-  const secretKey = process.env.AMAZON_PAAPI_SECRET_KEY;
-  const partnerTag = process.env.AMAZON_PAAPI_PARTNER_TAG;
-  const host = process.env.AMAZON_PAAPI_HOST || 'webservices.amazon.de';
-  const region = process.env.AMAZON_PAAPI_REGION || 'eu-west-1';
-  const amzTarget = 'com.amazon.paapi5.v1.ProductAdvertisingAPIv1.GetItems';
-
-  const payload = JSON.stringify({
-    ItemIds: [asin],
-    PartnerTag: partnerTag,
-    PartnerType: 'Associates',
-    Resources: [
-      'ItemInfo.Title',
-      'ItemInfo.Features',
-      'Images.Primary.Large',
-      'Offers.Listings.Price'
-    ]
-  });
-
-  const now = new Date();
-  const amzDate = now.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z/, 'Z');
-  const dateStamp = amzDate.slice(0, 8);
-  const service = 'ProductAdvertisingAPI';
-  const endpoint = '/paapi5/getitems';
-  const credentialScope = `${dateStamp}/${region}/${service}/aws4_request`;
-
-  const canonicalHeaders = `content-encoding:amz-1.0\ncontent-type:application/json; charset=utf-8\nhost:${host}\nx-amz-date:${amzDate}\nx-amz-target:${amzTarget}\n`;
-  const signedHeaders = 'content-encoding;content-type;host;x-amz-date;x-amz-target';
-  const payloadHash = crypto.createHash('sha256').update(payload).digest('hex');
-  const canonicalRequest = `POST\n${endpoint}\n\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
-  const stringToSign = `AWS4-HMAC-SHA256\n${amzDate}\n${credentialScope}\n${crypto.createHash('sha256').update(canonicalRequest).digest('hex')}`;
-  const signingKey = getSignatureKey(secretKey, dateStamp, region, service);
-  const signature = crypto.createHmac('sha256', signingKey).update(stringToSign).digest('hex');
-  const authHeader = `AWS4-HMAC-SHA256 Credential=${accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-
-  return new Promise((resolve, reject) => {
-    const req = https.request({
-      hostname: host,
-      path: endpoint,
-      method: 'POST',
-      timeout: FETCH_TIMEOUT_MS,
-      headers: {
-        'content-encoding': 'amz-1.0',
-        'content-type': 'application/json; charset=utf-8',
-        'host': host,
-        'x-amz-date': amzDate,
-        'x-amz-target': amzTarget,
-        'Authorization': authHeader
-      }
-    }, (res) => {
-      const chunks = [];
-      res.on('data', c => chunks.push(c));
-      res.on('end', () => {
-        try {
-          const body = JSON.parse(Buffer.concat(chunks).toString('utf-8'));
-          if (body.Errors || !body.ItemsResult || !body.ItemsResult.Items || !body.ItemsResult.Items.length) {
-            return reject(new Error('paapi_no_results'));
-          }
-          const item = body.ItemsResult.Items[0];
-          const result = {
-            product_title: item.ItemInfo?.Title?.DisplayValue || null,
-            product_description: (item.ItemInfo?.Features?.DisplayValues || []).join(' ').slice(0, 300) || null,
-            product_image_url: item.Images?.Primary?.Large?.URL || null,
-            product_price: null,
-            product_currency: null,
-            brand: 'Amazon'
-          };
-          const listing = item.Offers?.Listings?.[0];
-          if (listing?.Price?.Amount) {
-            result.product_price = listing.Price.Amount;
-            result.product_currency = listing.Price.Currency || 'EUR';
-          }
-          resolve(result);
-        } catch (e) { reject(e); }
-      });
-      res.on('error', reject);
-    });
-    req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
-    req.on('error', reject);
-    req.write(payload);
-    req.end();
-  });
 }
 
 /* ── HTML meta-tag parser ────────────────────────── */
@@ -463,51 +349,19 @@ async function handler(event) {
   if (source === 'amazon') {
     data.brand = 'Amazon';
 
-    // Try PA API first
-    if (hasPAAPI()) {
-      const asin = extractASIN(canonicalUrl);
-      if (asin) {
-        steps.push('asin:' + asin);
-        try {
-          const paResult = await fetchFromPAAPI(asin);
-          data.product_title = paResult.product_title;
-          data.product_description = paResult.product_description;
-          data.product_image_url = paResult.product_image_url;
-          data.product_price = paResult.product_price;
-          data.product_currency = paResult.product_currency;
-          data.confidence = 'high';
-          steps.push('paapi_success');
-        } catch (e) {
-          steps.push('paapi_failed:' + e.message);
-        }
-      } else {
-        steps.push('asin_not_found');
-      }
-    } else {
-      steps.push('paapi_not_configured');
-    }
-
-    // Fallback: metadata from HTML
-    if (!data.product_title) {
-      try {
-        const { html } = await fetchUrl(canonicalUrl);
-        const meta = parseMetadata(html);
-        const jsonLd = parseJsonLd(html);
-        const jResult = extractFromJsonLd(jsonLd);
-        const mResult = extractFromMeta(meta);
-        const best = jResult && jResult.product_title ? jResult : mResult;
-        data.product_title = best.product_title;
-        data.product_description = best.product_description;
-        data.product_image_url = best.product_image_url;
-        if (best.product_price != null) {
-          data.product_price = best.product_price;
-          data.product_currency = best.product_currency;
-        }
-        data.confidence = best.confidence || 'low';
-        steps.push('metadata_fallback');
-      } catch (e) {
-        steps.push('metadata_failed:' + e.message);
-      }
+    // Amazon: OG metadata only, no price scraping
+    try {
+      const { html } = await fetchUrl(canonicalUrl);
+      const meta = parseMetadata(html);
+      data.product_title = meta.ogTitle || meta.titleTag || null;
+      data.product_description = (meta.ogDescription || meta.metaDesc || '').slice(0, 300) || null;
+      data.product_image_url = meta.ogImage || null;
+      data.product_price = null;
+      data.product_currency = null;
+      data.confidence = data.product_title ? 'medium' : 'low';
+      steps.push('amazon_og_parsed');
+    } catch (e) {
+      steps.push('amazon_fetch_failed:' + e.message);
     }
   } else {
     // Temu, G2A, Generic

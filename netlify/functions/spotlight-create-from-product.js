@@ -13,8 +13,8 @@ const TEMPLATES = {
   },
   amazon: {
     theme: 'amazon',
-    badge_text: 'TOP PICK • PRIME',
-    cta_text: 'Deal auf Amazon ansehen →',
+    badge_text: 'Jetzt Preis prüfen',
+    cta_text: 'Auf Amazon ansehen →',
     subtitle: 'Preis kann sich ändern. Schnell prüfen & sparen.',
     gradient: 'linear-gradient(135deg, #f59e0b, #06b6d4)',
   },
