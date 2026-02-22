@@ -29,6 +29,7 @@
         <button class="nav-link" data-tab="spotlight">Spotlight</button>
         <button class="nav-link" data-tab="tracking">Tracking Links</button>
         <button class="nav-link" data-tab="analytics">Analytics</button>
+        <button class="nav-link" data-tab="deep-tracking">📊 Tracking</button>
       </nav>
       <div class="sidebar-footer">
         <a class="btn ghost" href="/" target="_blank">← Back to Site</a>
@@ -561,6 +562,115 @@
               <span>Time</span>
             </div>
             <div class="table-body" id="events-rows">
+              <p class="empty">Loading events…</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Deep Tracking Dashboard -->
+      <section class="tab-panel" data-panel="deep-tracking">
+        <div class="panel-head">
+          <h2>📊 Tracking Dashboard</h2>
+          <div class="head-actions">
+            <select id="tracking-range" style="font-size:.85rem;padding:.3rem .6rem;border-radius:6px;border:1px solid var(--admin-border);background:var(--admin-card);">
+              <option value="24h">Last 24 hours</option>
+              <option value="7d" selected>Last 7 days</option>
+              <option value="30d">Last 30 days</option>
+            </select>
+            <button class="btn mini" id="tracking-refresh">Refresh</button>
+            <button class="btn mini ghost" id="tracking-export-btn">Export CSV</button>
+          </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="stats-row" id="tracking-kpi-row">
+          <div class="stat-card">
+            <span class="stat-label">Pageviews</span>
+            <strong class="stat-value" id="trk-pageviews">–</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Sessions</span>
+            <strong class="stat-value" id="trk-sessions">–</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Uniques</span>
+            <strong class="stat-value" id="trk-uniques">–</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">CTA Clicks</span>
+            <strong class="stat-value" id="trk-cta-clicks">–</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">CTR</span>
+            <strong class="stat-value" id="trk-ctr">–</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Newsletter Conv.</span>
+            <strong class="stat-value" id="trk-nl-conv">–</strong>
+          </div>
+          <div class="stat-card">
+            <span class="stat-label">Consent Rate</span>
+            <strong class="stat-value" id="trk-consent-rate">–</strong>
+          </div>
+        </div>
+
+        <!-- Funnel -->
+        <div class="card">
+          <h3>🔽 Conversion Funnel</h3>
+          <div id="tracking-funnel-viz" style="padding:.5rem 0;">
+            <p class="empty">Loading funnel…</p>
+          </div>
+        </div>
+
+        <!-- Charts row -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin-bottom:1rem;">
+          <div class="card">
+            <h3>🌐 Top Sources</h3>
+            <div id="tracking-chart-sources"><p class="empty">Loading…</p></div>
+          </div>
+          <div class="card">
+            <h3>📣 Top Campaigns</h3>
+            <div id="tracking-chart-campaigns"><p class="empty">Loading…</p></div>
+          </div>
+          <div class="card">
+            <h3>🎯 Top Spotlights</h3>
+            <div id="tracking-chart-spotlights"><p class="empty">Loading…</p></div>
+          </div>
+          <div class="card">
+            <h3>📱 Devices</h3>
+            <div id="tracking-chart-devices"><p class="empty">Loading…</p></div>
+          </div>
+        </div>
+
+        <!-- Live Events Stream -->
+        <div class="card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem;">
+            <h3 style="margin:0;">⚡ Live Events</h3>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
+              <select id="tracking-event-filter" style="font-size:.8rem;padding:.25rem .5rem;border-radius:6px;border:1px solid var(--admin-border);background:var(--admin-card);">
+                <option value="">All events</option>
+                <option value="page_view">page_view</option>
+                <option value="spotlight_view">spotlight_view</option>
+                <option value="cta_click">cta_click</option>
+                <option value="coupon_copy">coupon_copy</option>
+                <option value="newsletter_success">newsletter_success</option>
+                <option value="scroll_depth">scroll_depth</option>
+              </select>
+              <span id="trk-live-status" style="font-size:.75rem;color:var(--admin-muted);">Auto-refresh: on</span>
+              <button class="btn mini ghost" id="trk-live-toggle">Pause</button>
+            </div>
+          </div>
+          <div class="data-table" id="tracking-events-table">
+            <div class="table-head" style="grid-template-columns:120px 130px 1fr 90px 90px 80px;">
+              <span>Time</span>
+              <span>Event</span>
+              <span>Slug / Path</span>
+              <span>Device</span>
+              <span>Country</span>
+              <span>Session</span>
+            </div>
+            <div class="table-body" id="tracking-events-rows">
               <p class="empty">Loading events…</p>
             </div>
           </div>

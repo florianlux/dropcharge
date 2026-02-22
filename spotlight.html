@@ -451,6 +451,11 @@
         // Theme-based layout switch
         if (item.theme === 'g2a') { renderG2A(item); return; }
 
+        // Emit spotlight_view tracking event
+        try {
+          if (typeof window.dcTrack === 'function') window.dcTrack('spotlight_view', { slug: item.slug, theme: item.theme || null, brand: item.brand || null });
+        } catch (err) { /* silent */ }
+
         // Update OG tags
         const ogTitle = document.getElementById('og-title');
         const ogDesc = document.getElementById('og-desc');
@@ -558,6 +563,11 @@
 
       /* ── G2A Enhanced Render ── */
       function renderG2A(item) {
+        // Emit spotlight_view tracking event
+        try {
+          if (typeof window.dcTrack === 'function') window.dcTrack('spotlight_view', { slug: item.slug, theme: 'g2a', brand: item.brand || null });
+        } catch (err) { /* silent */ }
+
         var heroImage = item.hero_url || item.product_image_url || null;
         var platform = detectPlatform(item.product_title || item.title);
         var region = detectRegion(item.product_title || item.title);
@@ -698,6 +708,12 @@
               body: JSON.stringify({ slug: item.slug })
             }).catch(function() {});
           } catch (err) { /* fire and forget */ }
+          // Also emit first-party cta_click event
+          try {
+            if (typeof window.dcTrack === 'function') {
+              window.dcTrack('cta_click', { slug: item.slug, theme: item.theme || null, url: (item.affiliate_url || '').slice(0, 256), position: 'hero' });
+            }
+          } catch (err) { /* silent */ }
         });
       }
 
@@ -713,10 +729,14 @@
               setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
             });
           }
+          try {
+            if (typeof window.dcTrack === 'function') window.dcTrack('coupon_copy', { slug: item.slug });
+          } catch (err) { /* silent */ }
         });
       }
 
       function bindG2ACTA(item) {
+        var posMap = { 'sp-cta-btn-desktop': 'buybox', 'sp-cta-btn-mobile': 'sticky' };
         ['sp-cta-btn-desktop', 'sp-cta-btn-mobile'].forEach(function(id) {
           var btn = document.getElementById(id);
           if (!btn) return;
@@ -728,6 +748,11 @@
                 body: JSON.stringify({ slug: item.slug })
               }).catch(function() {});
             } catch (err) { /* fire and forget */ }
+            try {
+              if (typeof window.dcTrack === 'function') {
+                window.dcTrack('cta_click', { slug: item.slug, theme: item.theme || null, url: (item.affiliate_url || '').slice(0, 256), position: posMap[id] || 'unknown' });
+              }
+            } catch (err) { /* silent */ }
           });
         });
       }
@@ -828,5 +853,6 @@
       }
     })();
   </script>
+  <script src="/assets/tracker.js"></script>
 </body>
 </html>
