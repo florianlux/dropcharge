@@ -2,6 +2,13 @@ const { supabase, hasSupabase, isSchemaError, schemaMismatchResponse } = require
 const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
 
+console.log("ENV CHECK:", {
+  hasResendKey: !!process.env.RESEND_API_KEY,
+  hasFrom: !!process.env.RESEND_FROM,
+  hasSupabaseUrl: !!process.env.SUPABASE_URL,
+  hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+});
+
 exports.handler = withCors(async (event) => {
   const authError = requireAdmin(event.headers || {});
   if (authError) return authError;

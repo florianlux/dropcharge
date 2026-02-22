@@ -2,10 +2,17 @@ const { supabase, hasSupabase } = require('./_lib/supabase');
 const { requireAdmin } = require('./_lib/admin-token');
 const { withCors } = require('./_lib/cors');
 
-const EMAIL_API_KEY = process.env.RESEND_API_KEY || process.env.EMAIL_API_KEY;
-const EMAIL_FROM = process.env.EMAIL_FROM || process.env.RESEND_FROM || process.env.NEWSLETTER_FROM;
+console.log("ENV CHECK:", {
+  hasResendKey: !!process.env.RESEND_API_KEY,
+  hasFrom: !!process.env.RESEND_FROM,
+  hasSupabaseUrl: !!process.env.SUPABASE_URL,
+  hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+});
+
+const EMAIL_API_KEY = process.env.RESEND_API_KEY;
+const EMAIL_FROM = process.env.RESEND_FROM;
 const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || undefined;
-const BASE_URL = (process.env.APP_BASE_URL || process.env.BASE_URL || 'https://dropcharge.netlify.app').replace(/\/$/, '');
+const BASE_URL = (process.env.PUBLIC_SITE_URL || 'https://dropcharge.netlify.app').replace(/\/$/, '');
 const BATCH_SIZE = Number(process.env.CAMPAIGN_BATCH_SIZE || 50);
 const BATCH_DELAY_MS = Number(process.env.CAMPAIGN_BATCH_DELAY || 750);
 const RATE_LIMIT_MS = 5 * 60 * 1000; // 5 minutes
@@ -64,8 +71,6 @@ async function logCampaign(payload) {
 }
 
 async function sendEmail({ to, subject, html }) {
-  if (!EMAIL_API_KEY) throw new Error('email_api_key_missing');
-  if (!EMAIL_FROM) throw new Error('email_from_missing');
   const body = {
     from: EMAIL_FROM,
     to,
@@ -162,17 +167,24 @@ async function handler(event) {
     return { statusCode: 400, body: JSON.stringify({ ok: false, error: 'subject_required' }) };
   }
 
-  if (!EMAIL_API_KEY || !EMAIL_FROM) {
-    const missing = [];
-    if (!EMAIL_API_KEY) missing.push('RESEND_API_KEY');
-    if (!EMAIL_FROM) missing.push('EMAIL_FROM');
+  const required = {
+    RESEND_API_KEY: !!process.env.RESEND_API_KEY,
+    RESEND_FROM: !!process.env.RESEND_FROM,
+    SUPABASE_URL: !!process.env.SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+  };
+  const missing = Object.entries(required)
+    .filter(([k, v]) => !v)
+    .map(([k]) => k);
+
+  if (missing.length) {
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ok: false,
         error: 'email_env_missing',
-        message: `Missing required env: ${missing.join(', ')}. Set these in Netlify → Site settings → Environment variables.`
+        missing
       })
     };
   }
@@ -228,7 +240,7 @@ async function handler(event) {
       body: JSON.stringify({ ok: true, ...result, test: Boolean(testEmail) })
     };
   } catch (err) {
-    console.log('campaign send failed', err.message);
+    console.error('campaign send failed', err.message);
     if (!testEmail) {
       await logCampaign({
         subject,
@@ -245,7 +257,7 @@ async function handler(event) {
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ok: false, error: err.message })
+      body: JSON.stringify({ ok: false, error: 'resend_failed', details: err.message })
     };
   }
 }

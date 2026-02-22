@@ -3,8 +3,15 @@ const { withCors } = require('./_lib/cors');
 const { welcomeEmail, BASE_URL } = require('./_lib/email-templates');
 const crypto = require('crypto');
 
-const EMAIL_API_KEY = process.env.RESEND_API_KEY || process.env.EMAIL_API_KEY;
-const EMAIL_FROM = process.env.EMAIL_FROM || process.env.RESEND_FROM || process.env.NEWSLETTER_FROM;
+console.log("ENV CHECK:", {
+  hasResendKey: !!process.env.RESEND_API_KEY,
+  hasFrom: !!process.env.RESEND_FROM,
+  hasSupabaseUrl: !!process.env.SUPABASE_URL,
+  hasServiceKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+});
+
+const EMAIL_API_KEY = process.env.RESEND_API_KEY;
+const EMAIL_FROM = process.env.RESEND_FROM;
 const EMAIL_REPLY_TO = process.env.EMAIL_REPLY_TO || undefined;
 
 function isValidEmail(email) {
