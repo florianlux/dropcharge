@@ -13,6 +13,8 @@ function generateToken() {
 }
 
 async function handler(event) {
+  console.log('newsletter_signup start', event.httpMethod);
+
   // Handle CORS preflight before method guard
   if (event.httpMethod === 'OPTIONS') {
     return {
@@ -76,18 +78,33 @@ async function handler(event) {
     record.meta = payload.meta;
   }
 
-  const { data: upsertData, error } = await supabase
+  let upsertData = null;
+  let error = null;
+
+  // First attempt: upsert with unsubscribe_token
+  ({ data: upsertData, error } = await supabase
     .from('newsletter_subscribers')
     .upsert(record, { onConflict: 'email' })
     .select('unsubscribe_token')
-    .maybeSingle();
+    .maybeSingle());
+
+  // If column missing, retry without unsubscribe_token
+  if (error && /unsubscribe_token/.test(error.message || '')) {
+    console.warn('newsletter_signup: unsubscribe_token column missing, retrying without it');
+    const { unsubscribe_token, ...fallbackRecord } = record;
+    ({ data: upsertData, error } = await supabase
+      .from('newsletter_subscribers')
+      .upsert(fallbackRecord, { onConflict: 'email' })
+      .select()
+      .maybeSingle());
+  }
 
   if (error) {
-    console.error('newsletter_signup upsert error:', error.message, error.stack || '');
+    console.error('newsletter_signup upsert error:', error.message, error.details || '');
     return {
       statusCode: 500,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ok: false, success: false, status: 'error', message: error.message })
+      body: JSON.stringify({ ok: false, success: false, status: 'error', error: 'db_error', details: error.message })
     };
   }
 
