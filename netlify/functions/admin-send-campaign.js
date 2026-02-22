@@ -102,9 +102,9 @@ function chunk(array, size) {
 }
 
 async function logEmailSend({ email, template, subject, status, error: errMsg }) {
-  if (!hasSupabase || !supabase) return;
+  if (!hasSupabase || !supabase) return { logged: false, reason: 'supabase_not_configured' };
   try {
-    await supabase.from('email_logs').insert({
+    const { error } = await supabase.from('email_logs').insert({
       recipient: email,
       template: template || 'campaign',
       subject,
@@ -112,14 +112,21 @@ async function logEmailSend({ email, template, subject, status, error: errMsg })
       error: errMsg || null,
       sent_at: status === 'sent' ? new Date().toISOString() : null
     });
+    if (error) {
+      console.error('email_log insert error:', error.message);
+      return { logged: false, reason: error.message };
+    }
+    return { logged: true };
   } catch (err) {
     console.error('email_log insert error:', err.message);
+    return { logged: false, reason: err.message };
   }
 }
 
 async function sendCampaign({ recipients, subject, html, context }) {
   let sent = 0;
   const failed = [];
+  let logWarnings = 0;
   const batches = chunk(recipients, BATCH_SIZE);
   for (let i = 0; i < batches.length; i += 1) {
     const batch = batches[i];
@@ -129,18 +136,20 @@ async function sendCampaign({ recipients, subject, html, context }) {
       try {
         await sendEmail({ to: email, subject, html: htmlWithUnsub });
         sent += 1;
-        await logEmailSend({ email, subject, status: 'sent' });
+        const logResult = await logEmailSend({ email, subject, status: 'sent' });
+        if (!logResult.logged) logWarnings += 1;
       } catch (err) {
         console.log('email send failed', email, err.message);
         failed.push(email);
-        await logEmailSend({ email, subject, status: 'failed', error: err.message });
+        const logResult = await logEmailSend({ email, subject, status: 'failed', error: err.message });
+        if (!logResult.logged) logWarnings += 1;
       }
     }));
     if (i < batches.length - 1) {
       await sleep(BATCH_DELAY_MS);
     }
   }
-  return { sent, failed };
+  return { sent, failed, logWarnings };
 }
 
 async function handler(event) {
@@ -234,10 +243,16 @@ async function handler(event) {
       });
     }
 
+    const response = { ok: true, ...result, test: Boolean(testEmail) };
+    if (result.logWarnings > 0) {
+      response.warning = 'log_insert_failed';
+      response.details = `${result.logWarnings} email log(s) could not be saved. Run migration 004_email_logs.sql.`;
+    }
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ok: true, ...result, test: Boolean(testEmail) })
+      body: JSON.stringify(response)
     };
   } catch (err) {
     console.error('campaign send failed', err.message);

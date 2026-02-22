@@ -44,6 +44,23 @@ function apiPost(path, data) {
   return api(path, { method: 'POST', body: JSON.stringify(data) });
 }
 
+// Silent GET — no error toast on failure; returns null instead
+async function apiGetSilent(path) {
+  const url = `${API_BASE}/.netlify/functions/${path}`;
+  const headers = {
+    'Content-Type': 'application/json',
+    'x-admin-token': getToken()
+  };
+  try {
+    const res = await fetch(url, { method: 'GET', headers });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) return null;
+    return body;
+  } catch {
+    return null;
+  }
+}
+
 // ── Toast ──────────────────────────────────────────────
 const toastEl = document.getElementById('toast');
 let toastTimer = null;
@@ -254,11 +271,14 @@ async function loadEmailTab() {
 
 async function loadEmailAudience() {
   try {
-    const [activeData, unsubData, sentData, failedData] = await Promise.all([
+    const [activeData, unsubData] = await Promise.all([
       apiGet('admin-list-subscribers?limit=1&status=active').catch(() => null),
-      apiGet('admin-list-subscribers?limit=1&status=unsubscribed').catch(() => null),
-      apiGet('admin-email-logs?limit=1&status=sent').catch(() => null),
-      apiGet('admin-email-logs?limit=1&status=failed').catch(() => null)
+      apiGet('admin-list-subscribers?limit=1&status=unsubscribed').catch(() => null)
+    ]);
+    // Logs stats are fetched silently — failures do not trigger error toast
+    const [sentData, failedData] = await Promise.all([
+      apiGetSilent('admin-email-logs?limit=1&status=sent'),
+      apiGetSilent('admin-email-logs?limit=1&status=failed')
     ]);
     const setVal = (id, data) => {
       const el = $(`#${id}`);
@@ -316,7 +336,15 @@ async function loadEmailLogs() {
   try {
     const params = new URLSearchParams({ limit: '50' });
     if (status) params.set('status', status);
-    const data = await apiGet(`admin-email-logs?${params}`);
+    const data = await apiGetSilent(`admin-email-logs?${params}`);
+    if (!data) {
+      rows.innerHTML = '<p class="empty warning">Logs unavailable. Check connection or run migration.</p>';
+      return;
+    }
+    if (data.warning === 'schema_missing') {
+      rows.innerHTML = `<p class="empty warning">No logs yet or table missing. ${escapeHtml(data.hint || 'Run migration 004_email_logs.sql.')}</p>`;
+      return;
+    }
     if (!data.items || data.items.length === 0) {
       rows.innerHTML = '<p class="empty">No email logs found.</p>';
       return;
@@ -333,7 +361,7 @@ async function loadEmailLogs() {
       </div>`;
     }).join('');
   } catch {
-    rows.innerHTML = '<p class="empty">Failed to load logs.</p>';
+    rows.innerHTML = '<p class="empty warning">Logs unavailable. Check connection or run migration.</p>';
   }
 }
 
@@ -354,12 +382,16 @@ function initEmail() {
         // Render the template first
         const tplData = await apiPost('admin-email-templates', { template });
         // Send via campaign endpoint as test
-        await apiPost('admin-send-campaign', {
+        const result = await apiPost('admin-send-campaign', {
           subject: tplData.subject,
           html: tplData.html,
           testEmail: recipient
         });
-        showToast(`Test email (${template}) sent to ${recipient}.`);
+        if (result.warning === 'log_insert_failed') {
+          showToast(`Test email sent to ${recipient}. (Logs unavailable — run migration)`);
+        } else {
+          showToast(`Test email (${template}) sent to ${recipient}.`);
+        }
         loadEmailLogs();
       } catch { /* toast shown */ }
     });
