@@ -379,3 +379,71 @@ textarea { resize: vertical; }
 #email-log-rows .table-row {
   grid-template-columns: 2fr 1fr 2fr 80px 140px;
 }
+
+/* ===== Neon News Ticker Banner ===== */
+.neon-banner {
+  margin-bottom: 1.5rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(10, 10, 20, 0.85), rgba(20, 15, 40, 0.9));
+  border: 1px solid transparent;
+  background-clip: padding-box;
+  position: relative;
+  height: 48px;
+  overflow: hidden;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.neon-banner::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: 15px;
+  padding: 1px;
+  background: linear-gradient(135deg, #8b5cf6, #06b6d4);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: neonPulse 3s ease-in-out infinite;
+}
+@keyframes neonPulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+.neon-banner-inner {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  padding: 0 1rem;
+  gap: 0.6rem;
+}
+.neon-banner-icon {
+  flex-shrink: 0;
+  color: #a78bfa;
+  display: flex;
+  align-items: center;
+  filter: drop-shadow(0 0 4px rgba(139, 92, 246, 0.6));
+}
+.neon-banner-track {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 3%, #000 97%, transparent);
+}
+.neon-banner-text {
+  display: inline-block;
+  color: #fff;
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-shadow: 0 0 8px rgba(139, 92, 246, 0.5), 0 0 20px rgba(6, 182, 212, 0.3);
+}
+.neon-banner-text.scrolling {
+  animation: tickerScroll var(--ticker-duration, 18s) linear infinite;
+  padding-left: 100%;
+}
+@keyframes tickerScroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
+}

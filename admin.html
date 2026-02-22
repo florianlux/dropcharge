@@ -33,6 +33,18 @@
     </aside>
 
     <main class="admin-main">
+      <!-- Neon News Ticker Banner -->
+      <div id="neon-news-banner" class="neon-banner" style="display:none;">
+        <div class="neon-banner-inner">
+          <span class="neon-banner-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="News alert"><path d="M9.5 1L4 9h4l-1.5 6L13 7H9l.5-6z" fill="currentColor"/></svg>
+          </span>
+          <div class="neon-banner-track">
+            <span class="neon-banner-text" id="neon-banner-text"></span>
+          </div>
+        </div>
+      </div>
+
       <!-- Dashboard Overview -->
       <section class="tab-panel active" data-panel="dashboard">
         <div class="panel-head">
@@ -59,6 +71,21 @@
             <span class="stat-label">Events (24h)</span>
             <strong class="stat-value" id="stat-events-24h">–</strong>
           </div>
+        </div>
+
+        <!-- Admin Settings: News Banner -->
+        <div class="card">
+          <h3>⚡ News Banner</h3>
+          <form id="banner-settings-form" class="card-form" style="border:none;padding:0;">
+            <label class="form-field">
+              <span>News Banner Text</span>
+              <input type="text" id="banner-text-input" placeholder="Flash Deal ends tonight – 20% boost active ⚡" />
+            </label>
+            <div class="form-actions">
+              <button type="submit" class="btn primary">Save Banner</button>
+              <button type="button" class="btn ghost" id="banner-clear-btn">Clear Banner</button>
+            </div>
+          </form>
         </div>
       </section>
 
