@@ -132,4 +132,16 @@ const TEMPLATES = {
   }
 };
 
-module.exports = { welcomeEmail, flashDealEmail, wrap, TEMPLATES, BASE_URL };
+/**
+ * Convenience helper – look up a template by id, merge vars, and return rendered output.
+ * Returns { templateId, subject, html } or null when the id is unknown.
+ */
+function getTemplate(templateId, vars) {
+  const tpl = TEMPLATES[templateId];
+  if (!tpl) return null;
+  const data = { ...tpl.sampleData, ...(vars || {}) };
+  const rendered = tpl.render(data);
+  return { templateId, subject: rendered.subject || tpl.name || templateId, html: rendered.html };
+}
+
+module.exports = { welcomeEmail, flashDealEmail, wrap, TEMPLATES, BASE_URL, getTemplate };
