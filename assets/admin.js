@@ -605,6 +605,86 @@ function initBannerSettings() {
   }
 }
 
+// ── Deals / G2A Repair ─────────────────────────────────
+function initDeals() {
+  const fixBtn = $('#g2a-fix-btn');
+  if (fixBtn) {
+    fixBtn.addEventListener('click', async () => {
+      fixBtn.disabled = true;
+      fixBtn.textContent = 'Scanning…';
+      const resultBox = $('#g2a-fix-result');
+      const statsEl = $('#g2a-fix-stats');
+      const examplesEl = $('#g2a-fix-examples');
+      try {
+        const data = await apiPost('admin-fix-g2a-links', {});
+        if (resultBox) resultBox.style.display = 'block';
+        if (statsEl) {
+          statsEl.innerHTML = [
+            statCard('Scanned', data.scanned),
+            statCard('Updated', data.updated),
+            statCard('Skipped', data.skipped),
+            statCard('Errors', (data.errors || []).length)
+          ].join('');
+        }
+        if (examplesEl && data.examples && data.examples.length > 0) {
+          examplesEl.innerHTML = '<h4 style="margin:0 0 .5rem">Examples</h4>' +
+            data.examples.map(ex =>
+              `<div style="font-size:.85rem;margin-bottom:.35rem;">
+                <strong>${escapeHtml(ex.column || 'url')}</strong> (${escapeHtml(ex.id.slice(0, 8))}…)<br/>
+                <span style="opacity:.5">${escapeHtml(ex.before)}</span> →<br/>
+                <span style="color:var(--accent,#60f)">${escapeHtml(ex.after)}</span>
+              </div>`
+            ).join('');
+        } else if (examplesEl) {
+          examplesEl.innerHTML = '';
+        }
+        showToast(`G2A fix complete: ${data.updated} updated, ${data.skipped} skipped.`);
+      } catch {
+        /* toast shown by api() */
+      } finally {
+        fixBtn.disabled = false;
+        fixBtn.textContent = 'Fix G2A Links';
+      }
+    });
+  }
+}
+
+function statCard(label, value) {
+  return `<div class="stat-card"><span class="stat-label">${escapeHtml(label)}</span><strong class="stat-value">${value ?? '–'}</strong></div>`;
+}
+
+// ── G2A URL normalisation (client-side) ────────────────
+function isG2AUrl(input) {
+  try {
+    const raw = String(input || '').trim();
+    if (!raw) return false;
+    const withScheme = /^https?:\/\//i.test(raw) ? raw : 'https://' + raw;
+    const url = new URL(withScheme);
+    const host = url.hostname.toLowerCase();
+    return host === 'g2a.com' || host === 'www.g2a.com' || host.endsWith('.g2a.com');
+  } catch {
+    return false;
+  }
+}
+
+function normalizeG2AReflinkClient(inputUrl, gtag) {
+  try {
+    const raw = String(inputUrl || '').trim();
+    if (!raw || !gtag) return raw;
+    const hadScheme = /^https?:\/\//i.test(raw);
+    const withScheme = hadScheme ? raw : 'https://' + raw;
+    const url = new URL(withScheme);
+    const host = url.hostname.toLowerCase();
+    if (host !== 'g2a.com' && host !== 'www.g2a.com' && !host.endsWith('.g2a.com')) return raw;
+    url.searchParams.set('gtag', gtag);
+    let result = url.toString();
+    if (!hadScheme) result = result.replace(/^https:\/\//i, '');
+    return result;
+  } catch {
+    return String(inputUrl || '').trim();
+  }
+}
+
 // ── Init ───────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
   initTabs();
@@ -612,6 +692,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initNewsletter();
   initEmail();
   initCampaigns();
+  initDeals();
   initTracking();
   initBannerSettings();
   loadDashboard();
