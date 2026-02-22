@@ -1016,6 +1016,136 @@ function resetSpotlightForm() {
   if (saveBtn) saveBtn.textContent = 'Create Spotlight';
   const previewBtn = $('#spotlight-preview-btn');
   if (previewBtn) previewBtn.style.display = 'none';
+  const statusEl = $('#spotlight-autofill-status');
+  if (statusEl) statusEl.style.display = 'none';
+}
+
+// ── Spotlight Auto-Fill ────────────────────────────────
+let _autofillUndoSnapshot = null;
+
+function _spotlightFormSnapshot() {
+  return {
+    title: ($('#spotlight-title') || {}).value || '',
+    slug: ($('#spotlight-slug') || {}).value || '',
+    subtitle: ($('#spotlight-subtitle') || {}).value || '',
+    brand: ($('#spotlight-brand') || {}).value || '',
+    badge_text: ($('#spotlight-badge') || {}).value || '',
+    logo_url: ($('#spotlight-logo-url') || {}).value || '',
+    hero_url: ($('#spotlight-hero-url') || {}).value || '',
+    gradient: ($('#spotlight-gradient') || {}).value || '',
+  };
+}
+
+function _applyAutofillData(data, forceOverwrite) {
+  const fieldMap = {
+    brand:     'spotlight-brand',
+    title:     'spotlight-title',
+    subtitle:  'spotlight-subtitle',
+    logo_url:  'spotlight-logo-url',
+    hero_url:  'spotlight-hero-url',
+    badge_text:'spotlight-badge',
+  };
+  const filled = [];
+  for (const [key, elId] of Object.entries(fieldMap)) {
+    if (!data[key]) continue;
+    const el = $(`#${elId}`);
+    if (!el) continue;
+    if (el.value && !forceOverwrite) continue;
+    el.value = data[key];
+    filled.push(key);
+  }
+  // Gradient — set select if value matches an option
+  if (data.gradient) {
+    const sel = $('#spotlight-gradient');
+    if (sel && (!sel.value || forceOverwrite || sel.selectedIndex === 0)) {
+      for (let i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === data.gradient) {
+          sel.selectedIndex = i;
+          filled.push('gradient');
+          break;
+        }
+      }
+    }
+  }
+  // Slug suggestion
+  if (data.suggested_slug) {
+    const slugEl = $('#spotlight-slug');
+    if (slugEl && (!slugEl.value || forceOverwrite)) {
+      slugEl.value = data.suggested_slug;
+      filled.push('slug');
+    }
+  }
+  return filled;
+}
+
+async function handleSpotlightAutofill(evt) {
+  const urlEl = $('#spotlight-affiliate-url');
+  const btn = $('#spotlight-autofill-btn');
+  const statusEl = $('#spotlight-autofill-status');
+  const url = (urlEl && urlEl.value || '').trim();
+
+  if (!url) {
+    showToast('Please enter an Affiliate URL first.', 'error');
+    return;
+  }
+
+  // Save undo snapshot
+  _autofillUndoSnapshot = _spotlightFormSnapshot();
+
+  // Check if fields already have values — require Alt key or confirm
+  const snap = _autofillUndoSnapshot;
+  const hasValues = snap.brand || snap.title || snap.subtitle || snap.logo_url || snap.hero_url;
+  const forceOverwrite = evt && (evt.altKey || evt.metaKey);
+  if (hasValues && !forceOverwrite) {
+    if (!confirm('Overwrite existing values?')) return;
+  }
+
+  // Show spinner
+  if (btn) { btn.disabled = true; btn.textContent = 'Fetching…'; }
+  if (statusEl) {
+    statusEl.style.display = 'block';
+    statusEl.innerHTML = '<span class="autofill-spinner"></span> Fetching metadata…';
+  }
+
+  try {
+    const result = await apiPost('spotlight-autofill', { url });
+    if (!result.ok || !result.data) throw new Error(result.error || 'No data');
+
+    const filled = _applyAutofillData(result.data, hasValues && (forceOverwrite || true));
+    const confidence = (result.debug && result.debug.confidence) || 'low';
+
+    // Show confidence + undo
+    if (statusEl) {
+      statusEl.innerHTML =
+        `Filled ${filled.length} field(s) ` +
+        `<span class="confidence-badge confidence-${confidence}">${confidence.toUpperCase()}</span>` +
+        ` <button type="button" class="autofill-undo-btn" id="spotlight-autofill-undo">Undo</button>`;
+      const undoBtn = $('#spotlight-autofill-undo');
+      if (undoBtn) {
+        undoBtn.addEventListener('click', () => {
+          if (_autofillUndoSnapshot) _applyAutofillData(_autofillUndoSnapshot, true);
+          statusEl.style.display = 'none';
+          showToast('Auto-fill reverted.');
+        });
+      }
+    }
+    showToast(`Auto-filled ${filled.length} field(s) (${confidence} confidence).`);
+  } catch (err) {
+    if (statusEl) { statusEl.innerHTML = '⚠️ Could not fetch metadata.'; }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Auto-Fill from Link'; }
+  }
+}
+
+function handleSuggestSlug() {
+  const brand = ($('#spotlight-brand') || {}).value || '';
+  const title = ($('#spotlight-title') || {}).value || '';
+  const text = (brand + ' ' + title).trim();
+  if (!text) { showToast('Enter a Brand or Title first.', 'error'); return; }
+  const slug = text.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+  const slugEl = $('#spotlight-slug');
+  if (slugEl) slugEl.value = slug;
+  showToast('Slug suggested: ' + slug);
 }
 
 function initSpotlight() {
@@ -1065,6 +1195,17 @@ function initSpotlight() {
 
   if (resetBtn) {
     resetBtn.addEventListener('click', resetSpotlightForm);
+  }
+
+  // Auto-Fill button
+  const autofillBtn = $('#spotlight-autofill-btn');
+  if (autofillBtn) {
+    autofillBtn.addEventListener('click', handleSpotlightAutofill);
+  }
+  // Suggest Slug button
+  const suggestSlugBtn = $('#spotlight-suggest-slug-btn');
+  if (suggestSlugBtn) {
+    suggestSlugBtn.addEventListener('click', handleSuggestSlug);
   }
 }
 
