@@ -65,7 +65,7 @@ function seededRandom(seed) {
     h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
   }
   return function() {
-    h = (h * 16807 + 0) % 2147483647;
+    h = (h * 16807) % 2147483647;
     if (h < 0) h += 2147483647;
     return (h - 1) / 2147483646;
   };

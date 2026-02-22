@@ -113,6 +113,9 @@
     .sp-g2a-chip--pc{background:#7c3aed}
     .sp-g2a-chip--region{background:rgba(255,255,255,.12);color:rgba(255,255,255,.8);border:1px solid rgba(255,255,255,.15)}
 
+    .sp-g2a-mobile-cta .sp-price-card{margin-bottom:1rem}
+    .sp-g2a-mobile-cta .sp-coupon{margin-bottom:1rem}
+
     .sp-g2a-social{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;font-size:.85rem;color:rgba(255,255,255,.6);margin-bottom:1.5rem}
     .sp-g2a-stars{color:#facc15;font-size:1rem;letter-spacing:1px}
     .sp-g2a-hot{color:#f97316;font-weight:600}
@@ -221,7 +224,7 @@
           h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
         }
         return function() {
-          h = (h * 16807 + 0) % 2147483647;
+          h = (h * 16807) % 2147483647;
           if (h < 0) h += 2147483647;
           return (h - 1) / 2147483646;
         };
@@ -400,13 +403,13 @@
           html += '<div class="sp-price-card">';
           html += '<span class="sp-price-amount">' + escapeHtml(String(item.product_price)) + '</span>';
           html += '<span class="sp-price-currency">' + escapeHtml(item.product_currency || 'EUR') + '</span>';
-          html += '</div><br>';
+          html += '</div>';
         }
         if (item.coupon_code) {
           html += '<div class="sp-coupon">';
           html += '<span>Code:</span> <code id="coupon-code">' + escapeHtml(item.coupon_code) + '</code>';
           html += '<button class="sp-coupon-copy" id="copy-coupon" title="Copy code">Copy</button>';
-          html += '</div><br>';
+          html += '</div>';
         }
         html += '<a class="sp-cta" id="sp-cta-btn" href="' + escapeAttr(item.affiliate_url) + '" target="_blank" rel="noopener noreferrer">';
         html += escapeHtml(item.cta_text || 'Jetzt sichern');
