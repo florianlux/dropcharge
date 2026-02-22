@@ -25,6 +25,7 @@
         <button class="nav-link" data-tab="email">Email</button>
         <button class="nav-link" data-tab="campaigns">Campaigns</button>
         <button class="nav-link" data-tab="deals">Deals</button>
+        <button class="nav-link" data-tab="drops">Gaming Drops</button>
         <button class="nav-link" data-tab="tracking">Tracking Links</button>
         <button class="nav-link" data-tab="analytics">Analytics</button>
       </nav>
@@ -263,6 +264,74 @@
             <div class="stats-row" id="g2a-fix-stats"></div>
             <div id="g2a-fix-examples" style="margin-top:.75rem;"></div>
           </div>
+        </div>
+      </section>
+
+      <!-- Gaming Drops Manager -->
+      <section class="tab-panel" data-panel="drops">
+        <div class="panel-head">
+          <h2>Gaming Drops</h2>
+        </div>
+        <div class="card">
+          <h3>🎮 Manage Drops</h3>
+          <p style="margin:0 0 1rem;opacity:.7;font-size:.9rem;">Configure outbound gaming credit links. G2A URLs are automatically tagged with your affiliate gtag on save.</p>
+          <div class="data-table" id="drops-table">
+            <div class="table-head drops-head">
+              <span>ID</span>
+              <span>Title</span>
+              <span>Platform</span>
+              <span>URL</span>
+              <span>Active</span>
+              <span>Order</span>
+              <span>Actions</span>
+            </div>
+            <div class="table-body" id="drops-rows">
+              <p class="empty">Loading drops…</p>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>➕ Add / Edit Drop</h3>
+          <form id="drop-form" class="card-form" style="border:none;padding:0;">
+            <div class="form-row">
+              <label class="form-field">
+                <span>ID (slug)</span>
+                <input type="text" id="drop-id" placeholder="e.g. nintendo15" required />
+              </label>
+              <label class="form-field">
+                <span>Title</span>
+                <input type="text" id="drop-title" placeholder="Nintendo eShop 15€" />
+              </label>
+            </div>
+            <div class="form-row">
+              <label class="form-field">
+                <span>Platform</span>
+                <input type="text" id="drop-platform" placeholder="Nintendo" />
+              </label>
+              <label class="form-field">
+                <span>Value (EUR)</span>
+                <input type="number" id="drop-value" placeholder="15" />
+              </label>
+            </div>
+            <label class="form-field">
+              <span>Destination URL</span>
+              <input type="url" id="drop-url" placeholder="https://www.g2a.com/n/nintendo15_lux" required />
+            </label>
+            <div class="form-row">
+              <label class="form-field">
+                <span>Sort Order</span>
+                <input type="number" id="drop-sort" value="0" />
+              </label>
+              <label class="form-field inline" style="align-items:center;gap:.5rem;">
+                <input type="checkbox" id="drop-active" checked />
+                <span>Active</span>
+              </label>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn primary">Save Drop</button>
+              <button type="button" class="btn ghost" id="drop-reset">Reset Form</button>
+            </div>
+          </form>
         </div>
       </section>
 
