@@ -1,4 +1,4 @@
-const DEFAULT_ORIGINS = (process.env.ADMIN_ALLOWED_ORIGINS || 'https://dropchargeadmin.netlify.app,https://dropcharge.netlify.app,http://localhost:8888')
+const DEFAULT_ORIGINS = (process.env.ADMIN_ALLOWED_ORIGINS || 'https://dropcharge.io,http://localhost:8888,http://localhost:3000')
   .split(',')
   .map(origin => origin.trim())
   .filter(Boolean);

@@ -3,7 +3,7 @@
  * Professional HTML email templates for transactional & marketing emails.
  */
 
-const BASE_URL = (process.env.PUBLIC_SITE_URL || 'https://dropcharge.netlify.app').replace(/\/$/, '');
+const BASE_URL = (process.env.PUBLIC_SITE_URL || 'https://dropcharge.io').replace(/\/$/, '');
 
 /* ── Shared wrapper ─────────────────────────────────── */
 function wrap(content, { unsubscribeUrl } = {}) {

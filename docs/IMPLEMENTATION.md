@@ -7,7 +7,7 @@
 - **Supabase Schema:** Defined in `supabase-schema.sql` (clicks, emails, events, spotlights, campaigns). Lacks hardened newsletter-specific tables / RLS.
 - **Newsletter Flow (derzeit):** Popup calls `/.netlify/functions/newsletter_signup` (recent iteration) but DB + admin UI still referencing legacy tables. No confirm/unsubscribe pages yet.
 - **Admin “Email & Leads”:** Table hooks to old endpoints (`admin-subscribers`). Needs rewire to new secure leads API + CSV export + filters.
-- **Deploy/Infra:** Netlify for frontend/functions (dropchargeadmin), Supabase for DB. Env variables already include SUPABASE_URL/SERVICE_KEY, TikTok IDs, etc.
+- **Deploy/Infra:** Netlify for frontend/functions (dropcharge.io), Supabase for DB. Env variables already include SUPABASE_URL/SERVICE_KEY, TikTok IDs, etc.
 
 ## Gap zum Soll-Stand
 - Newsletter tables need redesign (status, tokens, events) + RLS.
