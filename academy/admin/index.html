@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DropCharge Academy – Admin</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/academy/academy.css" />
+</head>
+<body>
+  <div class="page-bg"></div>
+
+  <div class="academy-app-nav">
+    <a href="/academy/" class="logo">DropCharge Academy Admin</a>
+    <div class="nav-right">
+      <a class="nav-link" href="/admin">Main Admin</a>
+      <a class="nav-link" href="/academy/app/">Academy App</a>
+    </div>
+  </div>
+
+  <div class="academy-admin">
+    <h1>Academy Administration</h1>
+
+    <div class="admin-tabs">
+      <button class="admin-tab active" data-tab="users">Benutzer</button>
+      <button class="admin-tab" data-tab="content">Inhalte</button>
+      <button class="admin-tab" data-tab="orders">Bestellungen</button>
+      <button class="admin-tab" data-tab="events">Webhook Events</button>
+    </div>
+
+    <!-- Users Panel -->
+    <div class="admin-panel active" id="panel-users">
+      <div class="admin-form">
+        <h3>Manueller Zugriff (Invoice Grant)</h3>
+        <div class="form-row">
+          <div>
+            <label>User ID / Email</label>
+            <input type="text" id="grant-user" placeholder="user@email.de" />
+          </div>
+          <div>
+            <label>Plan</label>
+            <select id="grant-plan">
+              <option value="basic">Basic</option>
+              <option value="pro">Pro</option>
+            </select>
+          </div>
+          <div>
+            <label>Gültig bis (leer = unbegrenzt)</label>
+            <input type="date" id="grant-until" />
+          </div>
+        </div>
+        <button class="btn primary" id="grant-btn">Zugang gewähren</button>
+        <button class="btn ghost" id="revoke-btn" style="margin-left:0.5rem;">Zugang widerrufen</button>
+        <div id="grant-msg" style="margin-top:0.5rem;font-size:0.85rem;"></div>
+      </div>
+
+      <h3>Benutzer mit Zugang</h3>
+      <div style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>User ID</th>
+              <th>Plan</th>
+              <th>Status</th>
+              <th>Gültig bis</th>
+              <th>Gewährt von</th>
+              <th>Erstellt</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Content Panel -->
+    <div class="admin-panel" id="panel-content">
+      <div class="admin-form">
+        <h3 id="content-form-title">Neues Modul erstellen</h3>
+        <input type="hidden" id="edit-module-id" />
+        <div class="form-row">
+          <div>
+            <label>Titel</label>
+            <input type="text" id="mod-title" />
+          </div>
+          <div>
+            <label>Plan</label>
+            <select id="mod-plan"><option value="basic">Basic</option><option value="pro">Pro</option></select>
+          </div>
+          <div>
+            <label>Sortierung</label>
+            <input type="number" id="mod-sort" value="0" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Beschreibung</label>
+          <input type="text" id="mod-desc" />
+        </div>
+        <button class="btn primary" id="save-module-btn">Modul speichern</button>
+        <button class="btn ghost" id="reset-module-btn" style="margin-left:0.5rem;">Zurücksetzen</button>
+      </div>
+
+      <div class="admin-form">
+        <h3 id="lesson-form-title">Neue Lektion erstellen</h3>
+        <input type="hidden" id="edit-lesson-id" />
+        <div class="form-row">
+          <div>
+            <label>Modul</label>
+            <select id="les-module"></select>
+          </div>
+          <div>
+            <label>Titel</label>
+            <input type="text" id="les-title" />
+          </div>
+          <div>
+            <label>Plan</label>
+            <select id="les-plan"><option value="basic">Basic</option><option value="pro">Pro</option></select>
+          </div>
+          <div>
+            <label>Sortierung</label>
+            <input type="number" id="les-sort" value="0" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Inhalt (HTML)</label>
+          <textarea id="les-content" rows="8"></textarea>
+        </div>
+        <button class="btn primary" id="save-lesson-btn">Lektion speichern</button>
+        <button class="btn ghost" id="reset-lesson-btn" style="margin-left:0.5rem;">Zurücksetzen</button>
+      </div>
+
+      <h3>Module & Lektionen</h3>
+      <div id="content-list"></div>
+    </div>
+
+    <!-- Orders Panel -->
+    <div class="admin-panel" id="panel-orders">
+      <h3>Bestellungen</h3>
+      <div style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>User</th>
+              <th>Plan</th>
+              <th>Betrag</th>
+              <th>Status</th>
+              <th>Stripe Session</th>
+              <th>Erstellt</th>
+            </tr>
+          </thead>
+          <tbody id="orders-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Events Panel -->
+    <div class="admin-panel" id="panel-events">
+      <h3>Stripe Webhook Events</h3>
+      <div style="overflow-x:auto;">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Event ID</th>
+              <th>Typ</th>
+              <th>Verarbeitet</th>
+            </tr>
+          </thead>
+          <tbody id="events-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    var API = '/.netlify/functions/';
+    var adminToken = localStorage.getItem('admin_token') || localStorage.getItem('adminToken');
+
+    if (!adminToken) {
+      adminToken = prompt('Admin Token eingeben:');
+      if (!adminToken) { window.location.href = '/academy/'; return; }
+      localStorage.setItem('admin_token', adminToken);
+    }
+
+    function adminFetch(fn, opts) {
+      opts = opts || {};
+      opts.headers = opts.headers || {};
+      opts.headers['Content-Type'] = 'application/json';
+      opts.headers['x-admin-token'] = adminToken;
+      return fetch(API + fn, opts).then(function(r) { return r.json(); });
+    }
+
+    // Tabs
+    document.querySelectorAll('.admin-tab').forEach(function(tab) {
+      tab.addEventListener('click', function() {
+        document.querySelectorAll('.admin-tab').forEach(function(t) { t.classList.remove('active'); });
+        document.querySelectorAll('.admin-panel').forEach(function(p) { p.classList.remove('active'); });
+        tab.classList.add('active');
+        document.getElementById('panel-' + tab.getAttribute('data-tab')).classList.add('active');
+      });
+    });
+
+    // --- Users ---
+    function loadUsers() {
+      adminFetch('academy_admin?action=users').then(function(data) {
+        if (!data.ok) return;
+        var html = '';
+        (data.users || []).forEach(function(u) {
+          html += '<tr>';
+          html += '<td>' + esc(u.user_id) + '</td>';
+          html += '<td><span class="status-pill ' + u.plan + '">' + u.plan + '</span></td>';
+          html += '<td><span class="status-pill ' + u.status + '">' + u.status + '</span></td>';
+          html += '<td>' + (u.valid_until ? new Date(u.valid_until).toLocaleDateString() : '∞') + '</td>';
+          html += '<td>' + esc(u.granted_by || '-') + '</td>';
+          html += '<td>' + new Date(u.created_at).toLocaleDateString() + '</td>';
+          html += '</tr>';
+        });
+        document.getElementById('users-tbody').innerHTML = html || '<tr><td colspan="6">Keine Benutzer</td></tr>';
+      });
+    }
+
+    document.getElementById('grant-btn').addEventListener('click', function() {
+      var userId = document.getElementById('grant-user').value.trim();
+      var plan = document.getElementById('grant-plan').value;
+      var until = document.getElementById('grant-until').value || null;
+      if (!userId) { document.getElementById('grant-msg').textContent = 'User ID erforderlich'; return; }
+      adminFetch('academy_admin', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'grant', user_id: userId, plan: plan, valid_until: until })
+      }).then(function(data) {
+        document.getElementById('grant-msg').textContent = data.ok ? 'Zugang gewährt!' : (data.error || 'Fehler');
+        document.getElementById('grant-msg').style.color = data.ok ? '#4fd5ff' : '#ff5a5a';
+        if (data.ok) loadUsers();
+      });
+    });
+
+    document.getElementById('revoke-btn').addEventListener('click', function() {
+      var userId = document.getElementById('grant-user').value.trim();
+      if (!userId) { document.getElementById('grant-msg').textContent = 'User ID erforderlich'; return; }
+      adminFetch('academy_admin', {
+        method: 'POST',
+        body: JSON.stringify({ action: 'revoke', user_id: userId })
+      }).then(function(data) {
+        document.getElementById('grant-msg').textContent = data.ok ? 'Zugang widerrufen!' : (data.error || 'Fehler');
+        document.getElementById('grant-msg').style.color = data.ok ? '#4fd5ff' : '#ff5a5a';
+        if (data.ok) loadUsers();
+      });
+    });
+
+    // --- Content ---
+    function loadContent() {
+      adminFetch('academy_admin?action=content').then(function(data) {
+        if (!data.ok) return;
+        var modules = data.modules || [];
+        var lessons = data.lessons || [];
+        // Populate module selector
+        var sel = document.getElementById('les-module');
+        sel.innerHTML = modules.map(function(m) { return '<option value="' + m.id + '">' + esc(m.title) + '</option>'; }).join('');
+        // Render content list
+        var html = '';
+        modules.forEach(function(m) {
+          html += '<div class="admin-form" style="margin-bottom:1rem;padding:1rem;">';
+          html += '<strong>' + esc(m.title) + '</strong> <span class="status-pill ' + m.plan_required + '">' + m.plan_required + '</span>';
+          html += ' <button class="btn ghost" style="padding:0.3rem 0.8rem;font-size:0.8rem;" onclick="editModule(\'' + m.id + '\')">Bearbeiten</button>';
+          var mLessons = lessons.filter(function(l) { return l.module_id === m.id; });
+          if (mLessons.length) {
+            html += '<ul style="margin:0.5rem 0 0;padding-left:1.2rem;">';
+            mLessons.forEach(function(l) {
+              html += '<li>' + esc(l.title) + ' <span class="status-pill ' + l.plan_required + '">' + l.plan_required + '</span>';
+              html += ' <button class="btn ghost" style="padding:0.2rem 0.5rem;font-size:0.75rem;" onclick="editLesson(\'' + l.id + '\')">Edit</button></li>';
+            });
+            html += '</ul>';
+          }
+          html += '</div>';
+        });
+        document.getElementById('content-list').innerHTML = html || '<p>Keine Inhalte.</p>';
+        window._academyModules = modules;
+        window._academyLessons = lessons;
+      });
+    }
+
+    window.editModule = function(id) {
+      var m = (window._academyModules || []).find(function(x) { return x.id === id; });
+      if (!m) return;
+      document.getElementById('edit-module-id').value = m.id;
+      document.getElementById('mod-title').value = m.title;
+      document.getElementById('mod-desc').value = m.description || '';
+      document.getElementById('mod-plan').value = m.plan_required;
+      document.getElementById('mod-sort').value = m.sort_order;
+      document.getElementById('content-form-title').textContent = 'Modul bearbeiten';
+    };
+
+    window.editLesson = function(id) {
+      var l = (window._academyLessons || []).find(function(x) { return x.id === id; });
+      if (!l) return;
+      document.getElementById('edit-lesson-id').value = l.id;
+      document.getElementById('les-module').value = l.module_id;
+      document.getElementById('les-title').value = l.title;
+      document.getElementById('les-content').value = l.content || '';
+      document.getElementById('les-plan').value = l.plan_required;
+      document.getElementById('les-sort').value = l.sort_order;
+      document.getElementById('lesson-form-title').textContent = 'Lektion bearbeiten';
+    };
+
+    document.getElementById('save-module-btn').addEventListener('click', function() {
+      var id = document.getElementById('edit-module-id').value || undefined;
+      var payload = {
+        action: 'save_module',
+        id: id,
+        title: document.getElementById('mod-title').value,
+        description: document.getElementById('mod-desc').value,
+        plan_required: document.getElementById('mod-plan').value,
+        sort_order: parseInt(document.getElementById('mod-sort').value) || 0
+      };
+      adminFetch('academy_admin', { method: 'POST', body: JSON.stringify(payload) }).then(function(data) {
+        if (data.ok) { loadContent(); resetModuleForm(); }
+        else alert(data.error || 'Fehler');
+      });
+    });
+
+    document.getElementById('save-lesson-btn').addEventListener('click', function() {
+      var id = document.getElementById('edit-lesson-id').value || undefined;
+      var payload = {
+        action: 'save_lesson',
+        id: id,
+        module_id: document.getElementById('les-module').value,
+        title: document.getElementById('les-title').value,
+        content: document.getElementById('les-content').value,
+        plan_required: document.getElementById('les-plan').value,
+        sort_order: parseInt(document.getElementById('les-sort').value) || 0
+      };
+      adminFetch('academy_admin', { method: 'POST', body: JSON.stringify(payload) }).then(function(data) {
+        if (data.ok) { loadContent(); resetLessonForm(); }
+        else alert(data.error || 'Fehler');
+      });
+    });
+
+    function resetModuleForm() {
+      document.getElementById('edit-module-id').value = '';
+      document.getElementById('mod-title').value = '';
+      document.getElementById('mod-desc').value = '';
+      document.getElementById('mod-sort').value = '0';
+      document.getElementById('content-form-title').textContent = 'Neues Modul erstellen';
+    }
+    function resetLessonForm() {
+      document.getElementById('edit-lesson-id').value = '';
+      document.getElementById('les-title').value = '';
+      document.getElementById('les-content').value = '';
+      document.getElementById('les-sort').value = '0';
+      document.getElementById('lesson-form-title').textContent = 'Neue Lektion erstellen';
+    }
+    document.getElementById('reset-module-btn').addEventListener('click', resetModuleForm);
+    document.getElementById('reset-lesson-btn').addEventListener('click', resetLessonForm);
+
+    // --- Orders ---
+    function loadOrders() {
+      adminFetch('academy_admin?action=orders').then(function(data) {
+        if (!data.ok) return;
+        var html = '';
+        (data.orders || []).forEach(function(o) {
+          html += '<tr>';
+          html += '<td style="font-size:0.75rem;">' + esc(o.id).substring(0, 8) + '</td>';
+          html += '<td>' + esc(o.user_id) + '</td>';
+          html += '<td><span class="status-pill ' + o.plan + '">' + o.plan + '</span></td>';
+          html += '<td>' + (o.amount ? (o.amount / 100).toFixed(2) + ' ' + (o.currency || 'EUR') : '-') + '</td>';
+          html += '<td>' + esc(o.status) + '</td>';
+          html += '<td style="font-size:0.75rem;">' + esc(o.stripe_session_id || '-').substring(0, 20) + '</td>';
+          html += '<td>' + new Date(o.created_at).toLocaleDateString() + '</td>';
+          html += '</tr>';
+        });
+        document.getElementById('orders-tbody').innerHTML = html || '<tr><td colspan="7">Keine Bestellungen</td></tr>';
+      });
+    }
+
+    // --- Events ---
+    function loadEvents() {
+      adminFetch('academy_admin?action=events').then(function(data) {
+        if (!data.ok) return;
+        var html = '';
+        (data.events || []).forEach(function(e) {
+          html += '<tr>';
+          html += '<td style="font-size:0.75rem;">' + esc(e.event_id) + '</td>';
+          html += '<td>' + esc(e.event_type) + '</td>';
+          html += '<td>' + new Date(e.processed_at).toLocaleString() + '</td>';
+          html += '</tr>';
+        });
+        document.getElementById('events-tbody').innerHTML = html || '<tr><td colspan="3">Keine Events</td></tr>';
+      });
+    }
+
+    function esc(s) {
+      if (!s) return '';
+      var d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    // Init
+    loadUsers();
+    loadContent();
+    loadOrders();
+    loadEvents();
+  })();
+  </script>
+</body>
+</html>

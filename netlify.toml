@@ -36,13 +36,63 @@
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"
-    Content-Security-Policy = "default-src 'self'; img-src 'self' data: https:; script-src 'self' https://analytics.tiktok.com 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co; frame-ancestors 'none';"
+    Content-Security-Policy = "default-src 'self'; img-src 'self' data: https:; script-src 'self' https://analytics.tiktok.com 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co https://checkout.stripe.com; frame-ancestors 'none';"
     Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
 
 [[headers]]
   for = "/admin*"
   [headers.values]
     Cache-Control = "no-store, no-cache, must-revalidate"
+
+[[headers]]
+  for = "/academy/admin*"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+
+[[headers]]
+  for = "/academy/app*"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate"
+
+[[redirects]]
+  from = "/academy/app/tools"
+  to = "/academy/app/tools/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/academy/app/tools/"
+  to = "/academy/app/tools/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/academy/app"
+  to = "/academy/app/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/academy/app/"
+  to = "/academy/app/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/academy/admin"
+  to = "/academy/admin/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/academy/admin/"
+  to = "/academy/admin/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/academy"
+  to = "/academy/index.html"
+  status = 200
+
+[[redirects]]
+  from = "/academy/"
+  to = "/academy/index.html"
+  status = 200
 
 [[redirects]]
   from = "/spin"

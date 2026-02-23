@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DropCharge Academy – Mitgliederbereich</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/academy/academy.css" />
+</head>
+<body>
+  <div class="page-bg"></div>
+
+  <!-- Auth screen (shown when not logged in) -->
+  <div id="auth-screen" style="display:none">
+    <div class="academy-app-nav">
+      <a href="/academy/" class="logo">DropCharge Academy</a>
+      <div class="nav-right">
+        <a class="nav-link" href="/academy/">Zurück</a>
+      </div>
+    </div>
+    <div class="auth-container">
+      <h2>Einloggen</h2>
+      <p style="color:var(--muted);text-align:center;font-size:0.9rem;">Gib deine Email-Adresse ein, um einen Login-Link zu erhalten.</p>
+      <div class="form-group">
+        <label for="auth-email">Email</label>
+        <input type="email" id="auth-email" placeholder="deine@email.de" />
+      </div>
+      <button class="btn primary" style="width:100%" id="auth-submit">Magic Link senden</button>
+      <div class="auth-msg" id="auth-msg"></div>
+    </div>
+  </div>
+
+  <!-- No-access screen -->
+  <div id="no-access-screen" style="display:none">
+    <div class="academy-app-nav">
+      <a href="/academy/" class="logo">DropCharge Academy</a>
+      <div class="nav-right">
+        <span class="user-email" id="no-access-email"></span>
+        <button class="nav-link" id="no-access-logout">Logout</button>
+      </div>
+    </div>
+    <div class="upgrade-container">
+      <h1>Zugang erforderlich</h1>
+      <p>Du hast noch keinen Academy-Zugang. Wähle einen Plan, um zu starten.</p>
+      <div class="pricing-grid" style="max-width:600px;margin:0 auto;">
+        <div class="pricing-card">
+          <div class="pricing-header">
+            <h3>Basic</h3>
+            <div class="pricing-amount"><span class="price">29€</span> <span class="period">einmalig</span></div>
+          </div>
+          <button class="btn primary pricing-cta" data-plan="basic" style="width:100%">Basic kaufen</button>
+        </div>
+        <div class="pricing-card featured">
+          <div class="pricing-badge">Beliebt</div>
+          <div class="pricing-header">
+            <h3>Pro</h3>
+            <div class="pricing-amount"><span class="price">19€</span> <span class="period">/Monat</span></div>
+          </div>
+          <button class="btn primary pricing-cta" data-plan="pro" style="width:100%">Pro starten</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="app-screen" style="display:none">
+    <div class="academy-app-nav">
+      <a href="/academy/" class="logo">DropCharge Academy</a>
+      <div class="nav-right">
+        <span class="user-email" id="app-user-email"></span>
+        <span class="status-pill" id="app-user-plan"></span>
+        <a class="nav-link" href="/academy/app/tools/" id="tools-link">Tools</a>
+        <button class="nav-link" id="app-logout">Logout</button>
+      </div>
+    </div>
+    <div class="academy-app-layout">
+      <aside class="academy-sidebar" id="sidebar">
+        <div class="progress-bar"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+        <p style="font-size:0.8rem;color:var(--muted);" id="progress-text">0% abgeschlossen</p>
+        <!-- Modules/lessons filled by JS -->
+      </aside>
+      <main class="academy-content" id="lesson-content">
+        <h2 id="lesson-title">Willkommen</h2>
+        <div class="lesson-body" id="lesson-body">
+          <p>Wähle eine Lektion aus der Seitenleiste, um zu starten.</p>
+        </div>
+        <div class="lesson-nav">
+          <button class="btn ghost" id="btn-prev" style="display:none">← Vorherige</button>
+          <div></div>
+          <button class="btn primary" id="btn-complete" style="display:none">✓ Abschließen & Weiter</button>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    var API = '/.netlify/functions/';
+    var state = { user: null, access: null, modules: [], lessons: [], progress: {}, currentLesson: null };
+
+    // --- Helpers ---
+    function show(id) { document.getElementById(id).style.display = ''; }
+    function hide(id) { document.getElementById(id).style.display = 'none'; }
+    function $(id) { return document.getElementById(id); }
+
+    function getToken() { return localStorage.getItem('academy_token'); }
+    function setToken(t) { localStorage.setItem('academy_token', t); }
+    function getUser() { try { return JSON.parse(localStorage.getItem('academy_user')); } catch(e) { return null; } }
+    function setUser(u) { localStorage.setItem('academy_user', JSON.stringify(u)); }
+
+    function apiFetch(fn, opts) {
+      opts = opts || {};
+      opts.headers = opts.headers || {};
+      opts.headers['Content-Type'] = 'application/json';
+      var token = getToken();
+      if (token) opts.headers['x-academy-token'] = token;
+      return fetch(API + fn, opts).then(function(r) { return r.json(); });
+    }
+
+    // --- Auth ---
+    function checkAuth() {
+      // Check URL for magic link token
+      var params = new URLSearchParams(window.location.search);
+      var token = params.get('token');
+      if (token) {
+        setToken(token);
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+      if (!getToken()) { showAuth(); return; }
+      // Verify session and get access
+      apiFetch('academy_session').then(function(data) {
+        if (!data.ok) { showAuth(); return; }
+        state.user = data.user;
+        setUser(data.user);
+        state.access = data.access;
+        if (!data.access || data.access.status !== 'active') { showNoAccess(); return; }
+        showApp();
+      }).catch(function() { showAuth(); });
+    }
+
+    function showAuth() {
+      hide('app-screen'); hide('no-access-screen'); show('auth-screen');
+    }
+    function showNoAccess() {
+      hide('auth-screen'); hide('app-screen'); show('no-access-screen');
+      $('no-access-email').textContent = state.user ? state.user.email : '';
+    }
+    function showApp() {
+      hide('auth-screen'); hide('no-access-screen'); show('app-screen');
+      $('app-user-email').textContent = state.user ? state.user.email : '';
+      var plan = state.access ? state.access.plan : 'basic';
+      var planEl = $('app-user-plan');
+      planEl.textContent = plan.toUpperCase();
+      planEl.className = 'status-pill ' + plan;
+      if (plan !== 'pro') $('tools-link').style.display = 'none';
+      loadContent();
+    }
+
+    // Magic link auth
+    $('auth-submit').addEventListener('click', function() {
+      var email = $('auth-email').value.trim();
+      if (!email || !email.includes('@')) {
+        $('auth-msg').textContent = 'Bitte gib eine gültige Email-Adresse ein.';
+        $('auth-msg').className = 'auth-msg error';
+        return;
+      }
+      $('auth-submit').disabled = true;
+      apiFetch('academy_auth', {
+        method: 'POST',
+        body: JSON.stringify({ email: email })
+      }).then(function(data) {
+        $('auth-submit').disabled = false;
+        if (data.ok) {
+          $('auth-msg').textContent = 'Login-Link wurde an deine Email gesendet! Prüfe deinen Posteingang.';
+          $('auth-msg').className = 'auth-msg success';
+        } else {
+          $('auth-msg').textContent = data.error || 'Fehler. Bitte versuche es erneut.';
+          $('auth-msg').className = 'auth-msg error';
+        }
+      });
+    });
+
+    // Logout
+    function logout() {
+      localStorage.removeItem('academy_token');
+      localStorage.removeItem('academy_user');
+      showAuth();
+    }
+    $('app-logout').addEventListener('click', logout);
+    $('no-access-logout').addEventListener('click', logout);
+
+    // No-access checkout
+    document.querySelectorAll('#no-access-screen .pricing-cta').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        var plan = this.getAttribute('data-plan');
+        btn.disabled = true;
+        apiFetch('academy_create_checkout', {
+          method: 'POST',
+          body: JSON.stringify({ plan: plan, email: state.user ? state.user.email : '' })
+        }).then(function(data) {
+          btn.disabled = false;
+          if (data.ok && data.url) window.location.href = data.url;
+          else alert(data.error || 'Fehler.');
+        });
+      });
+    });
+
+    // --- Content ---
+    function loadContent() {
+      apiFetch('academy_content').then(function(data) {
+        if (!data.ok) return;
+        state.modules = data.modules || [];
+        state.lessons = data.lessons || [];
+        state.progress = {};
+        (data.progress || []).forEach(function(p) { state.progress[p.lesson_id] = p.completed; });
+        renderSidebar();
+        // Auto-select first lesson
+        if (state.lessons.length > 0) selectLesson(state.lessons[0].id);
+      });
+    }
+
+    function renderSidebar() {
+      var sb = $('sidebar');
+      // Keep progress bar
+      var html = sb.innerHTML.split('</p>')[0] + '</p>';
+      var userPlan = state.access ? state.access.plan : 'basic';
+      var totalLessons = 0, completed = 0;
+
+      state.modules.forEach(function(mod) {
+        html += '<h3>' + escHtml(mod.title) + '</h3>';
+        var modLessons = state.lessons.filter(function(l) { return l.module_id === mod.id; });
+        modLessons.forEach(function(les) {
+          totalLessons++;
+          var done = state.progress[les.id];
+          if (done) completed++;
+          var locked = (les.plan_required === 'pro' && userPlan !== 'pro');
+          var cls = 'sidebar-lesson';
+          if (done) cls += ' completed';
+          if (locked) cls += ' locked';
+          if (state.currentLesson === les.id) cls += ' active';
+          html += '<div class="' + cls + '" data-lesson="' + les.id + '">';
+          html += '<span class="lesson-check">' + (done ? '✓' : locked ? '🔒' : '○') + '</span>';
+          html += escHtml(les.title);
+          html += '</div>';
+        });
+      });
+      sb.innerHTML = html;
+
+      // Progress
+      var pct = totalLessons > 0 ? Math.round((completed / totalLessons) * 100) : 0;
+      var fill = sb.querySelector('.progress-bar-fill');
+      if (fill) fill.style.width = pct + '%';
+      var ptxt = sb.querySelector('#progress-text') || sb.querySelectorAll('p')[0];
+      if (ptxt) ptxt.textContent = pct + '% abgeschlossen';
+
+      // Click handlers
+      sb.querySelectorAll('.sidebar-lesson:not(.locked)').forEach(function(el) {
+        el.addEventListener('click', function() { selectLesson(this.getAttribute('data-lesson')); });
+      });
+    }
+
+    function selectLesson(lessonId) {
+      state.currentLesson = lessonId;
+      var les = state.lessons.find(function(l) { return l.id === lessonId; });
+      if (!les) return;
+      $('lesson-title').textContent = les.title;
+      $('lesson-body').innerHTML = les.content || '<p>Kein Inhalt verfügbar.</p>';
+      // Complete button
+      var done = state.progress[lessonId];
+      $('btn-complete').style.display = done ? 'none' : '';
+      $('btn-complete').textContent = '✓ Abschließen & Weiter';
+      // Prev button
+      var idx = state.lessons.findIndex(function(l) { return l.id === lessonId; });
+      $('btn-prev').style.display = idx > 0 ? '' : 'none';
+      // Update sidebar active
+      document.querySelectorAll('.sidebar-lesson').forEach(function(el) {
+        el.classList.toggle('active', el.getAttribute('data-lesson') === lessonId);
+      });
+    }
+
+    // Complete lesson
+    $('btn-complete').addEventListener('click', function() {
+      if (!state.currentLesson) return;
+      var btn = this;
+      btn.disabled = true;
+      apiFetch('academy_progress', {
+        method: 'POST',
+        body: JSON.stringify({ lesson_id: state.currentLesson, completed: true })
+      }).then(function(data) {
+        btn.disabled = false;
+        if (data.ok) {
+          state.progress[state.currentLesson] = true;
+          renderSidebar();
+          // Go to next lesson
+          var idx = state.lessons.findIndex(function(l) { return l.id === state.currentLesson; });
+          if (idx < state.lessons.length - 1) selectLesson(state.lessons[idx + 1].id);
+          else { btn.style.display = 'none'; }
+        }
+      });
+    });
+
+    $('btn-prev').addEventListener('click', function() {
+      var idx = state.lessons.findIndex(function(l) { return l.id === state.currentLesson; });
+      if (idx > 0) selectLesson(state.lessons[idx - 1].id);
+    });
+
+    function escHtml(s) {
+      var d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+
+    // Init
+    checkAuth();
+  })();
+  </script>
+</body>
+</html>
