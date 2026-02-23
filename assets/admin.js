@@ -23,8 +23,13 @@ async function api(path, options = {}) {
     'x-admin-token': getToken(),
     ...(options.headers || {})
   };
+  
+  // Add 10s timeout to all API calls
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10000);
+  
   try {
-    const res = await fetch(url, { ...options, headers });
+    const res = await fetch(url, { ...options, headers, signal: controller.signal });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
       console.error(`[api] ${options.method || 'GET'} ${path} → ${res.status}`, body);
@@ -36,8 +41,13 @@ async function api(path, options = {}) {
     }
     return body;
   } catch (err) {
-    showToast(`Error: ${err.message}`, 'error');
+    const msg = err.name === 'AbortError'
+      ? `Request timeout (took longer than 10s)`
+      : err.message;
+    showToast(`Error: ${msg}`, 'error');
     throw err;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 

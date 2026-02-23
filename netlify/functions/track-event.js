@@ -194,8 +194,24 @@ async function handler(event) {
   };
 
   try {
-    const { error } = await supabase.from('events').insert(record);
-    if (error) throw error;
+    // Defensive INSERT: if it fails, still return 200 but log the issue
+    // This ensures analytics doesn't break the client experience
+    try {
+      const { error: insertError } = await supabase.from('events').insert(record);
+      if (insertError) {
+        console.error('track-event INSERT failed', {
+          error: insertError.message,
+          code: insertError.code,
+          eventName: normalizedEvent,
+          hasTs: !!record.ts,
+          recordKeys: Object.keys(record)
+        });
+        // Don't throw; continue to session upsert
+      }
+    } catch (insertErr) {
+      console.error('track-event INSERT exception', insertErr.message, insertErr.stack);
+      // Continue anyway
+    }
 
     // Upsert session row (non-blocking; ignore errors to keep response fast)
     if (sessionKey) {
@@ -205,17 +221,20 @@ async function handler(event) {
       }).catch(err => console.log('session upsert warning', err.message));
     }
 
+    // Always return 200 for successful request handling, even if insert failed
+    // (prevents client-side null reference errors from assuming 5xx = retry)
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ok: true })
     };
   } catch (err) {
-    console.error('track-event error', err.message);
+    // Only return 500 if the error is in request validation or parsing, not in the database
+    console.error('track-event fatal error', err.message, err.stack);
     return {
-      statusCode: 500,
+      statusCode: 400,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ok: false, error: err.message })
+      body: JSON.stringify({ ok: false, error: 'request_processing_failed' })
     };
   }
 }
