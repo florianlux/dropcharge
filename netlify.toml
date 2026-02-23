@@ -45,6 +45,11 @@
     Cache-Control = "no-store, no-cache, must-revalidate"
 
 [[redirects]]
+  from = "/performance"
+  to = "/performance.html"
+  status = 200
+
+[[redirects]]
   from = "/spin"
   to = "/spin.html"
   status = 200
