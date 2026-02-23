@@ -708,6 +708,37 @@ function initBannerSettings() {
   }
 }
 
+// ── System Health ──────────────────────────────────────
+async function loadHealth() {
+  const container = $('#health-status');
+  if (!container) return;
+  container.innerHTML = '<p class="empty">Checking…</p>';
+  try {
+    const data = await apiGet('admin-health');
+    let html = '';
+    const ok = data.ok;
+    html += `<div class="health-row"><span>Overall</span><span class="health-badge ${ok ? 'health-ok' : 'health-err'}">${ok ? '✅ Healthy' : '⚠️ Issues'}</span></div>`;
+    if (data.checks) {
+      html += `<div class="health-row"><span>Supabase Config</span><span class="health-badge ${data.checks.supabase_configured ? 'health-ok' : 'health-err'}">${data.checks.supabase_configured ? 'OK' : 'Missing'}</span></div>`;
+      html += `<div class="health-row"><span>Supabase Connection</span><span class="health-badge ${data.checks.supabase_connected ? 'health-ok' : 'health-err'}">${data.checks.supabase_connected ? 'Connected' : 'Disconnected'}</span></div>`;
+      if (data.checks.tables) {
+        data.checks.tables.forEach(t => {
+          html += `<div class="health-row"><span>Table: ${escapeHtml(t.table)}</span><span class="health-badge ${t.ok ? 'health-ok' : 'health-err'}">${t.ok ? 'OK' : escapeHtml(t.error || 'Error')}</span></div>`;
+        });
+      }
+    }
+    container.innerHTML = html;
+  } catch (err) {
+    console.error('health check failed', err);
+    container.innerHTML = '<p class="empty">Health check failed.</p>';
+  }
+}
+
+function initHealth() {
+  const btn = $('#health-refresh');
+  if (btn) btn.addEventListener('click', loadHealth);
+}
+
 // ── Deals / G2A Repair ─────────────────────────────────
 function initDeals() {
   const fixBtn = $('#g2a-fix-btn');
@@ -1387,7 +1418,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initSpotlight();
   initTracking();
   initBannerSettings();
+  initHealth();
   loadDashboard();
+  loadHealth();
   loadNewsBanner();
 });
 

@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./assets/styles.css" />
   <link rel="stylesheet" href="./assets/admin.css" />
+  <link rel="stylesheet" href="./assets/admin/admin-upgrade.css" />
 </head>
 <body class="admin">
   <div class="admin-shell">
@@ -54,6 +55,22 @@
         <div class="panel-head">
           <h2>Dashboard</h2>
         </div>
+
+        <!-- Sticky Top Bar -->
+        <div class="dc-topbar">
+          <input type="search" class="dc-topbar-search" id="dc-topbar-search" placeholder="Search…" />
+          <select id="dc-range-select">
+            <option value="24h">Last 24h</option>
+            <option value="7d" selected>Last 7 days</option>
+            <option value="30d">Last 30 days</option>
+          </select>
+          <button class="btn mini ghost" id="dc-refresh-btn">↻ Refresh</button>
+          <span class="dc-health-dot" id="dc-health-dot" title="System health" aria-label="System health status"></span>
+        </div>
+
+        <!-- Widget Grid -->
+        <section id="dc-widgets"></section>
+
         <div class="stats-row">
           <div class="stat-card">
             <span class="stat-label">Total Subscribers</span>
@@ -90,6 +107,15 @@
               <button type="button" class="btn ghost" id="banner-clear-btn">Clear Banner</button>
             </div>
           </form>
+        </div>
+
+        <!-- System Health -->
+        <div class="card">
+          <h3>🩺 System Health</h3>
+          <div id="health-status" class="health-status">
+            <p class="empty">Checking…</p>
+          </div>
+          <button class="btn mini ghost" id="health-refresh" style="margin-top:.75rem;">Re-check</button>
         </div>
       </section>
 
@@ -680,5 +706,63 @@
   </div>
   <div id="toast" class="toast"></div>
   <script type="module" src="./assets/admin.js"></script>
+  <script type="module">
+    import { initWidgets, refreshWidgets, setWidgetRange } from './assets/admin/widget-host.js';
+
+    // Build a context object that re-uses the admin.js api helpers
+    function buildCtx() {
+      const API_BASE = window.location.origin.replace(/\/$/, '');
+      const TOKEN_KEY = 'admin_token';
+      const token = localStorage.getItem(TOKEN_KEY) || '';
+      async function apiGet(path) {
+        const res = await fetch(API_BASE + '/.netlify/functions/' + path, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json', 'x-admin-token': token }
+        });
+        return res.json().catch(function() { return {}; });
+      }
+      return { apiGet: apiGet };
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      var ctx = buildCtx();
+      // Init widgets on dashboard load
+      initWidgets(ctx);
+
+      // Health dot
+      fetch(window.location.origin + '/.netlify/functions/health')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          var dot = document.getElementById('dc-health-dot');
+          if (dot) {
+            dot.className = 'dc-health-dot ' + (d.ok ? 'green' : 'red');
+            dot.setAttribute('aria-label', d.ok ? 'System healthy' : 'System unhealthy');
+          }
+        })
+        .catch(function() {
+          var dot = document.getElementById('dc-health-dot');
+          if (dot) {
+            dot.className = 'dc-health-dot yellow';
+            dot.setAttribute('aria-label', 'System status unknown');
+          }
+        });
+
+      // Range selector
+      var rangeSelect = document.getElementById('dc-range-select');
+      if (rangeSelect) {
+        rangeSelect.addEventListener('change', function() {
+          setWidgetRange(rangeSelect.value, buildCtx());
+        });
+      }
+
+      // Refresh button
+      var refreshBtn = document.getElementById('dc-refresh-btn');
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+          refreshWidgets(buildCtx());
+        });
+      }
+    });
+  </script>
 </body>
 </html>

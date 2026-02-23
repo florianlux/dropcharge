@@ -1,4 +1,5 @@
 const { supabase, hasSupabase } = require('./_lib/supabase');
+const { withCors } = require('./_lib/cors');
 
 function htmlResponse(body) {
   return {
@@ -8,7 +9,10 @@ function htmlResponse(body) {
   };
 }
 
-exports.handler = async function handler(event) {
+async function handler(event) {
+  if (event.httpMethod !== 'GET') {
+    return { statusCode: 405, headers: { 'Content-Type': 'text/plain' }, body: 'Method Not Allowed' };
+  }
   const token = event.queryStringParameters?.token;
   if (!token) {
     return htmlResponse('<h1>Fehler</h1><p>Token fehlt.</p>');
@@ -32,4 +36,6 @@ exports.handler = async function handler(event) {
     console.error('unsubscribe error', err.message, err.stack);
     return htmlResponse('<h1>Fehler</h1><p>Bitte später erneut versuchen.</p>');
   }
-};
+}
+
+exports.handler = withCors(handler);

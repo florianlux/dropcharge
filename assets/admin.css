@@ -517,3 +517,27 @@ textarea { resize: vertical; }
   font-size: 0.8rem;
   margin-left: 0.5rem;
 }
+
+/* ── System Health ────────────────────────── */
+.health-status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.health-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--admin-border);
+  font-size: 0.88rem;
+}
+.health-row:last-child { border-bottom: none; }
+.health-badge {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+}
+.health-ok  { background: rgba(16,185,129,.15); color: #6ee7b7; }
+.health-err { background: rgba(239,68,68,.15); color: #fca5a5; }
