@@ -54,7 +54,7 @@ function ensureTikTokBootstrap() {
   const name = 'ttq';
   window.TiktokAnalyticsObject = name;
   const ttq = window[name] = window[name] || [];
-  ttq.methods = ['page', 'track', 'identify', 'instances', 'debug', 'on', 'off', 'once', 'ready', 'alias', 'group', 'enableCookie', 'disableCookie'];
+  ttq.methods = ['page', 'track', 'identify', 'instances', 'debug', 'on', 'off', 'once', 'ready', 'alias', 'group', 'enableCookie', 'disableCookie', 'holdConsent', 'revokeConsent', 'grantConsent'];
   ttq.setAndDefer = function(t, e) { t[e] = function() { t.push([e].concat(Array.prototype.slice.call(arguments, 0))); }; };
   for (let i = 0; i < ttq.methods.length; i += 1) {
     ttq.setAndDefer(ttq, ttq.methods[i]);
