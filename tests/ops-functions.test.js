@@ -51,6 +51,9 @@ async function testSimulate() {
   assert(typeof body1.expectedProfit === 'number', 'expectedProfit is number');
   assert(typeof body1.breakevenCpc === 'number', 'breakevenCpc is number');
   assertEqual(body1.expectedCost, 800, 'cost = traffic * cpc');
+  assertEqual(body1.expectedRevenue, 134.4, 'revenue = conversions * (aov * commission/100)');
+  assertEqual(body1.expectedProfit, -665.6, 'profit = revenue - cost');
+  assertEqual(body1.breakevenCpc, 0.0134, 'breakevenCpc = revenue / traffic');
 
   // GET returns 405
   const r2 = await simulate.handler({

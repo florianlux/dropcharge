@@ -276,7 +276,7 @@ function wireChecklist() {
       const items = document.querySelectorAll('.ops-check-item');
       const text = Array.from(items).map(el => {
         const cb = el.querySelector('input');
-        return `${cb.checked ? '[x]' : '[ ]'} ${el.textContent.trim()}`;
+        return `${cb.checked ? '[x]' : '[ ]'} ${el.textContent.replace(/^\s+/, '').trim()}`;
       }).join('\n');
       navigator.clipboard.writeText(text).then(() => {
         btn.textContent = '✅ Copied!';
