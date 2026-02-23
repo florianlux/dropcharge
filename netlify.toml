@@ -55,6 +55,11 @@
   status = 200
 
 [[redirects]]
+  from = "/compare"
+  to = "/compare.html"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
