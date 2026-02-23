@@ -113,7 +113,7 @@ exports.handler = withCors(async (event) => {
     statusCode: 200,
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': 'public, max-age=30'
+      'Cache-Control': 'private, max-age=30'
     },
     body: JSON.stringify({
       ok: true,

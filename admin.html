@@ -65,7 +65,7 @@
             <option value="30d">Last 30 days</option>
           </select>
           <button class="btn mini ghost" id="dc-refresh-btn">↻ Refresh</button>
-          <span class="dc-health-dot" id="dc-health-dot" title="System health"></span>
+          <span class="dc-health-dot" id="dc-health-dot" title="System health" aria-label="System health status"></span>
         </div>
 
         <!-- Widget Grid -->
@@ -725,11 +725,17 @@
         .then(function(r) { return r.json(); })
         .then(function(d) {
           var dot = document.getElementById('dc-health-dot');
-          if (dot) dot.className = 'dc-health-dot ' + (d.ok ? 'green' : 'red');
+          if (dot) {
+            dot.className = 'dc-health-dot ' + (d.ok ? 'green' : 'red');
+            dot.setAttribute('aria-label', d.ok ? 'System healthy' : 'System unhealthy');
+          }
         })
         .catch(function() {
           var dot = document.getElementById('dc-health-dot');
-          if (dot) dot.className = 'dc-health-dot yellow';
+          if (dot) {
+            dot.className = 'dc-health-dot yellow';
+            dot.setAttribute('aria-label', 'System status unknown');
+          }
         });
 
       // Range selector
