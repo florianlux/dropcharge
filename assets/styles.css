@@ -516,4 +516,15 @@ details { background: rgba(255,255,255,0.03); border-radius: 16px; padding: 1rem
   .email-popup {
     width: 90%;
   }
+  .btn.primary {
+    padding: 1rem 2rem;
+    font-size: 1.05rem;
+  }
+}
+.mid-cta {
+  text-align: center;
+  background: radial-gradient(circle at center, rgba(127,93,255,0.08), transparent 60%);
+}
+.mid-cta .btn {
+  margin-top: 1rem;
 }
