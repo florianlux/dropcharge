@@ -398,7 +398,6 @@
             ' CR erwirtschaftest du ' + fmt(marginPerClick) + ' Marge pro Klick. ' +
             'Break-Even CPC liegt bei ' + fmt(beCPC) + '.';
         } else {
-          var beClicks = Math.ceil(1);
           box.className = 'insight-box not-profitable';
           title.textContent = '⚠️ Aktuell nicht profitabel';
           text.textContent = 'Dein CPC von ' + fmt(cpc) + ' liegt über dem Break-Even CPC von ' +
