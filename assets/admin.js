@@ -728,7 +728,8 @@ async function loadHealth() {
       }
     }
     container.innerHTML = html;
-  } catch {
+  } catch (err) {
+    console.error('health check failed', err);
     container.innerHTML = '<p class="empty">Health check failed.</p>';
   }
 }

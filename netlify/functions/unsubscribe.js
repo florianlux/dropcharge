@@ -10,6 +10,9 @@ function htmlResponse(body) {
 }
 
 async function handler(event) {
+  if (event.httpMethod !== 'GET') {
+    return { statusCode: 405, headers: { 'Content-Type': 'text/plain' }, body: 'Method Not Allowed' };
+  }
   const token = event.queryStringParameters?.token;
   if (!token) {
     return htmlResponse('<h1>Fehler</h1><p>Token fehlt.</p>');
