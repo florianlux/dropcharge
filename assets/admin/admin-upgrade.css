@@ -1,0 +1,268 @@
+/* ===== Admin Dashboard Upgrade — Widget System + UX ===== */
+
+/* ── Neon accent variables ──────────────────────────── */
+:root {
+  --dc-neon: #7c3aed;
+  --dc-neon-cyan: #06b6d4;
+  --dc-neon-glow: rgba(124, 58, 237, 0.15);
+  --dc-grid-bg: rgba(124, 58, 237, 0.03);
+}
+
+/* ── Widget Grid ────────────────────────────────────── */
+#dc-widgets { margin-bottom: 2rem; }
+
+.dc-widget-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.dc-widget-card {
+  background: var(--admin-card);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+}
+.dc-widget-card:hover {
+  box-shadow: 0 2px 12px var(--dc-neon-glow);
+}
+.dc-widget-lg { grid-column: 1 / -1; }
+
+.dc-widget-header {
+  padding: 0.8rem 1rem 0.4rem;
+  border-bottom: 1px solid var(--admin-border);
+}
+.dc-widget-title {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--admin-text);
+}
+.dc-widget-desc {
+  margin: 0.15rem 0 0;
+  font-size: 0.75rem;
+  color: var(--admin-muted);
+}
+.dc-widget-body {
+  padding: 1rem;
+  min-height: 80px;
+}
+
+/* ── Loading / Error / Empty ────────────────────────── */
+.dc-widget-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+}
+.dc-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--admin-border);
+  border-top-color: var(--dc-neon);
+  border-radius: 50%;
+  animation: dcSpin 0.6s linear infinite;
+}
+@keyframes dcSpin { to { transform: rotate(360deg); } }
+
+.dc-widget-error,
+.dc-widget-empty {
+  font-size: 0.82rem;
+  color: var(--admin-muted);
+  text-align: center;
+  padding: 0.5rem;
+}
+.dc-widget-error { color: var(--admin-danger); }
+
+/* ── KPI Grid ───────────────────────────────────────── */
+.dc-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.75rem;
+}
+.dc-kpi-item {
+  text-align: center;
+  padding: 0.5rem 0.25rem;
+}
+.dc-kpi-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--admin-text);
+}
+.dc-kpi-label {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--admin-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 0.15rem;
+}
+
+/* ── Signups List ───────────────────────────────────── */
+.dc-signups-list { display: flex; flex-direction: column; gap: 0.35rem; }
+.dc-signup-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--admin-border);
+}
+.dc-signup-row:last-child { border-bottom: none; }
+.dc-signup-email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+.dc-signup-meta { display: flex; gap: 0.6rem; font-size: 0.75rem; color: var(--admin-muted); }
+.dc-status-active { color: var(--admin-success); font-weight: 600; }
+.dc-status-unsub { color: var(--admin-danger); }
+
+/* ── Funnel ─────────────────────────────────────────── */
+.dc-funnel { display: flex; flex-direction: column; gap: 0.6rem; }
+.dc-funnel-step { }
+.dc-funnel-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  margin-bottom: 0.2rem;
+}
+.dc-funnel-bar-wrap {
+  background: var(--admin-border);
+  border-radius: 4px;
+  height: 10px;
+  overflow: hidden;
+}
+.dc-funnel-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--dc-neon), var(--dc-neon-cyan));
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+.dc-funnel-pct {
+  font-size: 0.7rem;
+  color: var(--admin-muted);
+}
+
+/* ── Bar list (referrers, outbound) ─────────────────── */
+.dc-bar-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.dc-bar-item { }
+.dc-bar-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  margin-bottom: 0.15rem;
+}
+.dc-bar-label span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+.dc-bar-track {
+  background: var(--admin-border);
+  border-radius: 3px;
+  height: 6px;
+}
+.dc-bar-fill {
+  height: 100%;
+  background: var(--dc-neon);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+.dc-bar-fill-cyan { background: var(--dc-neon-cyan); }
+
+/* ── Mini table (deals) ─────────────────────────────── */
+.dc-mini-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.dc-mini-table th {
+  text-align: left;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--admin-muted);
+  padding: 0.3rem 0.4rem;
+  border-bottom: 1px solid var(--admin-border);
+}
+.dc-mini-table td {
+  padding: 0.35rem 0.4rem;
+  border-bottom: 1px solid var(--admin-border);
+}
+.dc-mini-table tr:last-child td { border-bottom: none; }
+.dc-accent { color: var(--dc-neon); font-weight: 600; }
+
+/* ── Sparkline ──────────────────────────────────────── */
+.dc-sparkline {
+  width: 100%;
+  height: 60px;
+  display: block;
+}
+.dc-trend-summary {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--admin-muted);
+  margin-top: 0.3rem;
+}
+.dc-trend-total { font-weight: 600; color: var(--admin-text); }
+
+/* ── Sticky Top Bar ─────────────────────────────────── */
+.dc-topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0;
+  margin-bottom: 1rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--admin-bg);
+  border-bottom: 1px solid var(--admin-border);
+  flex-wrap: wrap;
+}
+.dc-topbar-search {
+  flex: 1;
+  min-width: 140px;
+  max-width: 260px;
+}
+.dc-topbar select,
+.dc-topbar input {
+  font-size: 0.82rem;
+  padding: 0.4rem 0.6rem;
+}
+.dc-health-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  background: var(--admin-muted);
+  flex-shrink: 0;
+}
+.dc-health-dot.green { background: var(--admin-success); box-shadow: 0 0 6px rgba(22, 163, 74, 0.5); }
+.dc-health-dot.yellow { background: #d97706; box-shadow: 0 0 6px rgba(217, 119, 6, 0.4); }
+.dc-health-dot.red { background: var(--admin-danger); box-shadow: 0 0 6px rgba(220, 38, 38, 0.4); }
+
+/* ── Subtle grid background (hacker touch) ──────────── */
+.admin-main {
+  background-image:
+    linear-gradient(var(--dc-grid-bg) 1px, transparent 1px),
+    linear-gradient(90deg, var(--dc-grid-bg) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ── Responsive ─────────────────────────────────────── */
+@media (max-width: 720px) {
+  .dc-widget-grid {
+    grid-template-columns: 1fr;
+  }
+  .dc-topbar {
+    position: static;
+  }
+}
