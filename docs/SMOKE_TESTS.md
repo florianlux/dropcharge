@@ -1,218 +1,187 @@
-# Smoke Tests
+# Smoke Tests – DropCharge
 
-Manual smoke tests and `curl` commands to verify core functionality.
-Replace `$BASE` with your deployment URL (e.g. `https://dropcharge.netlify.app`)
-and `$ADMIN_TOKEN` with your admin token.
+Manuelle Tests und `curl`-Befehle um die Kernfunktionen nach jedem Deploy zu prüfen.
+
+> **Voraussetzungen:**
+> - `BASE_URL` = deine Netlify-URL (z.B. `https://dropcharge.netlify.app`)
+> - `ADMIN_TOKEN` = dein Admin-Token (aus Netlify Env-Variablen)
+
+```bash
+export BASE_URL="https://dropcharge.netlify.app"
+export ADMIN_TOKEN="dein-admin-token"
+```
 
 ---
 
 ## 1. Newsletter Signup
 
-**What:** Verify the newsletter subscription endpoint accepts an email and returns success.
+**Ziel:** E-Mail-Adresse wird in `newsletter_subscribers` gespeichert.
 
 ```bash
-curl -s -X POST "$BASE/.netlify/functions/newsletter_signup" \
+curl -s -X POST "$BASE_URL/.netlify/functions/newsletter_signup" \
   -H "Content-Type: application/json" \
   -d '{"email": "smoketest@example.com", "source": "smoke-test"}' \
   | jq .
 ```
 
-**Expected:**
-- HTTP 200
-- JSON body contains `"ok": true` or a success message
-- Row appears in `newsletter_subscribers` table with status `active` (or `pending` if double opt-in is enabled)
+**Erwartete Antwort:** HTTP 200, JSON mit Erfolgs-Bestätigung.
 
-**Manual check:**
-- Open the landing page (`$BASE/`), fill in the newsletter popup, submit
-- Confirm no JS console errors
-- If `RESEND_API_KEY` is set, check that a welcome email is delivered
+**Manuelle Prüfung:**
+- [ ] Öffne `index.html` im Browser
+- [ ] Newsletter-Popup öffnen, E-Mail eingeben, absenden
+- [ ] Erfolgs-Nachricht wird angezeigt
+- [ ] Eintrag in Supabase `newsletter_subscribers` prüfen
 
 ---
 
-## 2. Tracking Stats
+## 2. Admin Dashboard Laden
 
-**What:** Verify the stats endpoint returns aggregated data.
+**Ziel:** Dashboard lädt ohne JS-Errors.
 
 ```bash
-curl -s "$BASE/.netlify/functions/tracking-stats" \
+# Login-Seite erreichbar
+curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/admin/login"
+# Erwartung: 200 oder 302
+
+# Dashboard-Seite erreichbar (nach Redirect)
+curl -s -o /dev/null -w "%{http_code}" "$BASE_URL/admin"
+# Erwartung: 200 oder 302
+```
+
+**Manuelle Prüfung:**
+- [ ] `$BASE_URL/admin/login` öffnen → Token-Eingabefeld sichtbar
+- [ ] Token eingeben → Weiterleitung zu `/admin`
+- [ ] Dashboard lädt alle Tabs ohne Console-Errors
+- [ ] Subscriber-Stats werden angezeigt (Dashboard-Tab)
+
+---
+
+## 3. Admin Stats / Analytics
+
+**Ziel:** Admin-Analytics-Endpoint liefert Daten.
+
+```bash
+curl -s "$BASE_URL/.netlify/functions/admin-analytics" \
   -H "x-admin-token: $ADMIN_TOKEN" \
   | jq .
 ```
 
-**Expected:**
-- HTTP 200
-- JSON body with stats object (e.g. click counts, event counts)
-
----
-
-## 3. Track Event
-
-**What:** Verify the event tracking endpoint accepts and stores events.
+**Erwartete Antwort:** HTTP 200, JSON mit Stats (Subscriber-Counts, Click-Daten).
 
 ```bash
-curl -s -X POST "$BASE/.netlify/functions/track-event" \
-  -H "Content-Type: application/json" \
-  -d '{"type": "smoke_test", "name": "ping", "path": "/smoke"}' \
-  | jq .
-```
-
-**Expected:**
-- HTTP 200
-- JSON body contains success confirmation
-- Row appears in `events` table with `type = 'smoke_test'`
-
----
-
-## 4. Track Click
-
-**What:** Verify click tracking stores a click record.
-
-```bash
-curl -s -X POST "$BASE/.netlify/functions/track-click" \
-  -H "Content-Type: application/json" \
-  -d '{"slug": "smoke-test", "platform": "test"}' \
-  | jq .
-```
-
-**Expected:**
-- HTTP 200
-- Row appears in `clicks` table with `slug = 'smoke-test'`
-
----
-
-## 5. Admin Dashboard Loads Without Errors
-
-**What:** Verify the admin page returns valid HTML and assets load.
-
-```bash
-# Check admin login page loads
-curl -s -o /dev/null -w "%{http_code}" "$BASE/admin/login"
-# Expected: 200
-
-# Check admin page loads (will redirect to login if no auth)
-curl -s -o /dev/null -w "%{http_code}" "$BASE/admin"
-# Expected: 200 (or 302 redirect to login)
-
-# Check admin CSS loads
-curl -s -o /dev/null -w "%{http_code}" "$BASE/assets/admin.css"
-# Expected: 200
-
-# Check admin JS loads
-curl -s -o /dev/null -w "%{http_code}" "$BASE/assets/admin.js"
-# Expected: 200
-```
-
-**Manual check:**
-- Open `$BASE/admin/login` in a browser
-- Log in with valid credentials
-- Verify the dashboard renders all tabs without JS console errors
-- Click through each tab and confirm no broken layouts or 500 errors in the network tab
-
----
-
-## 6. Admin Health Endpoint
-
-**What:** Verify the admin health check returns system status.
-
-```bash
-curl -s "$BASE/.netlify/functions/admin-health" \
+# Subscriber-Liste abrufen
+curl -s "$BASE_URL/.netlify/functions/admin-list-subscribers?limit=5" \
   -H "x-admin-token: $ADMIN_TOKEN" \
   | jq .
 ```
 
-**Expected:**
-- HTTP 200
-- JSON body with health/status information
+**Erwartete Antwort:** HTTP 200, JSON-Array mit Subscriber-Objekten.
 
 ---
 
-## 7. Admin List Subscribers
+## 4. Track Event
 
-**What:** Verify the subscriber listing endpoint works.
+**Ziel:** Events werden in der `events`-Tabelle gespeichert.
 
 ```bash
-curl -s "$BASE/.netlify/functions/admin-list-subscribers" \
+curl -s -X POST "$BASE_URL/.netlify/functions/track-event" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "event_name": "smoke_test",
+    "page": "/smoke",
+    "props": {"test": true}
+  }' \
+  | jq .
+```
+
+**Erwartete Antwort:** HTTP 200, JSON mit Erfolgs-Bestätigung.
+
+```bash
+# Events abrufen (Admin)
+curl -s "$BASE_URL/.netlify/functions/tracking-events?limit=5" \
   -H "x-admin-token: $ADMIN_TOKEN" \
   | jq .
 ```
 
-**Expected:**
-- HTTP 200
-- JSON body with array of subscribers
+**Erwartete Antwort:** HTTP 200, JSON-Array mit Event-Objekten (inkl. `smoke_test`).
 
 ---
 
-## 8. Gaming Drops Redirect
+## 5. Tracking Stats
 
-**What:** Verify the `/go/` short-URL redirect works.
+**Ziel:** Tracking-Stats-Endpoint liefert aggregierte Daten.
 
 ```bash
-curl -s -o /dev/null -w "%{http_code} %{redirect_url}" "$BASE/go/nintendo15"
+curl -s "$BASE_URL/.netlify/functions/tracking-stats" \
+  -H "x-admin-token: $ADMIN_TOKEN" \
+  | jq .
 ```
 
-**Expected:**
-- HTTP 301 or 302 redirect to the destination URL (e.g. G2A affiliate link)
+**Erwartete Antwort:** HTTP 200, JSON mit aggregierten Tracking-Daten.
 
 ---
 
-## 9. Public Config
+## 6. Admin Health Check
 
-**What:** Verify the public configuration endpoint returns config data.
+**Ziel:** Supabase-Verbindung und Basis-Config sind intakt.
 
 ```bash
-curl -s "$BASE/.netlify/functions/public-config" | jq .
+curl -s "$BASE_URL/.netlify/functions/admin-health" \
+  -H "x-admin-token: $ADMIN_TOKEN" \
+  | jq .
 ```
 
-**Expected:**
-- HTTP 200
-- JSON body with public configuration values
+**Erwartete Antwort:** HTTP 200, JSON mit `status: "ok"` und Verbindungsdetails.
 
 ---
 
-## 10. Spotlight Page
+## 7. Public Config
 
-**What:** Verify the spotlight page renders.
+**Ziel:** Öffentliche Konfiguration (z.B. TikTok Pixel) wird korrekt geliefert.
 
 ```bash
-curl -s -o /dev/null -w "%{http_code}" "$BASE/spotlight/test"
+curl -s "$BASE_URL/.netlify/functions/public-config" | jq .
 ```
 
-**Expected:**
-- HTTP 200 (catch-all route serves `spotlight.html`)
+**Erwartete Antwort:** HTTP 200, JSON mit Config-Werten.
 
 ---
 
-## Quick Full Smoke Run
+## 8. Spotlight Pages
 
-Run all critical checks in sequence:
+**Ziel:** Spotlight-Seiten sind öffentlich abrufbar.
 
 ```bash
-BASE="https://your-site.netlify.app"
-ADMIN_TOKEN="your-admin-token"
-
-echo "=== Newsletter Signup ==="
-curl -s -w "\nHTTP %{http_code}\n" -X POST "$BASE/.netlify/functions/newsletter_signup" \
-  -H "Content-Type: application/json" \
-  -d '{"email": "smoke-'$(date +%s)'@example.com", "source": "smoke-test"}'
-
-echo "=== Track Event ==="
-curl -s -w "\nHTTP %{http_code}\n" -X POST "$BASE/.netlify/functions/track-event" \
-  -H "Content-Type: application/json" \
-  -d '{"type": "smoke_test", "name": "ping", "path": "/smoke"}'
-
-echo "=== Tracking Stats ==="
-curl -s -w "\nHTTP %{http_code}\n" "$BASE/.netlify/functions/tracking-stats" \
-  -H "x-admin-token: $ADMIN_TOKEN"
-
-echo "=== Admin Health ==="
-curl -s -w "\nHTTP %{http_code}\n" "$BASE/.netlify/functions/admin-health" \
-  -H "x-admin-token: $ADMIN_TOKEN"
-
-echo "=== Admin Dashboard ==="
-curl -s -o /dev/null -w "HTTP %{http_code}\n" "$BASE/admin"
-
-echo "=== Landing Page ==="
-curl -s -o /dev/null -w "HTTP %{http_code}\n" "$BASE/"
-
-echo "=== Done ==="
+# Spotlight-Daten abrufen (wenn vorhanden)
+curl -s "$BASE_URL/.netlify/functions/spotlight-get?slug=test" | jq .
 ```
+
+**Erwartete Antwort:** HTTP 200 mit Spotlight-Daten oder HTTP 404 wenn kein Spotlight mit diesem Slug existiert.
+
+---
+
+## 9. Affiliate Redirect
+
+**Ziel:** `/go/*`-Links tracken Klick und leiten weiter.
+
+```bash
+curl -s -o /dev/null -w "%{http_code} redirect:%{redirect_url}" "$BASE_URL/go/test"
+```
+
+**Erwartete Antwort:** HTTP 302 mit Redirect-URL, oder HTTP 404 falls kein Link konfiguriert.
+
+---
+
+## Checkliste nach Deploy
+
+| # | Test | Methode | Status |
+|---|------|---------|--------|
+| 1 | Newsletter Signup | curl + UI | ☐ |
+| 2 | Admin Login + Dashboard | Browser | ☐ |
+| 3 | Admin Stats | curl | ☐ |
+| 4 | Track Event | curl | ☐ |
+| 5 | Tracking Stats | curl | ☐ |
+| 6 | Admin Health | curl | ☐ |
+| 7 | Public Config | curl | ☐ |
+| 8 | Spotlight Pages | curl | ☐ |
+| 9 | Affiliate Redirect | curl | ☐ |

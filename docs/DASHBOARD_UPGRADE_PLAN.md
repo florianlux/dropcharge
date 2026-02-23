@@ -1,168 +1,131 @@
-# Dashboard Upgrade Plan
+# Dashboard Upgrade Plan – DropCharge
 
-## IST-Zustand (Current State)
+## 1. IST-Zustand
 
 ### Entrypoints
 
-| File | URL | Purpose |
+| Datei | URL | Beschreibung |
 |---|---|---|
-| `admin-login.html` | `/admin/login` | Login page (bcrypt auth) |
-| `admin.html` | `/admin` | Main dashboard shell |
-| `assets/admin.js` | — | Client-side logic (V2, SPA-style tabs) |
-| `assets/admin.css` | — | Dashboard styles |
+| `admin-login.html` | `/admin/login` | Token-Eingabe → speichert in `localStorage` |
+| `admin.html` | `/admin` | Haupt-Dashboard (10+ Tabs) |
+| `assets/admin.js` | (module) | Gesamte Dashboard-Logik (Tab-Init, API-Calls, UI-Rendering) |
+| `assets/admin.css` | (stylesheet) | Dashboard-Styles |
 
-### Dashboard Tabs (in `admin.html`)
+### Tabs im Admin Dashboard
 
-1. **Dashboard** — overview / stats
-2. **Newsletter** — subscriber management
-3. **Email** — email debug & health
-4. **Campaigns** — newsletter campaigns
-5. **Deals** — spotlight/deals management
-6. **Gaming Drops** — voucher drop management
-7. **Spotlight** — product spotlight pages
-8. **Tracking Links** — link tracking
-9. **Analytics** — analytics data
-10. **📊 Tracking** — deep tracking / funnel view
+1. **Dashboard** – Subscriber-Stats, News-Banner
+2. **Newsletter** – Subscriber-Liste (Suche, Filter, Status)
+3. **Email Hub** – Audience-Übersicht, Templates, Test-E-Mails, Logs
+4. **Campaigns** – Composer mit Segment-Targeting & HTML-Editor
+5. **Deals/Spotlights** – G2A Reflink-Repair
+6. **Gaming Drops** – Outbound-Links mit Affiliate-Tagging
+7. **Spotlight Pages** – Erstellen/Bearbeiten (Templates: Temu, Amazon, G2A …)
+8. **Tracking Links** – UTM-Generator
+9. **Analytics** – Top 10 Links, Latest Events
+10. **Deep Tracking** – Echtzeit-Events, Funnel, Sources, Campaigns, Devices
 
-### Netlify Functions (Admin)
+### Netlify Functions (36 gesamt)
 
-| Function | Method | Purpose |
+**Admin (9):**
+`admin-analytics`, `admin-drops`, `admin-email-logs`, `admin-email-templates`, `admin-fix-g2a-links`, `admin-health`, `admin-list-leads`, `admin-list-subscribers`, `admin-send-campaign`
+
+**Core:**
+`go`, `last-activity`, `newsletter_signup`, `product-fetch`, `public-config`, `session-init`, `settings`, `subscribe`, `send-test-email`, `unsubscribe`, `email-health`, `email-debug`
+
+**Tracking:**
+`track-click`, `track-event`, `tracking-events`, `tracking-export`, `tracking-funnel`, `tracking-stats`, `activity`, `api-activity`
+
+**Spotlight:**
+`spotlight`, `spotlight-autofill`, `spotlight-click`, `spotlight-create`, `spotlight-create-from-product`, `spotlight-get`
+
+**Sonstige:**
+`spin-enter`
+
+**Shared Library (`_lib/`):**
+`admin-token.js`, `cors.js`, `settings.js`, `supabase.js`, `email-templates.js`, `ts-column.js`, `affiliates.js`, `send-welcome.js`
+
+### Supabase-Tabellen
+
+| Tabelle | Migrations | Genutzt von |
 |---|---|---|
-| `admin-health` | GET | System health check |
-| `admin-list-subscribers` | GET | List newsletter subscribers |
-| `admin-list-leads` | GET | List leads |
-| `admin-send-campaign` | POST | Send email campaign |
-| `admin-email-logs` | GET | Email send logs |
-| `admin-email-templates` | GET/POST | Manage email templates |
-| `admin-analytics` | GET | Analytics data |
-| `admin-drops` | GET/POST | CRUD for gaming drops |
-| `admin-fix-g2a-links` | POST | G2A link repair utility |
+| `newsletter_subscribers` | 001, 003 | newsletter_signup, admin-list-subscribers, admin-send-campaign |
+| `newsletter_campaigns` | 002 | admin-send-campaign |
+| `clicks` | 001 | track-click, admin-analytics |
+| `events` | 001, 009, 010 | track-event, tracking-events, tracking-stats, tracking-funnel |
+| `settings` | 001 | settings, admin.js (Banner) |
+| `email_logs` | 004 | admin-email-logs, send-welcome |
+| `drops` | 005, 006 | admin-drops |
+| `spotlights` | 001 | spotlight-create, spotlight-get |
+| `spotlight_pages` | 007, 008 | spotlight-create, spotlight-get |
+| `product_cache` | 008 | product-fetch, spotlight-autofill |
 
-### Netlify Functions (Public / Tracking)
+### Auth-Modell
 
-| Function | Purpose |
-|---|---|
-| `newsletter_signup` | Newsletter subscription |
-| `subscribe` | Legacy email subscribe |
-| `unsubscribe` | Unsubscribe handler |
-| `track-click` | Click tracking |
-| `track-event` | Event tracking |
-| `tracking-stats` | Stats aggregation |
-| `tracking-events` | Event listing |
-| `tracking-funnel` | Funnel analysis |
-| `tracking-export` | CSV/JSON export |
-| `session-init` | Session initialization |
-| `activity` / `api-activity` / `last-activity` | Activity feed |
-| `spotlight` / `spotlight-get` / `spotlight-create` / `spotlight-click` / `spotlight-autofill` / `spotlight-create-from-product` | Spotlight CRUD |
-| `go` | Short URL redirect handler |
-| `spin-enter` | Spin wheel entry |
-| `public-config` | Public config |
-| `settings` | Settings CRUD |
-| `send-test-email` | Test email sender |
-| `email-health` / `email-debug` | Email diagnostics |
-| `product-fetch` | Product data fetcher |
-
-### Shared Libraries (`netlify/functions/_lib/`)
-
-| Module | Purpose |
-|---|---|
-| `supabase.js` | Supabase client singleton |
-| `admin-token.js` | `x-admin-token` header verification |
-| `cors.js` | CORS headers helper |
-| `settings.js` | Settings read/write |
-| `affiliates.js` | Affiliate link helpers |
-| `email-templates.js` | Email template rendering |
-| `send-welcome.js` | Welcome email sender (Resend) |
-| `ts-column.js` | Timestamp column safety util |
-
-### Supabase Tables
-
-| Table | Purpose |
-|---|---|
-| `clicks` | Click tracking with UTM, geo, device |
-| `emails` | Email collection (legacy) |
-| `events` | Generic event tracking |
-| `newsletter_subscribers` | Subscribers with status, tokens, UTM |
-| `newsletter_campaigns` | Campaign definitions & status |
-| `newsletter_sends` | Per-recipient send records |
-| `email_logs` | Email send audit trail |
-| `settings` | Key-value config store |
-| `spotlights` | Product spotlights / deals |
-| `spotlight_pages` | Spotlight page variants |
-| `drops` | Gaming voucher drops |
-| `product_cache` | Cached product metadata |
-| `sessions` | First-party session tracking |
-| `aggregates_daily` | Daily analytics cache |
-| `admin_sessions` | Admin auth sessions |
-| `admin_login_attempts` | Login rate-limiting |
-| `admin_audit_log` | Admin action audit log |
-
-### Frontend Assets
-
-| File | Purpose |
-|---|---|
-| `assets/app.js` | Main landing page logic |
-| `assets/tracker.js` | Client-side event tracker |
-| `assets/spin.js` | Spin wheel logic |
-| `assets/styles.css` | Global styles |
-| `assets/spin.css` | Spin wheel styles |
+- Token wird client-seitig in `localStorage` gespeichert (`admin_token`)
+- Jeder Admin-API-Call sendet `x-admin-token` Header
+- Server validiert gegen `ADMIN_TOKEN` / `ADMIN_API_TOKEN` Env-Variablen
+- Admin-Login via `admin-login.html` (kein Passwort — nur Token)
 
 ---
 
-## Risiken (What Must Not Break)
+## 2. Risiken
 
-1. **Newsletter signup flow** — `newsletter_signup` function + Supabase insert must keep working. This is the primary conversion funnel from TikTok traffic.
-2. **Admin authentication** — `x-admin-token` header check and `admin-login.html` bcrypt flow. Breaking auth = open dashboard or locked-out admin.
-3. **Click/event tracking** — `track-click`, `track-event`, `session-init` feed into analytics. Data loss is unrecoverable.
-4. **Spotlight/deals pages** — Revenue-generating affiliate links. `spotlight.html` + related functions must render correctly.
-5. **Gaming drops redirect** — `/go/*` → `go.js` short-URL redirect is the core monetisation link.
-6. **Security headers** — CSP, HSTS, X-Frame-Options in `netlify.toml`. Removing them weakens security posture.
-7. **Existing Playwright tests** — `tests/` directory contains E2E tests (`admin-actions.spec.ts`, `affiliates.test.js`, `drops.test.js`, `spotlight.test.js`, `spotlight-g2a.test.js`, `ts-column.test.js`). All must pass after changes.
-8. **Environment variables** — Functions depend on `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_TOKEN`, `RESEND_API_KEY`. Env mismatch = runtime errors.
+| Risiko | Bereich | Auswirkung |
+|---|---|---|
+| **admin.js ist monolithisch** | Frontend | Jede Änderung kann andere Tabs brechen |
+| **Kein Build-Step** | Frontend | Kein Tree-Shaking, kein Bundling, kein TypeScript |
+| **Token-Auth ohne Expiry** | Security | Token bleibt in localStorage bis manuell gelöscht |
+| **Keine Unit-Tests für Functions** | Backend | Regressions werden erst in E2E-Tests entdeckt |
+| **CORS-Config in jeder Function** | Backend | Inkonsistente CORS-Handhabung möglich |
+| **Supabase Service-Role Key** | Security | Functions nutzen Service-Role → voller DB-Zugriff |
+| **Kein Rate-Limiting auf Public-Endpoints** | Security | newsletter_signup, track-event angreifbar |
+| **Keine CSP für Inline-Scripts** | Security | admin.html nutzt inline JS in einigen Stellen |
+
+**Was NICHT kaputt gehen darf:**
+- Newsletter Signup Flow (index.html → newsletter_signup → Supabase)
+- Affiliate-Link Redirect (`/go/*` → go.js → clicks tracking)
+- Admin-Auth (Token-Flow login → dashboard)
+- Spotlight-Seiten (öffentliche Landing-Pages)
+- Tracking-Pipeline (tracker.js → track-event → events-Tabelle)
+- E-Mail-Versand (Campaigns + Welcome-Mail via Resend)
 
 ---
 
-## Upgrade Roadmap
+## 3. Upgrade Roadmap
 
-### Phase 2 — Admin Dashboard Hardening
+### Phase 2 – Admin JS Modularisierung
+- [ ] `assets/admin.js` in Module aufteilen (je Tab ein Modul)
+- [ ] Shared Helpers extrahieren (`api.js`, `toast.js`, `utils.js`)
+- [ ] ES-Module-Imports nutzen (bereits `type="module"` in admin.html)
+- [ ] Smoke-Tests nach jedem Modul-Split durchführen
 
-- [ ] Add loading states and error boundaries to every tab
-- [ ] Implement consistent toast notifications for all API calls
-- [ ] Add auto-refresh / polling for live stats on Dashboard tab
-- [ ] Add pagination to subscriber and leads lists
+### Phase 3 – API-Härtung
+- [ ] Rate-Limiting für öffentliche Endpoints (newsletter_signup, track-event)
+- [ ] Token-Expiry / Refresh-Mechanismus für Admin-Auth
+- [ ] Input-Validation in allen Functions vereinheitlichen
+- [ ] CORS-Handling in `_lib/cors.js` zentralisieren (falls nicht schon überall genutzt)
 
-### Phase 3 — Analytics & Tracking Deep Dive
+### Phase 4 – Dashboard UI Verbesserungen
+- [ ] Responsive Layout für Mobile-Admin
+- [ ] Loading-States & Error-Boundaries pro Tab
+- [ ] Pagination für Subscriber-Liste & Event-Logs
+- [ ] Dark-Mode-Support (CSS-Variablen bereits teilweise vorhanden)
 
-- [ ] Wire Analytics tab to `admin-analytics` + `tracking-stats` functions
-- [ ] Build funnel visualisation using `tracking-funnel` data
-- [ ] Add date-range picker for all analytics views
-- [ ] Show session-level data from `sessions` table
+### Phase 5 – Daten & Analytics
+- [ ] Aggregation-Layer für Tracking (daily rollups → schnellere Queries)
+- [ ] Dashboard-Widgets: Conversion-Funnel, Geo-Verteilung, Trend-Charts
+- [ ] CSV/JSON-Export für alle Listen-Tabs
+- [ ] Scheduled Reports (Netlify Scheduled Functions oder Cron)
 
-### Phase 4 — Campaign Management
+### Phase 6 – E-Mail & Campaigns
+- [ ] Template-Editor mit Live-Preview im Dashboard
+- [ ] Segmentierung: Tags, Custom Fields, Engagement-Score
+- [ ] A/B-Testing für Subject-Lines
+- [ ] Automatische Welcome-Sequenz (Drip Campaign)
 
-- [ ] Build campaign composer UI (subject, body HTML, segment selector)
-- [ ] Add campaign preview / test-send before broadcast
-- [ ] Show send progress with live `newsletter_sends` status
-- [ ] Add campaign performance metrics (open rate proxy via email logs)
-
-### Phase 5 — Email Template System
-
-- [ ] Build template editor in admin (CRUD via `admin-email-templates`)
-- [ ] Add template preview with variable substitution
-- [ ] Link templates to campaigns for reuse
-- [ ] Add default templates for welcome, confirmation, unsubscribe
-
-### Phase 6 — Spotlight & Drops Management
-
-- [ ] Improve spotlight creation form (image upload, rich description)
-- [ ] Add drag-and-drop sort for drops priority
-- [ ] Add bulk actions (activate/deactivate, delete)
-- [ ] Show click stats per spotlight / drop inline
-
-### Phase 7 — Operational Excellence
-
-- [ ] Add admin audit log viewer in dashboard
-- [ ] Implement admin role-based access (read-only vs full)
-- [ ] Add data export (CSV) for subscribers, events, clicks
-- [ ] Add health-check dashboard panel aggregating `admin-health` + `email-health`
-- [ ] Document all API endpoints in an OpenAPI spec
+### Phase 7 – DevOps & Testing
+- [ ] CI/CD: Playwright-Tests in GitHub Actions
+- [ ] Staging-Environment (separate Supabase-Instanz)
+- [ ] Function-Unit-Tests (vitest oder jest)
+- [ ] Monitoring & Alerting (Uptime, Error-Rate, E-Mail-Bounce)
+- [ ] Supabase RLS-Policies für alle Tabellen aktivieren
