@@ -42,6 +42,11 @@ async function loadRuntimeConfig() {
 
 function initTikTokPixel(pixelId) {
   if (!pixelId || pixelLoaded) return;
+  // If pixel was already loaded via inline <head> snippet, just mark as loaded
+  if (window.ttq && window.ttq._i && window.ttq._i[pixelId]) {
+    pixelLoaded = true;
+    return;
+  }
   ensureTikTokBootstrap();
   if (typeof window.ttq === 'undefined') return;
   window.ttq.load(pixelId);
@@ -54,7 +59,7 @@ function ensureTikTokBootstrap() {
   const name = 'ttq';
   window.TiktokAnalyticsObject = name;
   const ttq = window[name] = window[name] || [];
-  ttq.methods = ['page', 'track', 'identify', 'instances', 'debug', 'on', 'off', 'once', 'ready', 'alias', 'group', 'enableCookie', 'disableCookie'];
+  ttq.methods = ['page', 'track', 'identify', 'instances', 'debug', 'on', 'off', 'once', 'ready', 'alias', 'group', 'enableCookie', 'disableCookie', 'holdConsent', 'revokeConsent', 'grantConsent'];
   ttq.setAndDefer = function(t, e) { t[e] = function() { t.push([e].concat(Array.prototype.slice.call(arguments, 0))); }; };
   for (let i = 0; i < ttq.methods.length; i += 1) {
     ttq.setAndDefer(ttq, ttq.methods[i]);
@@ -187,9 +192,34 @@ affiliateLinks.forEach(link => {
       updateUI(clicks);
     }
     track('ClickOutbound', { slug: `/go/${slug}` });
+    const href = link.getAttribute('href') || '';
+    if (isTemuLink(slug, href)) {
+      firePixel('ClickButton', {
+        content_type: 'product',
+        content_id: slug,
+        description: 'temu_clickout'
+      });
+    }
   });
 });
 
+// Fire TikTok ClickButton for any outbound link pointing to temu.com
+document.addEventListener('click', (e) => {
+  let el = e.target;
+  for (let i = 0; i < 5 && el && el !== document.body; i++) {
+    if (el.tagName === 'A' && el.href) {
+      if (isTemuLink(null, el.href)) {
+        firePixel('ClickButton', {
+          content_type: 'product',
+          content_id: el.href.slice(0, 256),
+          description: 'temu_clickout'
+        });
+      }
+      break;
+    }
+    el = el.parentElement;
+  }
+}, true);
 
 
 const spotlightCard = document.querySelector('[data-spotlight]');
@@ -273,6 +303,17 @@ async function logEvent(name, meta = {}) {
 function firePixel(name, meta = {}) {
   if (!pixelLoaded || !window.ttq) return;
   window.ttq.track(name, meta);
+}
+
+function isTemuLink(slug, href) {
+  if (slug && /temu/i.test(slug)) return true;
+  if (href) {
+    try {
+      const url = new URL(href, window.location.origin);
+      return /(^|\.)temu\.com$/i.test(url.hostname);
+    } catch { /* ignore */ }
+  }
+  return false;
 }
 
 function track(name, meta = {}) {
