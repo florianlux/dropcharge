@@ -119,7 +119,6 @@ img{max-width:100%;display:block}
 
 /* ── Responsive ── */
 @media(max-width:720px){
-  .cmp-sticky{transform:translateY(0)}
   .cmp-table{font-size:.85rem}
   .cmp-table thead th,.cmp-table tbody td{padding:.7rem .6rem}
   .cmp-deals-grid{grid-template-columns:1fr}
