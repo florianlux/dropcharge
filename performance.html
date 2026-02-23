@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DropCharge – Temu Performance Analyse</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #02030c;
+      --surface: rgba(255,255,255,0.03);
+      --surface-alt: rgba(255,255,255,0.06);
+      --text: #f8fbff;
+      --muted: #9ea8c3;
+      --primary: #7f5dff;
+      --green: #22c55e;
+      --red: #ef4444;
+      --orange: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Space Grotesk', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    a { color: inherit; text-decoration: none; }
+    .page-bg {
+      position: fixed; inset: -20%;
+      background: radial-gradient(circle at 20% 20%, rgba(127,93,255,0.2), transparent 40%),
+                  radial-gradient(circle at 80% 0%, rgba(0,111,205,0.2), transparent 45%);
+      filter: blur(40px); z-index: -2;
+    }
+    .nav {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.5rem clamp(1rem,4vw,4rem);
+    }
+    .logo { font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; }
+    .nav-links { display: flex; gap: 0.6rem; }
+    .nav-link {
+      border: 1px solid rgba(255,255,255,0.2); padding: 0.5rem 1.4rem;
+      border-radius: 999px; font-size: 0.9rem;
+    }
+    .container { max-width: 960px; margin: 0 auto; padding: 0 clamp(1rem,4vw,4rem) 4rem; }
+
+    h1 { font-size: clamp(1.8rem,5vw,2.8rem); line-height: 1.15; margin-bottom: 0.5rem; }
+    h1 span { color: var(--primary); }
+    .subtitle { color: var(--muted); margin-bottom: 2rem; }
+
+    /* Temu Params Box */
+    .params-box {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(180px,1fr)); gap: 1rem;
+    }
+    .param { text-align: center; }
+    .param .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted); }
+    .param .value { font-size: 1.6rem; font-weight: 700; color: var(--primary); }
+
+    /* Section */
+    .section { margin-bottom: 2.5rem; }
+    .section h2 { font-size: 1.3rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+
+    /* Input Group */
+    .input-group {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 1.2rem;
+    }
+    .field label {
+      display: block; font-size: 0.8rem; text-transform: uppercase;
+      letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.3rem;
+    }
+    .field input {
+      width: 100%; padding: 0.6rem 0.8rem; border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06);
+      color: var(--text); font-family: inherit; font-size: 1rem;
+    }
+    .field input:focus { outline: none; border-color: var(--primary); }
+    .field .hint { font-size: 0.75rem; color: var(--muted); margin-top: 0.2rem; }
+
+    /* KPI Cards */
+    .kpi-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px,1fr)); gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .kpi-card {
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px; padding: 1.2rem; text-align: center;
+    }
+    .kpi-card .kpi-label {
+      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.15em;
+      color: var(--muted); margin-bottom: 0.3rem;
+    }
+    .kpi-card .kpi-value { font-size: 1.8rem; font-weight: 700; }
+    .kpi-card .kpi-note { font-size: 0.8rem; color: var(--muted); margin-top: 0.3rem; }
+
+    .text-green { color: var(--green); }
+    .text-red { color: var(--red); }
+    .text-orange { color: var(--orange); }
+    .text-primary { color: var(--primary); }
+
+    /* Simulation Table */
+    .sim-table {
+      width: 100%; border-collapse: separate; border-spacing: 0;
+      background: rgba(255,255,255,0.03); border-radius: 16px;
+      overflow: hidden; border: 1px solid rgba(255,255,255,0.1);
+    }
+    .sim-table th, .sim-table td { padding: 0.8rem 1rem; text-align: right; }
+    .sim-table th {
+      background: rgba(255,255,255,0.06); font-size: 0.75rem;
+      text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
+    }
+    .sim-table th:first-child, .sim-table td:first-child { text-align: left; }
+    .sim-table td { border-top: 1px solid rgba(255,255,255,0.06); }
+    .sim-table tr:last-child td:first-child { border-bottom-left-radius: 16px; }
+    .sim-table tr:last-child td:last-child { border-bottom-right-radius: 16px; }
+
+    .badge {
+      display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px;
+      font-size: 0.75rem; font-weight: 600;
+    }
+    .badge-profit { background: rgba(34,197,94,0.15); color: var(--green); }
+    .badge-loss { background: rgba(239,68,68,0.15); color: var(--red); }
+
+    /* Formula box */
+    .formula-box {
+      background: rgba(127,93,255,0.08); border: 1px solid rgba(127,93,255,0.25);
+      border-radius: 12px; padding: 1rem 1.2rem; margin-bottom: 1.5rem;
+      font-size: 0.9rem;
+    }
+    .formula-box code {
+      background: rgba(255,255,255,0.08); padding: 0.15rem 0.4rem;
+      border-radius: 4px; font-family: 'Space Grotesk', monospace;
+    }
+
+    /* Profitability Insight */
+    .insight-box {
+      border-radius: 16px; padding: 1.5rem; margin-top: 2rem;
+      text-align: center; font-size: 1.05rem;
+    }
+    .insight-box.profitable { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.3); }
+    .insight-box.not-profitable { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); }
+    .insight-box strong { font-size: 1.3rem; display: block; margin-bottom: 0.3rem; }
+
+    @media (max-width: 600px) {
+      .sim-table { font-size: 0.85rem; }
+      .sim-table th, .sim-table td { padding: 0.6rem 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-bg"></div>
+  <nav class="nav">
+    <div class="logo">DropCharge</div>
+    <div class="nav-links">
+      <a class="nav-link" href="/">← Zurück</a>
+      <a class="nav-link" href="/admin.html">Dashboard</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1>📊 Temu <span>Performance Analyse</span></h1>
+    <p class="subtitle">Break-Even, Conversion-Grenzen & Profit-Simulation für Temu-Affiliate-Traffic</p>
+
+    <!-- Temu Parameters -->
+    <div class="params-box">
+      <div class="param">
+        <div class="label">Download Bonus</div>
+        <div class="value">4,00 €</div>
+      </div>
+      <div class="param">
+        <div class="label">Provision</div>
+        <div class="value">10 %</div>
+      </div>
+      <div class="param">
+        <div class="label">Ø Warenkorb</div>
+        <div class="value">20,00 €</div>
+      </div>
+      <div class="param">
+        <div class="label">Erlös / Conversion</div>
+        <div class="value" id="revPerConversion">6,00 €</div>
+      </div>
+    </div>
+
+    <!-- Adjustable Inputs -->
+    <div class="section">
+      <h2>⚙️ Parameter anpassen</h2>
+      <div class="input-group">
+        <div class="field">
+          <label for="inputCPC">CPC (€)</label>
+          <input type="number" id="inputCPC" value="0.08" step="0.01" min="0.01">
+          <div class="hint">Dein Cost-per-Click (z.B. TikTok Ads)</div>
+        </div>
+        <div class="field">
+          <label for="inputCTR">ClickTemu Rate (%)</label>
+          <input type="number" id="inputCTR" value="35" step="1" min="1" max="100">
+          <div class="hint">% der LP-Besucher, die zu Temu klicken</div>
+        </div>
+        <div class="field">
+          <label for="inputCR">Conversion Rate (%)</label>
+          <input type="number" id="inputCR" value="8" step="0.5" min="0.5" max="100">
+          <div class="hint">% der Temu-Klicker, die kaufen/downloaden</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Section: Break-Even -->
+    <div class="section">
+      <h2>1️⃣ Break-Even CPC</h2>
+      <div class="formula-box">
+        <strong>Formel:</strong> Break-Even CPC = ClickTemu Rate × Conversion Rate × Erlös pro Conversion<br>
+        <code>BE-CPC = CTR × CR × 6,00 €</code>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Break-Even CPC</div>
+          <div class="kpi-value text-primary" id="kpiBECPC">—</div>
+          <div class="kpi-note">Max. CPC bei dem kein Verlust entsteht</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Dein CPC</div>
+          <div class="kpi-value" id="kpiYourCPC">—</div>
+          <div class="kpi-note">Aktueller Cost-per-Click</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Marge pro Klick</div>
+          <div class="kpi-value" id="kpiMarginClick">—</div>
+          <div class="kpi-note">Erlös − Kosten pro LP-Besucher</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Section: Min Conversion Rate -->
+    <div class="section">
+      <h2>2️⃣ Minimale Conversion Rate</h2>
+      <div class="formula-box">
+        <strong>Formel:</strong> Min. CR = CPC ÷ (ClickTemu Rate × 6,00 €)<br>
+        <code>Min. CR = CPC ÷ (CTR × 6,00 €)</code>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Minimale CR</div>
+          <div class="kpi-value text-orange" id="kpiMinCR">—</div>
+          <div class="kpi-note">Unter diesem Wert = Verlust</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Deine CR</div>
+          <div class="kpi-value" id="kpiYourCR">—</div>
+          <div class="kpi-note">Aktuelle Conversion Rate</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Section: Required ClickTemu Rate -->
+    <div class="section">
+      <h2>3️⃣ Benötigte ClickTemu Rate</h2>
+      <div class="formula-box">
+        <strong>Formel:</strong> Min. CTR = CPC ÷ (Conversion Rate × 6,00 €)<br>
+        <code>Min. CTR = CPC ÷ (CR × 6,00 €)</code>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Minimale ClickTemu Rate</div>
+          <div class="kpi-value text-orange" id="kpiMinCTR">—</div>
+          <div class="kpi-note">Unter diesem Wert = Verlust</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Deine CTR</div>
+          <div class="kpi-value" id="kpiYourCTR">—</div>
+          <div class="kpi-note">Aktuelle ClickTemu Rate</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Simulation -->
+    <div class="section">
+      <h2>4️⃣ Profit-Simulation</h2>
+      <table class="sim-table">
+        <thead>
+          <tr>
+            <th>Szenario</th>
+            <th>Klicks</th>
+            <th>Ad-Kosten</th>
+            <th>Temu-Klicks</th>
+            <th>Conversions</th>
+            <th>Einnahmen</th>
+            <th>Profit</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="simBody">
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Profitability Insight -->
+    <div id="insightBox" class="insight-box profitable">
+      <strong id="insightTitle">—</strong>
+      <span id="insightText">—</span>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var DOWNLOAD_BONUS = 4;
+      var COMMISSION_RATE = 0.10;
+      var AVG_CART = 20;
+      var REV_PER_CONV = DOWNLOAD_BONUS + (COMMISSION_RATE * AVG_CART);
+
+      var scenarios = [
+        { label: 'Klein', clicks: 1000 },
+        { label: 'Mittel', clicks: 3000 },
+        { label: 'Groß', clicks: 10000 }
+      ];
+
+      var inputCPC = document.getElementById('inputCPC');
+      var inputCTR = document.getElementById('inputCTR');
+      var inputCR = document.getElementById('inputCR');
+
+      document.getElementById('revPerConversion').textContent = fmt(REV_PER_CONV);
+
+      function fmt(n) {
+        return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+      }
+      function fmtPct(n) {
+        return n.toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' %';
+      }
+      function fmtInt(n) {
+        return Math.round(n).toLocaleString('de-DE');
+      }
+
+      function calculate() {
+        var cpc = parseFloat(inputCPC.value) || 0.01;
+        var ctr = (parseFloat(inputCTR.value) || 1) / 100;
+        var cr = (parseFloat(inputCR.value) || 0.5) / 100;
+
+        // 1) Break-Even CPC
+        var beCPC = ctr * cr * REV_PER_CONV;
+        document.getElementById('kpiBECPC').textContent = fmt(beCPC);
+        document.getElementById('kpiYourCPC').textContent = fmt(cpc);
+        var marginPerClick = (ctr * cr * REV_PER_CONV) - cpc;
+        var marginEl = document.getElementById('kpiMarginClick');
+        marginEl.textContent = fmt(marginPerClick);
+        marginEl.className = 'kpi-value ' + (marginPerClick >= 0 ? 'text-green' : 'text-red');
+
+        // 2) Minimum CR
+        var minCR = cpc / (ctr * REV_PER_CONV);
+        document.getElementById('kpiMinCR').textContent = fmtPct(minCR * 100);
+        var yourCREl = document.getElementById('kpiYourCR');
+        yourCREl.textContent = fmtPct(cr * 100);
+        yourCREl.className = 'kpi-value ' + (cr >= minCR ? 'text-green' : 'text-red');
+
+        // 3) Required ClickTemu Rate
+        var minCTR = cpc / (cr * REV_PER_CONV);
+        document.getElementById('kpiMinCTR').textContent = fmtPct(minCTR * 100);
+        var yourCTREl = document.getElementById('kpiYourCTR');
+        yourCTREl.textContent = fmtPct(ctr * 100);
+        yourCTREl.className = 'kpi-value ' + (ctr >= minCTR ? 'text-green' : 'text-red');
+
+        // 4) Simulation
+        var tbody = document.getElementById('simBody');
+        tbody.innerHTML = '';
+        for (var i = 0; i < scenarios.length; i++) {
+          var s = scenarios[i];
+          var adCost = s.clicks * cpc;
+          var temuClicks = Math.round(s.clicks * ctr);
+          var conversions = Math.round(temuClicks * cr);
+          var revenue = conversions * REV_PER_CONV;
+          var profit = revenue - adCost;
+          var isProfitable = profit >= 0;
+
+          var row = document.createElement('tr');
+          row.innerHTML =
+            '<td><strong>' + s.label + '</strong></td>' +
+            '<td>' + fmtInt(s.clicks) + '</td>' +
+            '<td>' + fmt(adCost) + '</td>' +
+            '<td>' + fmtInt(temuClicks) + '</td>' +
+            '<td>' + fmtInt(conversions) + '</td>' +
+            '<td>' + fmt(revenue) + '</td>' +
+            '<td class="' + (isProfitable ? 'text-green' : 'text-red') + '"><strong>' + fmt(profit) + '</strong></td>' +
+            '<td><span class="badge ' + (isProfitable ? 'badge-profit' : 'badge-loss') + '">' +
+            (isProfitable ? '✓ Profit' : '✗ Verlust') + '</span></td>';
+          tbody.appendChild(row);
+        }
+
+        // Insight
+        var box = document.getElementById('insightBox');
+        var title = document.getElementById('insightTitle');
+        var text = document.getElementById('insightText');
+        if (marginPerClick >= 0) {
+          box.className = 'insight-box profitable';
+          title.textContent = '✅ Profitabel ab dem 1. Klick';
+          text.textContent = 'Bei ' + fmt(cpc) + ' CPC, ' + fmtPct(ctr * 100) +
+            ' ClickTemu Rate und ' + fmtPct(cr * 100) +
+            ' CR erwirtschaftest du ' + fmt(marginPerClick) + ' Marge pro Klick. ' +
+            'Break-Even CPC liegt bei ' + fmt(beCPC) + '.';
+        } else {
+          box.className = 'insight-box not-profitable';
+          title.textContent = '⚠️ Aktuell nicht profitabel';
+          text.textContent = 'Dein CPC von ' + fmt(cpc) + ' liegt über dem Break-Even CPC von ' +
+            fmt(beCPC) + '. Senke den CPC oder steigere CTR/CR. ' +
+            'Mindestens ' + fmtPct(minCR * 100) + ' CR oder ' + fmtPct(minCTR * 100) +
+            ' CTR benötigt.';
+        }
+      }
+
+      inputCPC.addEventListener('input', calculate);
+      inputCTR.addEventListener('input', calculate);
+      inputCR.addEventListener('input', calculate);
+
+      calculate();
+    })();
+  </script>
+</body>
+</html>
