@@ -6,6 +6,8 @@ const { withCors } = require('./_lib/cors');
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const crypto = require('crypto');
 
+const SESSION_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
 async function resolveSession(token) {
   if (!token || !hasSupabase) return null;
 
@@ -21,8 +23,8 @@ async function resolveSession(token) {
   let session;
   try { session = typeof data.value === 'string' ? JSON.parse(data.value) : data.value; } catch (e) { return null; }
 
-  // Check expiry (24 hours)
-  if (session.created && Date.now() - session.created > 24 * 60 * 60 * 1000) {
+  // Check expiry
+  if (session.created && Date.now() - session.created > SESSION_TTL_MS) {
     // Clean up expired token
     await supabase.from('settings').delete().eq('key', 'academy_session_' + tokenHash);
     return null;

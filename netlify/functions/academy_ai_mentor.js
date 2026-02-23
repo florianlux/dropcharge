@@ -9,7 +9,7 @@ const { withCors } = require('./_lib/cors');
 const { supabase, hasSupabase } = require('./_lib/supabase');
 const { resolveSession } = require('./academy_session');
 
-const MONTHLY_QUOTA = 50;
+const MONTHLY_QUOTA = parseInt(process.env.AI_MENTOR_MONTHLY_QUOTA) || 50;
 
 exports.handler = withCors(async (event) => {
   if (event.httpMethod !== 'POST') {

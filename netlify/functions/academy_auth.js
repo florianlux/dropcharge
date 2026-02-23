@@ -96,9 +96,10 @@ exports.handler = withCors(async (event) => {
     };
   }
 
-  // Dev fallback: return token directly
+  // Dev fallback: no email provider configured
+  console.log('academy_auth: RESEND_API_KEY not set – login URL generated but not emailed');
   return {
     statusCode: 200,
-    body: JSON.stringify({ ok: true, message: 'login link sent', _dev_token: token, _dev_url: loginUrl })
+    body: JSON.stringify({ ok: true, message: 'login link sent (email provider not configured – check server logs)' })
   };
 });

@@ -137,7 +137,7 @@ async function handleCheckoutComplete(session) {
     plan: plan,
     status: 'active',
     granted_by: 'stripe',
-    valid_until: plan === 'pro' ? null : null, // Both are valid indefinitely initially
+    valid_until: null,
     updated_at: new Date().toISOString()
   }, { onConflict: 'user_id' });
 }
