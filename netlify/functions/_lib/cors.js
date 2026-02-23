@@ -14,7 +14,7 @@ function pickOrigin(event) {
 function corsHeaders(origin, extra = {}) {
   return {
     'Access-Control-Allow-Origin': origin,
-    'Access-Control-Allow-Headers': 'content-type,x-admin-token',
+    'Access-Control-Allow-Headers': 'content-type,x-admin-token,x-academy-token',
     'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
     'Access-Control-Allow-Credentials': 'true',
     ...extra

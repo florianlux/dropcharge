@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DropCharge Academy – Tools</title>
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/styles.css" />
+  <link rel="stylesheet" href="/assets/academy/academy.css" />
+</head>
+<body>
+  <div class="page-bg"></div>
+
+  <div class="academy-app-nav">
+    <a href="/academy/" class="logo">DropCharge Academy</a>
+    <div class="nav-right">
+      <a class="nav-link" href="/academy/app/">← Kurs</a>
+      <button class="nav-link" id="tools-logout">Logout</button>
+    </div>
+  </div>
+
+  <div class="section" style="max-width:900px;">
+    <h2 class="section-title">Pro Tools</h2>
+    <p class="section-sub">Exklusive Werkzeuge für Pro-Mitglieder.</p>
+
+    <div id="no-pro" style="display:none;text-align:center;padding:2rem;">
+      <p>Diese Tools sind nur für Pro-Mitglieder verfügbar.</p>
+      <a class="btn primary" href="/academy/app/">Zurück zum Kurs</a>
+    </div>
+
+    <div id="tools-area" style="display:none">
+      <div class="tools-grid">
+        <!-- Commission Calculator -->
+        <div class="tool-card">
+          <h3>🧮 Commission Calculator</h3>
+          <p>Berechne deine potenziellen Einnahmen basierend auf Traffic und Conversion.</p>
+          <div class="form-group">
+            <label>Monatliche Besucher</label>
+            <input type="number" id="calc-traffic" value="1000" min="0" />
+          </div>
+          <div class="form-group">
+            <label>Conversion Rate (%)</label>
+            <input type="number" id="calc-conv" value="2" min="0" max="100" step="0.1" />
+          </div>
+          <div class="form-group">
+            <label>Earnings per Click (€)</label>
+            <input type="number" id="calc-epc" value="0.50" min="0" step="0.01" />
+          </div>
+          <button class="btn primary" id="calc-btn" style="width:100%">Berechnen</button>
+          <div class="tool-result" id="calc-result" style="display:none"></div>
+        </div>
+
+        <!-- Funnel Score Analyzer -->
+        <div class="tool-card">
+          <h3>📊 Funnel Score Analyzer</h3>
+          <p>Bewerte deinen Funnel und erhalte Tipps zur Optimierung.</p>
+          <div class="form-group">
+            <label>Hast du eine Landingpage?</label>
+            <select id="funnel-lp"><option value="1">Ja</option><option value="0">Nein</option></select>
+          </div>
+          <div class="form-group">
+            <label>Nutzt du Email-Marketing?</label>
+            <select id="funnel-email"><option value="1">Ja</option><option value="0">Nein</option></select>
+          </div>
+          <div class="form-group">
+            <label>Hast du Social Proof?</label>
+            <select id="funnel-proof"><option value="1">Ja</option><option value="0">Nein</option></select>
+          </div>
+          <div class="form-group">
+            <label>Nutzt du Retargeting?</label>
+            <select id="funnel-retarget"><option value="0">Nein</option><option value="1">Ja</option></select>
+          </div>
+          <div class="form-group">
+            <label>A/B-Tests aktiv?</label>
+            <select id="funnel-ab"><option value="0">Nein</option><option value="1">Ja</option></select>
+          </div>
+          <button class="btn primary" id="funnel-btn" style="width:100%">Analysieren</button>
+          <div class="tool-result" id="funnel-result" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- AI Mentor -->
+      <div class="tool-card" style="margin-top:1.5rem;">
+        <h3>🤖 AI Mentor</h3>
+        <p>Stelle deinem persönlichen Affiliate-Berater eine Frage. (50 Prompts/Monat)</p>
+        <div class="mentor-chat" id="mentor-chat"></div>
+        <div class="form-group" style="margin:0">
+          <textarea id="mentor-input" placeholder="Stelle eine Frage zum Thema Gaming-Affiliate-Marketing..." rows="3"></textarea>
+        </div>
+        <div style="display:flex;gap:0.5rem;margin-top:0.5rem;align-items:center;">
+          <button class="btn primary" id="mentor-btn" style="flex:1">Fragen</button>
+          <span style="font-size:0.8rem;color:var(--muted);" id="mentor-quota"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    var API = '/.netlify/functions/';
+
+    function getToken() { return localStorage.getItem('academy_token'); }
+    function apiFetch(fn, opts) {
+      opts = opts || {};
+      opts.headers = opts.headers || {};
+      opts.headers['Content-Type'] = 'application/json';
+      var token = getToken();
+      if (token) opts.headers['x-academy-token'] = token;
+      return fetch(API + fn, opts).then(function(r) { return r.json(); });
+    }
+
+    // Check auth + pro access
+    if (!getToken()) { window.location.href = '/academy/app/'; return; }
+
+    apiFetch('academy_session').then(function(data) {
+      if (!data.ok || !data.access || data.access.status !== 'active') {
+        window.location.href = '/academy/app/';
+        return;
+      }
+      if (data.access.plan !== 'pro') {
+        document.getElementById('no-pro').style.display = '';
+        return;
+      }
+      document.getElementById('tools-area').style.display = '';
+    });
+
+    // Commission Calculator
+    document.getElementById('calc-btn').addEventListener('click', function() {
+      var traffic = parseFloat(document.getElementById('calc-traffic').value) || 0;
+      var conv = parseFloat(document.getElementById('calc-conv').value) || 0;
+      var epc = parseFloat(document.getElementById('calc-epc').value) || 0;
+      var clicks = traffic * (conv / 100);
+      var earnings = clicks * epc;
+      var r = document.getElementById('calc-result');
+      r.style.display = '';
+      r.innerHTML = '<strong>Ergebnis:</strong><br>' +
+        'Klicks/Monat: <strong>' + Math.round(clicks) + '</strong><br>' +
+        'Geschätzte Einnahmen: <strong>' + earnings.toFixed(2) + ' €/Monat</strong><br>' +
+        'Jahreseinnahmen: <strong>' + (earnings * 12).toFixed(2) + ' €</strong>';
+    });
+
+    // Funnel Score
+    document.getElementById('funnel-btn').addEventListener('click', function() {
+      var lp = parseInt(document.getElementById('funnel-lp').value);
+      var email = parseInt(document.getElementById('funnel-email').value);
+      var proof = parseInt(document.getElementById('funnel-proof').value);
+      var retarget = parseInt(document.getElementById('funnel-retarget').value);
+      var ab = parseInt(document.getElementById('funnel-ab').value);
+      var score = (lp * 25) + (email * 25) + (proof * 20) + (retarget * 15) + (ab * 15);
+      var tips = [];
+      if (!lp) tips.push('Eine dedizierte Landingpage kann deine Conversions verdoppeln.');
+      if (!email) tips.push('Email-Marketing ist einer der profitabelsten Kanäle. Starte eine Liste!');
+      if (!proof) tips.push('Social Proof (Testimonials, Zahlen) erhöht das Vertrauen der Besucher.');
+      if (!retarget) tips.push('Retargeting holt verlorene Besucher zurück – oft der günstigste Traffic.');
+      if (!ab) tips.push('A/B-Tests helfen dir, systematisch zu optimieren.');
+      var r = document.getElementById('funnel-result');
+      r.style.display = '';
+      var grade = score >= 80 ? 'Exzellent 🏆' : score >= 60 ? 'Gut 👍' : score >= 40 ? 'Ausbaufähig 📈' : 'Verbesserung nötig ⚡';
+      r.innerHTML = '<strong>Funnel Score: ' + score + '/100 – ' + grade + '</strong>';
+      if (tips.length) r.innerHTML += '<br><br><strong>Tipps:</strong><ul>' + tips.map(function(t) { return '<li>' + t + '</li>'; }).join('') + '</ul>';
+    });
+
+    // AI Mentor
+    var chatEl = document.getElementById('mentor-chat');
+    document.getElementById('mentor-btn').addEventListener('click', function() {
+      var input = document.getElementById('mentor-input');
+      var prompt = input.value.trim();
+      if (!prompt) return;
+      var btn = this;
+      btn.disabled = true;
+
+      chatEl.innerHTML += '<div class="mentor-msg user">' + escHtml(prompt) + '</div>';
+      input.value = '';
+      chatEl.scrollTop = chatEl.scrollHeight;
+
+      apiFetch('academy_ai_mentor', {
+        method: 'POST',
+        body: JSON.stringify({ prompt: prompt })
+      }).then(function(data) {
+        btn.disabled = false;
+        var msg = data.ok ? data.reply : (data.error || 'Fehler aufgetreten.');
+        chatEl.innerHTML += '<div class="mentor-msg assistant">' + escHtml(msg) + '</div>';
+        chatEl.scrollTop = chatEl.scrollHeight;
+        if (data.remaining !== undefined) {
+          document.getElementById('mentor-quota').textContent = data.remaining + ' Prompts übrig';
+        }
+      }).catch(function() {
+        btn.disabled = false;
+        chatEl.innerHTML += '<div class="mentor-msg assistant">Netzwerkfehler. Bitte versuche es erneut.</div>';
+      });
+    });
+
+    document.getElementById('tools-logout').addEventListener('click', function() {
+      localStorage.removeItem('academy_token');
+      localStorage.removeItem('academy_user');
+      window.location.href = '/academy/app/';
+    });
+
+    function escHtml(s) {
+      var d = document.createElement('div');
+      d.textContent = s;
+      return d.innerHTML;
+    }
+  })();
+  </script>
+</body>
+</html>
