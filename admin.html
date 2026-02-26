@@ -31,6 +31,7 @@
         <button class="nav-link" data-tab="tracking">Tracking Links</button>
         <button class="nav-link" data-tab="analytics">Analytics</button>
         <button class="nav-link" data-tab="deep-tracking">📊 Tracking</button>
+        <button class="nav-link" data-tab="growth-ops">🚀 Growth Ops</button>
       </nav>
       <div class="sidebar-footer">
         <a class="btn ghost" href="/" target="_blank">← Back to Site</a>
@@ -702,12 +703,22 @@
           </div>
         </div>
       </section>
+
+      <!-- Growth Ops -->
+      <section class="tab-panel" data-panel="growth-ops">
+        <div class="panel-head">
+          <h2>🚀 Growth Ops</h2>
+          <p class="micro">Campaign tools, creative assets & performance checks</p>
+        </div>
+        <div class="ops-actions-grid" id="ops-actions-grid"></div>
+      </section>
     </main>
   </div>
   <div id="toast" class="toast"></div>
   <script type="module" src="./assets/admin.js"></script>
   <script type="module">
     import { initWidgets, refreshWidgets, setWidgetRange } from './assets/admin/widget-host.js';
+    import { initOpsPanel } from './assets/admin/ops-panel.js';
 
     // Build a context object that re-uses the admin.js api helpers
     function buildCtx() {
@@ -721,13 +732,23 @@
         });
         return res.json().catch(function() { return {}; });
       }
-      return { apiGet: apiGet };
+      async function apiPost(path, body) {
+        const res = await fetch(API_BASE + '/.netlify/functions/' + path, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+          body: JSON.stringify(body)
+        });
+        return res.json().catch(function() { return {}; });
+      }
+      return { apiGet: apiGet, apiPost: apiPost };
     }
 
     document.addEventListener('DOMContentLoaded', function() {
       var ctx = buildCtx();
       // Init widgets on dashboard load
       initWidgets(ctx);
+      // Init Growth Ops panel
+      initOpsPanel(ctx);
 
       // Health dot
       fetch(window.location.origin + '/.netlify/functions/health')
