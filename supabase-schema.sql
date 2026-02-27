@@ -214,3 +214,16 @@ create table if not exists public.drops (
 );
 
 create index if not exists drops_active_idx on public.drops (active, sort_order);
+
+-- User profiles (linked to Supabase Auth)
+create extension if not exists "uuid-ossp";
+
+create table if not exists public.user_profiles (
+  id uuid primary key references auth.users(id) on delete cascade,
+  email text,
+  username text unique,
+  phone text,
+  newsletter_opt_in boolean not null default false,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
